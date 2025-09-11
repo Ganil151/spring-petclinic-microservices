@@ -1,7 +1,11 @@
+# Dockerfile in the `docker` directory
+
 FROM eclipse-temurin:17 AS builder
 WORKDIR application
-ARG ARTIFACT_NAME
-COPY ${ARTIFACT_NAME}.jar application.jar
+# Change the build argument name to match the Jenkinsfile
+ARG JAR_FILE 
+# Copy the JAR using the new argument
+COPY ${JAR_FILE} application.jar
 RUN java -Djarmode=layertools -jar application.jar extract
 
 
@@ -14,11 +18,6 @@ EXPOSE ${EXPOSED_PORT}
 ENV SPRING_PROFILES_ACTIVE=docker
 
 COPY --from=builder application/dependencies/ ./
-
-# fix for https://stackoverflow.com/questions/51115856/docker-failed-to-export-image-failed-to-create-image-failed-to-get-layer
-# (only last copy caused issue)
-# this seems to be triggered by using btrfs:
-# https://github.com/moby/moby/issues/36573
 RUN true
 COPY --from=builder application/spring-boot-loader/ ./
 RUN true
