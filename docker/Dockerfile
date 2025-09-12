@@ -24,7 +24,7 @@ RUN true
 COPY --from=builder application/snapshot-dependencies/ ./
 RUN true
 COPY --from=builder application/application/ ./
-ENTRYPOINT ["java", "org.springframework.boot.loader.launch.JarLauncher"]
+# ENTRYPOINT ["java", "org.springframework.boot.loader.launch.JarLauncher"]
 
 
 # # docker/Dockerfile (Multi-stage)
@@ -42,4 +42,4 @@ ENTRYPOINT ["java", "org.springframework.boot.loader.launch.JarLauncher"]
 # COPY --from=builder /app/spring-petclinic-config-server/target/spring-petclinic-config-server-*.jar ./application.jar
 
 # EXPOSE 8080
-# ENTRYPOINT ["java", "-jar", "application.jar"]
+ENTRYPOINT ["java", "-jar", "application.jar"]
