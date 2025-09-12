@@ -94,6 +94,9 @@
                                         <encoding.reporting>${project.reporting.outputEncoding}</encoding.reporting>
                                         <java.version>${java.version}</java.version>
                                     </additionalProperties>
+                                    <layers>
+                                        <enabled>true</enabled>
+                                    </layers>
                                 </configuration>
                             </execution>
                         </executions>
