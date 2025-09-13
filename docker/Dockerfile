@@ -1,46 +1,74 @@
-# Dockerfile in the `docker` directory
-
+# Stage 1: Build the application
 FROM eclipse-temurin:17 AS builder
-WORKDIR application
-# Change the build argument name to match the Jenkinsfile
-ARG JAR_FILE 
-# Copy the JAR using the new argument
-COPY ${JAR_FILE} application.jar
-RUN java -Djarmode=layertools -jar application.jar extract
+WORKDIR /app
 
+# Copy Maven wrapper and project files
+COPY .mvn ./.mvn
+COPY mvnw .
+COPY pom.xml .
+COPY spring-petclinic-config-server/pom.xml spring-petclinic-config-server/
+COPY spring-petclinic-config-server/src spring-petclinic-config-server/src
 
-FROM eclipse-temurin:17
-WORKDIR application
-
-ARG EXPOSED_PORT
-EXPOSE ${EXPOSED_PORT}
-
-ENV SPRING_PROFILES_ACTIVE=docker
-
-COPY --from=builder application/dependencies/ ./
-RUN true
-COPY --from=builder application/spring-boot-loader/ ./
-RUN true
-COPY --from=builder application/snapshot-dependencies/ ./
-RUN true
-COPY --from=builder application/application/ ./
-
-# # docker/Dockerfile (Multi-stage)
-WORKDIR /application
-COPY ../.mvn ./.mvn
-COPY ../mvnw .
-COPY ../pom.xml .
-COPY ../spring-petclinic-config-server/pom.xml spring-petclinic-config-server/
-COPY ../spring-petclinic-config-server/src spring-petclinic-config-server/src
-RUN mvn clean package -pl spring-petclinic-config-server -am -DskipTests
+# Build the application
+RUN ./mvnw clean package -pl spring-petclinic-config-server -am -DskipTests
 
 # Extract the JAR file for layering (if needed)
-RUN mkdir -p /application/target && cp spring-petclinic-config-server/target/spring-petclinic-config-server-*.jar /application/target/application.jar
+RUN mkdir -p /app/target && cp spring-petclinic-config-server/target/spring-petclinic-config-server-*.jar /app/target/application.jar
 
 # Stage 2: Create the final, lightweight image
 FROM eclipse-temurin:17-jre-alpine
-WORKDIR /application
-COPY --from=builder /application/spring-petclinic-config-server/target/spring-petclinic-config-server-*.jar ./application.jar
+WORKDIR /app
+
+# Copy the JAR file from the builder stage
+COPY --from=builder /app/target/application.jar ./application.jar
 
 EXPOSE 8080
 ENTRYPOINT ["java", "-jar", "application.jar"]
+
+
+# # Dockerfile in the `docker` directory
+
+# FROM eclipse-temurin:17 AS builder
+# WORKDIR application
+# # Change the build argument name to match the Jenkinsfile
+# ARG JAR_FILE 
+# # Copy the JAR using the new argument
+# COPY ${JAR_FILE} application.jar
+# RUN java -Djarmode=layertools -jar application.jar extract
+
+
+# FROM eclipse-temurin:17
+# WORKDIR application
+
+# ARG EXPOSED_PORT
+# EXPOSE ${EXPOSED_PORT}
+
+# ENV SPRING_PROFILES_ACTIVE=docker
+
+# COPY --from=builder application/dependencies/ ./
+# RUN true
+# COPY --from=builder application/spring-boot-loader/ ./
+# RUN true
+# COPY --from=builder application/snapshot-dependencies/ ./
+# RUN true
+# COPY --from=builder application/application/ ./
+
+# # # docker/Dockerfile (Multi-stage)
+# WORKDIR /application
+# COPY ../.mvn ./.mvn
+# COPY ../mvnw .
+# COPY ../pom.xml .
+# COPY ../spring-petclinic-config-server/pom.xml spring-petclinic-config-server/
+# COPY ../spring-petclinic-config-server/src spring-petclinic-config-server/src
+# RUN mvn clean package -pl spring-petclinic-config-server -am -DskipTests
+
+# # Extract the JAR file for layering (if needed)
+# RUN mkdir -p /application/target && cp spring-petclinic-config-server/target/spring-petclinic-config-server-*.jar /application/target/application.jar
+
+# # Stage 2: Create the final, lightweight image
+# FROM eclipse-temurin:17-jre-alpine
+# WORKDIR /application
+# COPY --from=builder /application/spring-petclinic-config-server/target/spring-petclinic-config-server-*.jar ./application.jar
+
+# EXPOSE 8080
+# ENTRYPOINT ["java", "-jar", "application.jar"]
