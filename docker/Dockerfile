@@ -26,7 +26,7 @@ RUN true
 COPY --from=builder application/application/ ./
 
 # # docker/Dockerfile (Multi-stage)
-WORKDIR /app
+WORKDIR /application
 COPY ../.mvn ./.mvn
 COPY ../mvnw .
 COPY ../pom.xml .
@@ -34,10 +34,13 @@ COPY ../spring-petclinic-config-server/pom.xml spring-petclinic-config-server/
 COPY ../spring-petclinic-config-server/src spring-petclinic-config-server/src
 RUN mvn clean package -pl spring-petclinic-config-server -am -DskipTests
 
+# Extract the JAR file for layering (if needed)
+RUN mkdir -p /application/target && cp spring-petclinic-config-server/target/spring-petclinic-config-server-*.jar /application/target/application.jar
+
 # Stage 2: Create the final, lightweight image
 FROM eclipse-temurin:17-jre-alpine
-WORKDIR /app
-COPY --from=builder /app/spring-petclinic-config-server/target/spring-petclinic-config-server-*.jar ./application.jar
+WORKDIR /application
+COPY --from=builder /application/spring-petclinic-config-server/target/spring-petclinic-config-server-*.jar ./application.jar
 
 EXPOSE 8080
-ENTRYPOINT ["java", "-jar", "application.jar", "org.springframework.boot.loader.launch.JarLauncher"]
+ENTRYPOINT ["java", "-jar", "application.jar"]
