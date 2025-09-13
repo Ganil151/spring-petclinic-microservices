@@ -1,31 +1,24 @@
-# Stage 1: Build the application
 FROM eclipse-temurin:17 AS builder
-WORKDIR /app
+WORKDIR /application
 
-# Copy Maven wrapper and project files
-COPY .mvn ./.mvn
-COPY mvnw .
-COPY pom.xml .
-COPY spring-petclinic-config-server/pom.xml spring-petclinic-config-server/
-COPY spring-petclinic-config-server/src spring-petclinic-config-server/src
+ARG JAR_FILE
+COPY ${JAR_FILE} application.jar
 
-# Build the application
-RUN ./mvnw clean package -pl spring-petclinic-config-server -am -DskipTests
+RUN java -Djarmode=layertools -jar application.jar extract
 
-# Extract the JAR file for layering (if needed)
-RUN mkdir -p /app/target && cp spring-petclinic-config-server/target/spring-petclinic-config-server-*.jar /app/target/application.jar
-
-# Stage 2: Create the final, lightweight image
 FROM eclipse-temurin:17-jre-alpine
-WORKDIR /app
+WORKDIR /application
 
-# Copy the JAR file from the builder stage
-COPY --from=builder /app/target/application.jar ./application.jar
+COPY --from=builder /application/dependencies/ ./
+COPY --from=builder /application/spring-boot-loader/ ./
+COPY --from=builder /application/snapshot-dependencies/ ./
+COPY --from=builder /application/application/ ./
 
 EXPOSE 8080
-ENTRYPOINT ["java", "-jar", "application.jar"]
 
+ENTRYPOINT [ "java", "-jar", "application.jar", "org.springframework.boot.loader.launch.JarLauncher" ]
 
+# # Stage 1: Build the application
 # # Dockerfile in the `docker` directory
 
 # FROM eclipse-temurin:17 AS builder
