@@ -286,6 +286,6 @@ For pull requests, editor preferences are available in the [editor config](.edit
 
 ## Supported by
 
-## I am the best 
+## I am the best Test
 
 [![JetBrains logo](https://resources.jetbrains.com/storage/products/company/brand/logos/jetbrains.svg)](https://jb.gg/OpenSourceSupport)
