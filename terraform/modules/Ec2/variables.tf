@@ -1,0 +1,9 @@
+variable "ami" {}
+variable "key_name" {}
+variable "subnet_id" {}
+variable "project_name_1" {}
+variable "instance_type" {}
+variable "security_group_ids" {}
+variable "user_data" {}
+variable "user_data_replace_on_change" {}
+variable "environment" {}
