@@ -1,6 +1,8 @@
 # Project Names
-project_name_1 = "jenkins-server"
-project_name_2 = "worker-server"
+project_name_1 = "Spring-Petclinic-Master"
+project_name_2 = "Spring-Petclinic-Worker"
+project_name_3 = "Spring-Petclinic-Moniter"
+project_name_4 = "Spring-Petclinic-MySqlDB"
 
 
 # Environment
@@ -17,7 +19,7 @@ enable_dns_hostnames    = true
 map_public_ip_on_launch = true
 
 # Security Group
-ingress_rules = [22, 80, 443, 3000, 3306, 8080, 9000]
+ingress_rules = [22, 25, 80, 443, 465, 3000, 3306, 6443, 8080, 8761, 8888, 9000, 9090,9091, 9100 ]
 egress_rules  = [0]
 
 # Keys

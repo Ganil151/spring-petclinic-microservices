@@ -28,7 +28,7 @@ module "key" {
   key_name = var.key_name
 }
 
-# Jenkins Instance
+# Master Instance
 module "jenkins_instance" {
   source                      = "../MODULES/EC2"
   ami                         = var.ami
@@ -36,7 +36,7 @@ module "jenkins_instance" {
   project_name_1              = var.project_name_1
   instance_type               = var.instance_type
   subnet_id                   = element(module.vpc.public_subnet_ids, 0)
-  user_data                   = file("${path.module}/scripts/build/jenkins.sh")
+  user_data                   = file("${path.module}/scripts/jenkins.sh")
   user_data_replace_on_change = var.user_data_replace_on_change
   security_group_ids          = [module.master_sg.master_sg]
   environment                 = var.environment
@@ -51,7 +51,7 @@ module "worker_instance" {
   project_name_1              = var.project_name_2
   instance_type               = var.instance_type
   subnet_id                   = element(module.vpc.public_subnet_ids, 0)
-  user_data                   = file("${path.module}/scripts/build/docker.sh")
+  user_data                   = file("${path.module}/scripts/docker.sh")
   user_data_replace_on_change = var.user_data_replace_on_change
   security_group_ids          = [module.master_sg.master_sg]
   environment                 = var.environment

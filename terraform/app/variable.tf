@@ -9,9 +9,16 @@ variable "project_name_2" {
   type        = string
 
 }
+variable "project_name_3" {
+  description = "Dynamic project name"
+  type        = string
 
+}
+variable "project_name_4" {
+  description = "Dynamic project name"
+  type        = string
 
-
+}
 
 # Environment
 variable "environment" {

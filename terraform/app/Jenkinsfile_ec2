@@ -15,7 +15,7 @@ pipeline {
         )
         string(
             name: 'EC2_INSTANCE_NAME',
-            defaultValue: 'docker-server',
+            defaultValue: 'Docker-Server',
             description: 'Name tag for the EC2 instance'
         )
     }
@@ -179,11 +179,11 @@ pipeline {
                     if [ "$INSTANCE_ID" == "None" ] || [ -z "$INSTANCE_ID" ]; then
                     echo "No existing instance found with name '${EC2_INSTANCE_NAME}'. Launching a new EC2 instance..."
                     INSTANCE_ID=$(aws ec2 run-instances \
-                        --image-id ami-00ca32bbc84273381 \
+                        --image-id ami-052064a798f08f0d3 \
                         --instance-type t3.small \
                         --key-name master_keys \
-                        --security-group-ids sg-01721a3a3b738749c \
-                        --subnet-id subnet-04351b31e254306f1 \
+                        --security-group-ids sg-094042449646a9784 \
+                        --subnet-id subnet-01878d955a21b127e \
                         --associate-public-ip-address \
                         --tag-specifications "ResourceType=instance,Tags=[{Key=Name,Value=${EC2_INSTANCE_NAME}}]" \
                         --query "Instances[0].InstanceId" \

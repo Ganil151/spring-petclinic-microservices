@@ -4,10 +4,10 @@ set -e
 
 # Change Host Name
 echo "Changing Host Name..."
-sudo hostnamectl set-hostname "docker-server"
+sudo hostnamectl set-hostname "Worker-Server"
 
 # Install dependencies and update system
-echo "Installing dependencies and updating system..."
+echo "Installing dependencies and updating system...😎"
 sudo yum update -y
 
 # Install Java
@@ -54,7 +54,6 @@ sudo systemctl enable docker
 sudo systemctl start docker
 
 sudo yum update -y
-
 
 # Increase /tmp file size persistently and remount
 echo "Increasing /tmp file size to 1.5GB persistently..."

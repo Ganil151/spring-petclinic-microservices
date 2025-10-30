@@ -4,7 +4,7 @@ set -e
 
 # Change Host Name
 echo "Change Host Name"
-sudo hostnamectl set-hostname "jenkins-server"
+sudo hostnamectl set-hostname "Master-Server"
 
 # Install dependencies and update system
 echo "Install dependencies and update system"
