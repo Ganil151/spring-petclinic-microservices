@@ -179,11 +179,11 @@ pipeline {
                     if [ "$INSTANCE_ID" == "None" ] || [ -z "$INSTANCE_ID" ]; then
                     echo "No existing instance found with name '${EC2_INSTANCE_NAME}'. Launching a new EC2 instance..."
                     INSTANCE_ID=$(aws ec2 run-instances \
-                        --image-id ami-052064a798f08f0d3 \
+                        --image-id ami-00ca32bbc84273381 \
                         --instance-type t3.small \
                         --key-name master_keys \
-                        --security-group-ids sg-094042449646a9784 \
-                        --subnet-id subnet-01878d955a21b127e \
+                        --security-group-ids sg-0067cc27ce50b01bd \
+                        --subnet-id subnet-03f40a328d7074481 \
                         --associate-public-ip-address \
                         --tag-specifications "ResourceType=instance,Tags=[{Key=Name,Value=${EC2_INSTANCE_NAME}}]" \
                         --query "Instances[0].InstanceId" \
@@ -222,110 +222,6 @@ pipeline {
                 success { echo "======= EC2 Provisioning ⭐Successfully⭐========" }
                 failure { echo "======= EC2 Provisioning failed❌========" }
             }
-        }
-
-        stage('Configure & Deploy on EC2') {
-            steps {
-                sshagent(['master_keys']) {
-                    withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-                        sh '''
-                        set -e
-                        PUBLIC_IP=$(cat public_ip.txt)
-
-                        echo "Copying docker directory and compose file..."
-                        scp -o StrictHostKeyChecking=no -r docker/ ec2-user@$PUBLIC_IP:/home/ec2-user/
-                        scp -o StrictHostKeyChecking=no docker-compose.yml ec2-user@$PUBLIC_IP:/home/ec2-user/
-
-                        echo "SSH into $PUBLIC_IP to configure and deploy..."
-                        ssh -o StrictHostKeyChecking=no ec2-user@$PUBLIC_IP "
-                        set -e
-
-                        echo '=== Updating packages ==='
-                        sudo yum update -y || { echo 'Failed to update packages'; exit 1; }
-
-                        echo '=== Installing Docker if missing ==='
-                        if ! command -v docker &> /dev/null; then
-                            sudo yum install docker -y || { echo 'Failed to install Docker'; exit 1; }
-                            sudo systemctl enable docker
-                            sudo systemctl start docker
-                            sudo usermod -aG docker ec2-user
-                        fi
-
-                        echo '=== Installing Docker Compose V2 if missing ==='
-                        if ! docker compose version &> /dev/null; then
-                            echo 'Installing Docker Compose V2...'
-                            mkdir -p ~/.docker/cli-plugins/
-                            # Ensure the binary is downloaded to the correct location and is executable
-                            curl -SL https://github.com/docker/compose/releases/download/v2.24.5/docker-compose-linux-x86_64 -o ~/.docker/cli-plugins/docker-compose
-                            chmod +x ~/.docker/cli-plugins/docker-compose
-
-                            # Optional: Add the directory to PATH if not recognized by default
-                            # This might be redundant as Docker usually looks in ~/.docker/cli-plugins/
-                            export PATH=\$PATH:/home/ec2-user/.docker/cli-plugins
-                            echo 'export PATH=\$PATH:/home/ec2-user/.docker/cli-plugins' >> ~/.bashrc
-
-                        fi
-
-                        echo '=== Verify Docker & Compose ==='
-                        docker --version || { echo 'Docker not working'; exit 1; }
-                        docker compose version || { echo 'Docker Compose V2 not working or not found in expected location'; exit 1; }
-
-                        echo '=== Logging into Docker Hub ==='
-                        echo '$DOCKER_PASS' | sudo docker login -u '$DOCKER_USER' --password-stdin || { echo 'Docker login failed'; exit 1; }
-
-                        echo '=== Pulling latest Docker image ==='
-                        sudo docker pull $DOCKER_IMAGE:$IMAGE_TAG || { echo 'Failed to pull image'; exit 1; }
-
-                        echo '=== Deploying with Docker Compose ==='
-                        cd /home/ec2-user/
-                        if [ ! -f docker-compose.yml ]; then
-                            echo 'docker-compose.yml not found even after copy!'
-                            exit 1
-                        fi
-                        sudo docker compose down || true # Stop existing containers gracefully
-                        sudo docker compose up -d || { echo 'Docker Compose up failed'; exit 1; }
-
-                        echo 'Deployment completed successfully.'
-                        "
-                        '''
-                    }
-                }
-            }
-            post {
-                always { echo "======= Configure & Deploy on EC2 =======" }
-                success { echo "======= Configure & Deploy on EC2 ⭐Successfully⭐========" }
-                failure { echo "======= Configure & Deploy on EC2 failed❌========" }
-            }
         }   
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
