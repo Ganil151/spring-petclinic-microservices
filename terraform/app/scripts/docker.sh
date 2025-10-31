@@ -25,19 +25,45 @@ echo "Installing Docker..."
 sudo yum install -y docker git
 
 # Install Docker Compose
-echo '=== Installing Docker Compose V2 if missing ==='
-if ! docker compose version &> /dev/null; then
-    echo 'Installing Docker Compose V2...'
-    mkdir -p ~/.docker/cli-plugins/
-    # Ensure the binary is downloaded to the correct location and is executable
-    curl -SL https://github.com/docker/compose/releases/download/v2.24.5/docker-compose-linux-x86_64 -o ~/.docker/cli-plugins/docker-compose
-    chmod +x ~/.docker/cli-plugins/docker-compose
+#!/bin/bash
 
-    # Optional: Add the directory to PATH if not recognized by default
-    # This might be redundant as Docker usually looks in ~/.docker/cli-plugins/
-    export PATH=\$PATH:/home/ec2-user/.docker/cli-plugins
-    echo 'export PATH=\$PATH:/home/ec2-user/.docker/cli-plugins' >> ~/.bashrc
+set -e  # Exit immediately if a command exits with a non-zero status
 
+# Update system packages
+echo "=== Updating system packages ==="
+sudo yum update -y
+
+# Ensure Docker is installed (optional, as it's a prerequisite)
+if ! command -v docker &> /dev/null; then
+    echo "Docker is not installed. Please install Docker first."
+    exit 1
+fi
+
+# Define the Docker plugins directory (using the standard user directory)
+DOCKER_CONFIG=${DOCKER_CONFIG:-$HOME/.docker}
+PLUGINS_DIR="$DOCKER_CONFIG/cli-plugins"
+
+# Create the plugins directory if it doesn't exist
+echo "=== Creating Docker CLI plugins directory ==="
+mkdir -p $PLUGINS_DIR
+
+# Download the Docker Compose binary for Linux (x86_64)
+COMPOSE_VERSION="v2.40.1" # You can update this to the latest version if needed
+echo "=== Downloading Docker Compose binary ==="
+curl -SL "https://github.com/docker/compose/releases/download/${COMPOSE_VERSION}/docker-compose-linux-x86_64" \
+     -o "$PLUGINS_DIR/docker-compose"
+
+# Make the binary executable
+echo "=== Making Docker Compose binary executable ==="
+chmod +x "$PLUGINS_DIR/docker-compose"
+
+# Verify the installation
+echo "=== Verifying Docker Compose installation ==="
+if docker compose version; then
+    echo "=== Docker Compose has been successfully installed! ==="
+else
+    echo "=== Error: Docker Compose verification failed. ==="
+    exit 1
 fi
 
 echo '=== Verify Docker & Compose ==='
