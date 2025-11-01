@@ -147,7 +147,7 @@ Dependency for Connector/J, the MySQL JDBC driver is already included in the `po
 
 You may start a MySql database with docker:
 
-```
+```bash
 docker run -e MYSQL_ROOT_PASSWORD=petclinic -e MYSQL_DATABASE=petclinic -p 3306:3306 mysql:8.4.5
 ```
 or download and install the MySQL database (e.g., MySQL Community Server 8.4.5 LTS), which can be found here: https://dev.mysql.com/downloads/
@@ -162,7 +162,7 @@ You may also manually create the PetClinic database and data by executing the `"
 In the `application.yml` of the [Configuration repository], set the `initialization-mode` to `never`.
 
 If you are running the microservices with Docker, you have to add the `mysql` profile into the (Dockerfile)[docker/Dockerfile]:
-```
+```bash
 ENV SPRING_PROFILES_ACTIVE docker,mysql
 ```
 In the `mysql section` of the `application.yml` from the [Configuration repository], you have to change 

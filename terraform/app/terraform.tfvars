@@ -19,7 +19,7 @@ enable_dns_hostnames    = true
 map_public_ip_on_launch = true
 
 # Security Group
-ingress_rules = [22, 25, 80, 443, 465, 3000, 3306, 6443, 8080, 8761, 8888, 9000, 9090,9091, 9100 ]
+ingress_rules = [22, 25, 80, 443, 465, 3000, 3306, 6443, 8080, 8761, 8888, 9000, 9090, 9091, 9100]
 egress_rules  = [0]
 
 # Keys
@@ -27,7 +27,7 @@ key_name = "master_keys"
 
 # Ec2
 ami                         = "ami-052064a798f08f0d3"
-instance_type               = "t3.small"
+instance_type               = "c7i-flex.large"
 subnet_id                   = "master_subnet"
 user_data                   = ""
 user_data_replace_on_change = true

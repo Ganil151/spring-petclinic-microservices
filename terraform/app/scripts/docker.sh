@@ -24,11 +24,6 @@ echo "export PATH=$PATH:$HOME/bin:$JAVA_HOME" | sudo tee -a ~/.bashrc
 echo "Installing Docker..."
 sudo yum install -y docker git
 
-# Install Docker Compose
-#!/bin/bash
-
-set -e  # Exit immediately if a command exits with a non-zero status
-
 # Update system packages
 echo "=== Updating system packages ==="
 sudo yum update -y
