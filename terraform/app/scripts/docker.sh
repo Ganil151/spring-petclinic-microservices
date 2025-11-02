@@ -28,6 +28,14 @@ sudo yum install -y docker git
 echo "=== Updating system packages ==="
 sudo yum update -y
 
+# Install YQ for YAML processing
+echo "=== Installing YQ ==="
+if ! command -v yq &> /dev/null; then
+    echo "Installing yq..."
+    sudo wget https://github.com/mikefarah/yq/releases/download/v4.34.1/yq_linux_amd64 -O /usr/local/bin/yq
+    sudo chmod +x /usr/local/bin/yq
+fi
+
 # Ensure Docker is installed (optional, as it's a prerequisite)
 if ! command -v docker &> /dev/null; then
     echo "Docker is not installed. Please install Docker first."
@@ -67,7 +75,6 @@ docker compose version || { echo 'Docker Compose V2 not working or not found in 
 
 # Add the current user to the docker group
 echo "Adding the current user to the docker group..."
-sudo usermod -a -G docker ec2-user
 
 # Configure Docker to start on boot
 echo "Configuring Docker to start on boot..."

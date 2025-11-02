@@ -4,7 +4,7 @@ set -ea
 
 # Change Host Name
 echo "Changing Host Name..."
-sudo hostnamectl set-hostname "mysql-server"
+sudo hostnamectl set-hostname "Mysql-Server"
 
 # Load Dependencies
 echo "Updating system and installing dependencies..."

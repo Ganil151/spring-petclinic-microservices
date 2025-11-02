@@ -19,7 +19,5 @@ resource "local_file" "private_key" {
 
   depends_on = [tls_private_key.rsa_4096]
 
-  provisioner "local-exec" {
-    command = "chmod 400 ${var.key_name}.pem"
-  }
+  
 }

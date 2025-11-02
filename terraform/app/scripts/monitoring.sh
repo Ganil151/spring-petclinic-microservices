@@ -4,7 +4,7 @@ set -e
 
 # Change Host Name
 echo "Changing Host Name..."
-sudo hostnamectl set-hostname "Worker-Server"
+sudo hostnamectl set-hostname "Monitor-Server"
 
 # Install dependencies and update system
 echo "Installing dependencies and updating system...😎"

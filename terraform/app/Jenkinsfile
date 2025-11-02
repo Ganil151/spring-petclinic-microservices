@@ -1,10 +1,12 @@
 pipeline {
-    agent { label params.NODE_LABEL } 
+    agent { label params.NODE_LABEL }
 
     environment {
         COMPOSE_PROJECT_NAME = "spring-petclinic"
-        DOCKER_IMAGE         = "ganil151/spring-petclinic-microservice"
-        IMAGE_TAG            = "${env.BUILD_NUMBER ?: 'latest'}"
+        DOCKER_PREFIX      = "ganil151" 
+        IMAGE_TAG          = "${env.BUILD_NUMBER ?: 'latest'}"
+        JAVA_HOME          = "/usr/lib/jvm/java-21-amazon-corretto" 
+        PATH               = "${JAVA_HOME}/bin:${env.PATH}"
     }
 
     parameters {
@@ -13,7 +15,6 @@ pipeline {
             defaultValue: 'worker-node-1',
             description: 'Label of the Jenkins worker node to run this pipeline'
         )
-        
     }
 
     triggers {
@@ -25,14 +26,44 @@ pipeline {
             steps {
                 git(
                     branch: 'main',
-                    credentialsId: 'github-credentials', 
+                    credentialsId: 'github-credentials',
                     url: 'https://github.com/Ganil151/spring-petclinic-microservices.git'
                 )
             }
-            post {
-                always { echo "========Checkout========" }
-                success { echo "========Checkout ⭐Successfully⭐========" }
-                failure { echo "========Checkout failed❌========" }
+        }
+        
+        stage('Configure Docker Permissions') {
+            steps {
+                sh '''
+                echo "Configuring Docker permissions for the current user..."
+                CURRENT_USER=$(whoami)
+                
+                if ! grep -q "^docker:" /etc/group; then
+                    echo "Creating 'docker' group..."
+                    sudo groupadd docker
+                fi
+
+                echo "Adding user $CURRENT_USER to the 'docker' group."
+                # Note: This requires a new login/shell to take effect, but we try anyway.
+                sudo usermod -aG docker $CURRENT_USER
+
+                if ! systemctl is-active --quiet docker; then
+                    echo "Starting Docker service..."
+                    sudo systemctl start docker
+                fi
+                
+                echo "Docker status check:"
+                sudo systemctl status docker | grep 'Active:'
+                '''
+            }
+        }
+
+        stage('Normalize Line Endings') {
+            steps {
+                sh '''
+                echo "Converting mvnw line endings from CRLF (DOS) to LF (Unix)..."
+                sed -i 's/\r$//' mvnw
+                '''
             }
         }
 
@@ -44,21 +75,7 @@ pipeline {
                     sudo wget https://github.com/mikefarah/yq/releases/download/v4.34.1/yq_linux_amd64 -O /usr/local/bin/yq
                     sudo chmod +x /usr/local/bin/yq
                 fi
-                '''
-            }
-            post {
-                always { echo "========Install yq========" }
-                success { echo "========Install yq ⭐Successfully⭐========" }
-                failure { echo "========Install yq failed❌========" }
-            }
-        }
-
-        stage('Remove genai-service from docker-compose.yml') {
-            steps {
-                sh '''
-                cp docker-compose.yml docker-compose.yml.bak
-                yq eval 'del(.services.genai-service)' -i docker-compose.yml
-                echo "Removed genai-service from docker-compose.yml"
+                yq --version
                 '''
             }
         }
@@ -69,159 +86,56 @@ pipeline {
                     sh '''
                     echo "Logging into Docker Hub..."
                     echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
-                    if [ $? -eq 0 ]; then
-                        echo "Docker Login Successful..."
-                    else
-                        echo "Failed to log in to Docker Hub"
-                        exit 1
-                    fi
                     '''
                 }
             }
-            post {
-                always { echo "========Docker Login========" }
-                success { echo "========Docker Login ⭐Successfully⭐========" }
-                failure { echo "========Docker Login failed❌========" }
-            }
         }
 
-        stage('Build Application') {
-            environment {
-                JAVA_HOME = "/usr/lib/jvm/java-21-amazon-corretto"
-                PATH = "${JAVA_HOME}/bin:${env.PATH}"
-            }
+        stage('Build and Push All Microservice Images') {
             steps {
                 sh '''
-                echo "Building the Spring PetClinic application..."
-                ./mvnw clean install -DskipTests 
-                JAR_FILE=$(ls spring-petclinic-config-server/target/*.jar | head -n 1)
-
-                echo "Copying $JAR_FILE to docker/application.jar"
-                cp "$JAR_FILE" docker/application.jar
+                echo "--- Starting Application Build and Push ---"
+                
+                chmod +x mvnw
+                java -version
+                
+                # ONLY RUNNING THE TAGGED BUILD WITH -e FLAG FOR DETAILED STACK TRACE
+                echo "Running Maven build with -e (stack trace) flag..."
+                /bin/bash ./mvnw clean install -P buildDocker -e -Ddocker.image.prefix=${DOCKER_PREFIX} -Ddocker.image.tag=${IMAGE_TAG}
                 '''
             }
             post {
-                always { echo "========Build Application========" }
-                success { echo "========Build Application ⭐Successfully⭐========" }
-                failure { echo "========Build Application failed❌========" }
-            }
-        }
-
-        stage('Docker Build and Push') {
-            steps {
-                script {
-                    echo "Building and pushing Docker image..."
-                    sh '''
-                    cd docker
-                    echo "Current working directory: $(pwd)"
-                    echo "Contents of docker/ directory:"
-                    ls -la
-
-                    if [ ! -f application.jar ]; then
-                        echo "application.jar not found!"
-                        exit 1
-                    fi
-
-                    echo "Building Docker image..."
-                    docker build --build-arg JAR_FILE=application.jar -t $DOCKER_IMAGE:$IMAGE_TAG -t $DOCKER_IMAGE:latest -f Dockerfile .
-                    if [ $? -ne 0 ]; then
-                        echo "Failed to build Docker image"
-                        exit 1
-                    fi
-
-                    echo "Pushing Docker image to Docker Hub..."
-                    docker push $DOCKER_IMAGE:$IMAGE_TAG
-                    if [ $? -ne 0 ]; then
-                        echo "Failed to push image with tag $IMAGE_TAG"
-                        exit 1
-                    fi
-
-                    docker push $DOCKER_IMAGE:latest
-                    if [ $? -ne 0 ]; then
-                        echo "Failed to push image with tag latest"
-                        exit 1
-                    fi
-
-                    echo "Successfully built and pushed Docker image"
-                    '''
+                success { 
+                    echo "======== All Microservice Images Built & Pushed ⭐Successfully⭐ ========" 
+                    // This will not run on failure, but is good practice:
+                    // /bin/bash ./mvnw clean install -P buildDocker -Ddocker.image.prefix=${DOCKER_PREFIX} -Ddocker.image.tag=latest
+                }
+                failure { 
+                    echo "======== Microservice Image Build failed❌. PLEASE PROVIDE THE FULL STACK TRACE. ========" 
                 }
             }
-            post {
-                always { echo "========Docker Build and Push========" }
-                success { echo "========Docker Build and Push ⭐Successfully⭐========" }
-                failure { echo "========Docker Build and Push failed❌========" }
+        }
+
+        stage('Update Compose File Image Names') {
+            steps {
+                sh '''
+                echo "Skipping due to prior failure."
+                '''
             }
         }
 
-        
-        stage('Deploy to Worker Node') {
-            steps {
-                echo "Deploying Spring Petclinic on worker node (${env.NODE_NAME}) using Docker Compose..."
-                sh '''
-                    set -e
-
-                    # Ensure the required directories exist in the workspace (optional, depends on your setup)
-                    # mkdir -p docker
-
-                    # Verify Docker Compose is available
-                    if ! docker compose version &> /dev/null; then
-                        echo "ERROR: Docker Compose V2 is not installed or not accessible on this node."
-                        exit 1
-                    fi
-
-                    # Navigate to the workspace root where docker-compose.yml is located
-                    cd $WORKSPACE
-
-                    # Pull the latest image from Docker Hub
-                    echo "Pulling latest Docker image: $DOCKER_IMAGE:$IMAGE_TAG"
-                    docker pull $DOCKER_IMAGE:$IMAGE_TAG
-
-                    # Stop existing containers gracefully (ignore errors if no containers are running)
-                    echo "Stopping existing containers..."
-                    docker compose down || true
-
-                    # Start the services defined in docker-compose.yml using the new image
-                    echo "Starting services with Docker Compose..."
-                    docker compose up -d --build 
-
-                    echo "Docker Compose deployment completed successfully."
-                '''
-            }
-            post {
-                always { echo "======= Deploy to Worker Node =======" }
-                success { echo "======= Deploy to Worker Node ⭐Successfully⭐========" }
-                failure { echo "======= Deploy to Worker Node failed❌========" }
-            }
-        }
-
-        // Optional: Stage to verify deployment status
-        stage('Verify Deployment') {
+        stage('Deploy on Worker') {
             steps {
                 sh '''
-                    set -e
-                    cd $WORKSPACE
-                    echo "Checking status of Docker Compose services..."
-                    docker compose ps
-                    # Add more specific health checks if needed, e.g., curl API endpoints
+                echo "Skipping due to prior failure."
                 '''
-            }
-            post {
-                always { echo "======= Verify Deployment =======" }
-                success { echo "======= Verify Deployment ⭐Successfully⭐========" }
-                failure { echo "======= Verify Deployment failed❌========" }
             }
         }
     }
 
     post {
         always {
-            echo "========always========"
-        }
-        success {
-            echo "========pipeline executed successfully ========"
-        }
-        failure {
-            echo "========pipeline execution failed========"
+            echo "Pipeline finished."
         }
     }
 }
