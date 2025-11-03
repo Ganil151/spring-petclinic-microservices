@@ -51,7 +51,7 @@ module "worker_instance" {
   project_name_1              = var.project_name_2
   instance_type               = var.instance_type
   subnet_id                   = element(module.vpc.public_subnet_ids, 0)
-  user_data                   = file("${path.module}/scripts/docker.sh")
+  user_data                   = file("${path.module}/scripts/worker.sh")
   user_data_replace_on_change = var.user_data_replace_on_change
   security_group_ids          = [module.master_sg.master_sg]
   environment                 = var.environment
