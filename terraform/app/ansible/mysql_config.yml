@@ -1,0 +1,65 @@
+# mysql_config.yml (Place this in your Git repository)
+---
+- name: Configure MySQL Database for Spring PetClinic
+  hosts: mysql_server
+  gather_facts: yes
+  become: yes # Required to install packages and manage services
+
+  # Define variables, pulling from Jenkins environment variables for security
+  vars:
+    mysql_root_password: "{{ lookup('env', 'DB_ROOT_PASSWORD') }}"
+    petclinic_db_name: petclinic
+    petclinic_app_user: petclinic_user
+    petclinic_app_password: "{{ lookup('env', 'DB_APP_PASSWORD') }}"
+
+  tasks:
+    - name: Ensure MySQL Server is installed (Idempotent)
+      yum:
+        name: mysql-server
+        state: present
+
+    - name: Start and enable MySQL service (Idempotent)
+      service:
+        name: mysqld
+        state: started
+        enabled: yes
+
+    - name: Set MySQL Root Password (Idempotent: Only runs if password is not set)
+      community.mysql.mysql_user:
+        name: root
+        host: localhost
+        password: "{{ mysql_root_password }}"
+        login_user: root
+        check_implicit_admin: yes
+        state: present
+
+    - name: Configure remote access by commenting out bind-address (Allows connection from any host)
+      lineinfile:
+        path: /etc/my.cnf
+        regexp: '^bind-address'
+        line: '#bind-address = 127.0.0.1' # Comment out the binding to allow external connections
+        backup: yes
+      notify: Restart MySQL Service
+
+    - name: Ensure PetClinic database exists (Idempotent)
+      community.mysql.mysql_db:
+        name: "{{ petclinic_db_name }}"
+        state: present
+        login_user: root
+        login_password: "{{ mysql_root_password }}"
+
+    - name: Create application user and grant permissions (Idempotent)
+      community.mysql.mysql_user:
+        name: "{{ petclinic_app_user }}"
+        password: "{{ petclinic_app_password }}"
+        priv: "{{ petclinic_db_name }}.*:ALL" # Grant all on the PetClinic database only
+        host: '%' # Allows connection from any host (the microservices)
+        state: present
+        login_user: root
+        login_password: "{{ mysql_root_password }}"
+
+  handlers:
+    - name: Restart MySQL Service
+      service:
+        name: mysqld
+        state: restarted

@@ -5,16 +5,19 @@ pipeline {
         COMPOSE_PROJECT_NAME = "spring-petclinic"
         DOCKER_IMAGE         = "ganil151/spring-petclinic-microservice"
         IMAGE_TAG            = "${env.BUILD_NUMBER ?: 'latest'}"
-        // Add environment for ECR/Docker Hub credentials for the build-image step
-        // We'll use this as a secure best practice instead of relying solely on the 'Docker Login' stage
-        // NOTE: Replace 'my-docker-registry' with your actual ECR/Docker Hub
-        DOCKER_REGISTRY_URL  = 'docker.io' 
-        // NOTE: The JAVA_HOME environment is correctly defined in the Build Application stage
     }
 
     parameters {
-        string(name: 'NODE_LABEL', defaultValue: 'worker-node', description: 'Label of the Jenkins worker node to run this pipeline')
-        string(name: 'EC2_INSTANCE_NAME', defaultValue: 'Docker-Server', description: 'Name tag for the EC2 instance')
+        string(
+            name: 'NODE_LABEL',
+            defaultValue: 'worker-node',
+            description: 'Label of the Jenkins worker node to run this pipeline'
+        )
+        string(
+            name: 'EC2_INSTANCE_NAME',
+            defaultValue: 'Docker-Server',
+            description: 'Name tag for the EC2 instance'
+        )
     }
 
     triggers {
@@ -36,92 +39,191 @@ pipeline {
                 failure { echo "========Checkout failed❌========" }
             }
         }
-        
-        // **********************************************
-        // FIX: Ensure mvnw has execute permission
-        // **********************************************
-        stage('Prepare Build') { 
-             steps {
-                sh 'chmod +x ./mvnw'
-                // Optional: Check if the file is now executable
-                sh 'ls -l ./mvnw'
-             }
-             post {
-                success { echo "========Prepare Build ⭐Successfully⭐========" }
-                failure { error("Failed to set execute permission on mvnw.") }
-             }
+
+        stage('Install yq') {
+            steps {
+                sh '''
+                if ! command -v yq &> /dev/null; then
+                    echo "Installing yq..."
+                    sudo wget https://github.com/mikefarah/yq/releases/download/v4.34.1/yq_linux_amd64 -O /usr/local/bin/yq
+                    sudo chmod +x /usr/local/bin/yq
+                fi
+                '''
+            }
+            post {
+                always { echo "========Install yq========" }
+                success { echo "========Install yq ⭐Successfully⭐========" }
+                failure { echo "========Install yq failed❌========" }
+            }
         }
 
-        stage('Install yq') { /* ... (Install yq stage remains the same) ... */ }
-        stage('Remove genai-service from docker-compose.yml') { /* ... (Removal stage remains the same) ... */ }
+        stage('Remove genai-service from docker-compose.yml') {
+            steps {
+                sh '''
+                cp docker-compose.yml docker-compose.yml.bak
+                yq eval 'del(.services.genai-service)' -i docker-compose.yml
+                '''
+            }
+        }
 
-        // Security Note: Docker Login is good for general image pushing, but the 
-        // Spring Boot build-image goal can handle the registry login via settings.xml or environment.
-        // We'll keep this stage for explicit security.
-        stage('Docker Login') { /* ... (Docker Login stage remains the same) ... */ } 
+        stage('Docker Login') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                    sh '''
+                    echo "Logging into Docker Hub..."
+                    echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
+                    if [ $? -eq 0 ]; then
+                        echo "Docker Login Successful..."
+                    else
+                        echo "Failed to log in to Docker Hub"
+                        exit 1
+                    fi
+                    '''
+                }
+            }
+            post {
+                always { echo "========Docker Login========" }
+                success { echo "========Docker Login ⭐Successfully⭐========" }
+                failure { echo "========Docker Login failed❌========" }
+            }
+        }
 
         stage('Build Application') {
-            // Your JAVA_HOME and PATH configuration is correct here, great job!
             environment {
                 JAVA_HOME = "/usr/lib/jvm/java-21-amazon-corretto"
                 PATH = "${JAVA_HOME}/bin:${env.PATH}"
             }
             steps {
-                // We use clean install to compile, test, and package all JARs
                 sh '''
                 echo "Building the Spring PetClinic application..."
-                ./mvnw clean install -DskipTests 
+                
+                chmod +x ./mvnw
+                sed -i 's/\r$//' ./mvnw
+                
+                ./mvnw clean install
+
+                JAR_FILE=$(ls spring-petclinic-config-server/target/*.jar | head -n 1)
+
+                echo "Copying $JAR_FILE to docker/application.jar"
+                cp "$JAR_FILE" docker/application.jar
                 '''
             }
             post {
                 always { echo "========Build Application========" }
                 success { echo "========Build Application ⭐Successfully⭐========" }
-                failure { error("========Build Application failed❌========") }
+                failure { echo "========Build Application failed❌========" }
             }
         }
 
-        // **********************************************
-        // ENHANCEMENT: Use the project's native way to build microservice images.
-        // The original pipeline only built the config-server, which is insufficient.
-        // The Petclinic project is designed to build images for ALL services.
-        // **********************************************
-        stage('Containerize All Microservices') {
+        stage('Docker Build and Push') {
             steps {
                 script {
+                    echo "Building and pushing Docker image..."
                     sh '''
-                    echo "Containerizing and pushing all microservices to ${DOCKER_IMAGE}..."
+                    cd docker
+                    echo "Current working directory: $(pwd)"
+                    echo "Contents of docker/ directory:"
+                    ls -la
 
-                    # Set the registry property for the spring-boot-maven-plugin
-                    export DOCKER_BUILD_TAG="${DOCKER_IMAGE}:${IMAGE_TAG}"
-                    
-                    # This command finds all pom.xml files, and for each microservice module (which 
-                    # contains the spring-boot-maven-plugin), it builds and tags the Docker image.
-                    # The image name will be the artifactId (e.g., customers-service)
-                    ./mvnw spring-boot:build-image -P buildDocker -Dspring-boot.build-image.imageName="${DOCKER_IMAGE}/%s" -Dspring-boot.build-image.tag="${IMAGE_TAG}"
-                    
-                    # NOTE: If the above command fails to find all modules, use a loop (like in my previous response).
-                    
-                    # Since Docker Login was successful, we can push the individual images
-                    echo "Pushing all newly built images..."
-                    # Find all images tagged with the build number and push them
-                    docker images --format "{{.Repository}}:{{.Tag}}" | grep "${IMAGE_TAG}" | while read IMAGE; do
-                        docker push $IMAGE
-                        docker tag $IMAGE "${IMAGE_IMAGE}:latest" # Also tag as latest
-                        docker push "${IMAGE_IMAGE}:latest"
-                    done
-                    
-                    echo "Successfully built and pushed all microservice images."
+                    if [ ! -f application.jar ]; then
+                        echo "application.jar not found!"
+                        exit 1
+                    fi
+
+                    echo "Building Docker image..."
+                    docker build --build-arg JAR_FILE=application.jar -t $DOCKER_IMAGE:$IMAGE_TAG -t $DOCKER_IMAGE:latest -f Dockerfile .
+                    if [ $? -ne 0 ]; then
+                        echo "Failed to build Docker image"
+                        exit 1
+                    fi
+
+                    echo "Pushing Docker image to Docker Hub..."
+                    docker push $DOCKER_IMAGE:$IMAGE_TAG
+                    if [ $? -ne 0 ]; then
+                        echo "Failed to push image with tag $IMAGE_TAG"
+                        exit 1
+                    fi
+
+                    docker push $DOCKER_IMAGE:latest
+                    if [ $? -ne 0 ]; then
+                        echo "Failed to push image with tag latest"
+                        exit 1
+                    fi
+
+                    echo "Successfully built and pushed Docker image"
                     '''
                 }
             }
             post {
                 always { echo "========Docker Build and Push========" }
                 success { echo "========Docker Build and Push ⭐Successfully⭐========" }
-                failure { error("========Docker Build and Push failed❌========") }
+                failure { echo "========Docker Build and Push failed❌========" }
             }
         }
 
-        stage('EC2 Provisioning') { /* ... (EC2 Provisioning stage remains the same) ... */ }
-        
+        stage('EC2 Provisioning') {
+            steps {
+                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-credentials']]) {
+                    sh '''
+                    echo "Checking if EC2 Instance already exists..."
+                    echo "DEBUG: EC2_INSTANCE_NAME is set to: '${EC2_INSTANCE_NAME}'"
+                    
+                    if [ -z "${EC2_INSTANCE_NAME}" ] || [ -z "$(echo "${EC2_INSTANCE_NAME}" | sed 's/[[:space:]]*//g')" ]; then
+                    echo "ERROR: EC2_INSTANCE_NAME parameter is empty or contains only spaces."
+                    exit 1
+                    fi
+
+                    INSTANCE_ID=$(aws ec2 describe-instances \
+                    --filters "Name=tag:Name,Values=${EC2_INSTANCE_NAME}" "Name=instance-state-name,Values=running" \
+                    --query "Reservations[0].Instances[0].InstanceId" \
+                    --output text 2>/dev/null || echo "None")
+
+                    if [ "$INSTANCE_ID" == "None" ] || [ -z "$INSTANCE_ID" ]; then
+                    echo "No existing instance found with name '${EC2_INSTANCE_NAME}'. Launching a new EC2 instance..."
+                    INSTANCE_ID=$(aws ec2 run-instances \
+                        --image-id ami-00ca32bbc84273381 \
+                        --instance-type c7i-flex.large \
+                        --key-name master_keys \
+                        --security-group-ids sg-0ae2b14d36dcc5afd \
+                        --subnet-id subnet-0c33076906b505ed5 \
+                        --associate-public-ip-address \
+                        --tag-specifications "ResourceType=instance,Tags=[{Key=Name,Value=${EC2_INSTANCE_NAME}}]" \
+                        --query "Instances[0].Instances[0].InstanceId" \
+                        --output text)
+                    echo "Launched new EC2 Instance: $INSTANCE_ID"
+                    else
+                    echo "Using existing EC2 Instance: $INSTANCE_ID with name '${EC2_INSTANCE_NAME}'"
+                    fi
+
+                    if [ -z "$INSTANCE_ID" ] || [ "$INSTANCE_ID" = "None" ]; then
+                    echo "ERROR: Could not determine or launch an EC2 Instance ID."
+                    exit 1
+                    fi
+
+                    echo "Waiting for instance $INSTANCE_ID to be running..."
+                    aws ec2 wait instance-running --instance-ids $INSTANCE_ID
+                    echo "Instance $INSTANCE_ID is now running."
+
+                    PUBLIC_IP=$(aws ec2 describe-instances \
+                    --instance-ids $INSTANCE_ID \
+                    --query "Reservations[0].Instances[0].PublicIpAddress" \
+                    --output text)
+
+                    if [ -z "$PUBLIC_IP" ] || [ "$PUBLIC_IP" = "None" ]; then
+                    echo "ERROR: Could not retrieve Public IP for instance $INSTANCE_ID"
+                    exit 1
+                    fi
+
+                    echo "EC2 Instance $INSTANCE_ID is running at $PUBLIC_IP"
+                    echo $PUBLIC_IP > public_ip.txt
+                    '''
+                }
+            }
+            post {
+                always { echo "======= EC2 Provisioning =======" }
+                success { echo "======= EC2 Provisioning ⭐Successfully⭐========" }
+                failure { echo "======= EC2 Provisioning failed❌========" }
+            }
+        } 
     }
 }
