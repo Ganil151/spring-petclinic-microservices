@@ -1,4 +1,5 @@
-FROM eclipse-temurin:21 AS builder
+#FROM eclipse-temurin:21 AS builder
+FROM docker.io/eclipse-temurin:21 AS builder
 WORKDIR /application
 
 # Use a default value for JAR_FILE if not provided during build

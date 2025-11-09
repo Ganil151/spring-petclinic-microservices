@@ -32,9 +32,9 @@ You can tell Config Server to use your local Git repository by using `native` Sp
 
 ## Starting services locally with docker-compose
 In order to start entire infrastructure using Docker, you have to build images by executing
-``bash
+```bash
 ./mvnw clean install -P buildDocker
-``
+```
 This requires `Docker` or `Docker desktop` to be installed and running.
 
 Alternatively you can also build all the images on `Podman`, which requires Podman or Podman Desktop to be installed and running.
