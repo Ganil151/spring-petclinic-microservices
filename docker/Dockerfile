@@ -1,5 +1,5 @@
-#FROM eclipse-temurin:21 AS builder
-FROM docker.io/eclipse-temurin:21 AS builder
+FROM eclipse-temurin:21 AS builder
+#FROM docker.io/eclipse-temurin:21 AS builder
 WORKDIR /application
 
 # Use a default value for JAR_FILE if not provided during build
@@ -11,8 +11,8 @@ COPY ${JAR_FILE} application.jar
 RUN java -Djarmode=layertools -jar application.jar extract
 
 # Use the JRE-based Alpine image for the final stage
-#FROM eclipse-temurin:21-jre-alpine
-FROM docker.io/eclipse-temurin:21-jre-alpine
+FROM eclipse-temurin:21-jre-alpine
+#FROM docker.io/eclipse-temurin:21-jre-alpine
 WORKDIR /application
 
 # Copy the extracted layers from the builder stage
