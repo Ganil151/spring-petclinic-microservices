@@ -3,8 +3,9 @@
 set -ea
 
 # Change Host Name
-echo "Changing Host Name..."
-sudo hostnamectl set-hostname "Mysql-Server"
+NEW_HOSTNAME="Mysql-Server"
+echo "Changing Host Name: ${NEW_HOSTNAME}"
+sudo hostnamectl set-hostname ${NEW_HOSTNAME}
 
 # Load Dependencies
 echo "Updating system and installing dependencies..."
@@ -19,11 +20,11 @@ echo "export PATH=$PATH:$HOME/bin:$JAVA_HOME" | sudo tee -a ~/.bashrc
 
 
 # Install MySQL 8.0
+Mysql_Community="mysql80-community-release-el9-1.noarch.rpm"
 echo "Downloading MySQL 8.0 repository..."
-sudo wget https://dev.mysql.com/get/mysql80-community-release-el9-1.noarch.rpm
-sudo yum localinstall -y mysql80-community-release-el9-1.noarch.rpm
-sudo rm -f mysql80-community-release-el9-1.noarch.rpm
-
+sudo wget https://dev.mysql.com/get/$Mysql_Community
+sudo yum localinstall -y $Mysql_Community
+sudo rm -f $Mysql_Community
 echo "Importing MySQL GPG key..."
 sudo rpm --import https://repo.mysql.com/RPM-GPG-KEY-mysql-2023
 

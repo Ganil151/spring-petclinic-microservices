@@ -3,8 +3,9 @@
 set -e
 
 # Change Host Name
-echo "Changing Host Name..."
-sudo hostnamectl set-hostname "Monitor-Server"
+NEW_HOSTNAME="Monitor-Server"
+echo "Changing Host Name..${NEW_HOSTNAME}"
+sudo hostnamectl set-hostname ${NEW_HOSTNAME}
 
 # Install dependencies and update system
 echo "Installing dependencies and updating system...😎"
