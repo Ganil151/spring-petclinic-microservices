@@ -4,11 +4,11 @@ set -e
 
 # Change Host Name
 NEW_HOSTNAME="Worker-Server"
-echo "Changing Host Name..${NEW_HOSTNAME}"
-sudo hostnamectl set-hostname ${NEW_HOSTNAME}
+echo "Changing Host Name ${NEW_HOSTNAME} ..."
+sudo hostnamectl set-hostname $NEW_HOSTNAME
 
 # Install dependencies and update system
-echo "Installing dependencies and updating system...😎"
+echo "Installing dependencies and updating system..."
 sudo yum update -y
 
 # Install Java
@@ -57,49 +57,20 @@ sudo chmod +x /etc/profile.d/jenkins_env.sh
 echo "Installing Docker..."
 sudo yum install -y docker git
 
-# Update system packages
-echo "=== Updating system packages ==="
-sudo yum update -y
+# Install Docker Compose
+echo '=== Installing Docker Compose V2 if missing ==='
+if ! docker compose version &> /dev/null; then
+    echo 'Installing Docker Compose V2...'
+    sudo mkdir -p /usr/libexec/docker/cli-plugins/
+    # Ensure the binary is downloaded to the correct location and is executable
+    curl -SL https://github.com/docker/compose/releases/latest/download/docker-compose-linux-$(uname -m) -o /usr/libexec/docker/cli-plugins/docker-compose    chmod +x ~/.docker/cli-plugins/docker-compose
+    chmod +x /usr/libexec/docker/cli-plugins/docker-compose
 
-# Install YQ for YAML processing
-echo "=== Installing YQ ==="
-if ! command -v yq &> /dev/null; then
-    echo "Installing yq..."
-    sudo wget https://github.com/mikefarah/yq/releases/download/v4.34.1/yq_linux_amd64 -O /usr/local/bin/yq
-    sudo chmod +x /usr/local/bin/yq
-fi
+    # Optional: Add the directory to PATH if not recognized by default
+    # This might be redundant as Docker usually looks in ~/.docker/cli-plugins/
+    export PATH=\$PATH:/home/ec2-user/.docker/cli-plugins
+    echo 'export PATH=\$PATH:/home/ec2-user/.docker/cli-plugins' >> ~/.bashrc
 
-# Ensure Docker is installed (optional, as it's a prerequisite)
-if ! command -v docker &> /dev/null; then
-    echo "Docker is not installed. Please install Docker first."
-    exit 1
-fi
-
-# Define the Docker plugins directory (using the standard user directory)
-DOCKER_CONFIG=${DOCKER_CONFIG:-$HOME/.docker}
-PLUGINS_DIR="$DOCKER_CONFIG/cli-plugins"
-
-# Create the plugins directory if it doesn't exist
-echo "=== Creating Docker CLI plugins directory ==="
-mkdir -p $PLUGINS_DIR
-
-# Download the Docker Compose binary for Linux (x86_64)
-COMPOSE_VERSION="v2.40.1" # You can update this to the latest version if needed
-echo "=== Downloading Docker Compose binary ==="
-curl -SL "https://github.com/docker/compose/releases/download/${COMPOSE_VERSION}/docker-compose-linux-x86_64" \
-     -o "$PLUGINS_DIR/docker-compose"
-
-# Make the binary executable
-echo "=== Making Docker Compose binary executable ==="
-chmod +x "$PLUGINS_DIR/docker-compose"
-
-# Verify the installation
-echo "=== Verifying Docker Compose installation ==="
-if docker compose version; then
-    echo "=== Docker Compose has been successfully installed! ==="
-else
-    echo "=== Error: Docker Compose verification failed. ==="
-    exit 1
 fi
 
 echo '=== Verify Docker & Compose ==='
@@ -108,25 +79,15 @@ docker compose version || { echo 'Docker Compose V2 not working or not found in 
 
 # Add the current user to the docker group
 echo "Adding the current user to the docker group..."
+sudo usermod -a -G docker ${whoami}
 
 # Configure Docker to start on boot
 echo "Configuring Docker to start on boot..."
 sudo systemctl enable docker
 sudo systemctl start docker
 
-sudo yum update 
+sudo yum update -y
 
-# Install Ansible
-sudo yum install ansible -y
-
-# Verify Ansible installation
-if command -v ansible >/dev/null 2>&1; then
-    echo "Ansible installation successful."
-    ansible --version
-else
-    echo "Ansible installation failed."
-    exit 1
-fi
 
 # Increase /tmp file size persistently and remount
 echo "Increasing /tmp file size to 1.5GB persistently..."

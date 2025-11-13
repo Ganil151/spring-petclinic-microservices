@@ -35,8 +35,8 @@ pipeline {
             }
             post {
                 always { echo "========Checkout========" }
-                success { echo "========Checkout ⭐Successfully⭐========" }
-                failure { echo "========Checkout failed❌========" }
+                success { echo "========Checkout Successfully ========" }
+                failure { echo "========Checkout failed ========" }
             }
         }
 
@@ -52,8 +52,8 @@ pipeline {
             }
             post {
                 always { echo "========Install yq========" }
-                success { echo "========Install yq ⭐Successfully⭐========" }
-                failure { echo "========Install yq failed❌========" }
+                success { echo "========Install yq Successfully ========" }
+                failure { echo "========Install yq failed ========" }
             }
         }
 
@@ -83,8 +83,8 @@ pipeline {
             }
             post {
                 always { echo "========Docker Login========" }
-                success { echo "========Docker Login ⭐Successfully⭐========" }
-                failure { echo "========Docker Login failed❌========" }
+                success { echo "========Docker Login Successfully ========" }
+                failure { echo "========Docker Login failed ========" }
             }
         }
 
@@ -110,8 +110,8 @@ pipeline {
             }
             post {
                 always { echo "========Build Application========" }
-                success { echo "========Build Application ⭐Successfully⭐========" }
-                failure { echo "========Build Application failed❌========" }
+                success { echo "========Build Application Successfully ========" }
+                failure { echo "========Build Application failed ========" }
             }
         }
 
@@ -156,8 +156,8 @@ pipeline {
             }
             post {
                 always { echo "========Docker Build and Push========" }
-                success { echo "========Docker Build and Push ⭐Successfully⭐========" }
-                failure { echo "========Docker Build and Push failed❌========" }
+                success { echo "========Docker Build and Push Successfully ========" }
+                failure { echo "========Docker Build and Push failed ========" }
             }
         }
 
@@ -221,8 +221,8 @@ pipeline {
             }
             post {
                 always { echo "======= EC2 Provisioning =======" }
-                success { echo "======= EC2 Provisioning ⭐Successfully⭐========" }
-                failure { echo "======= EC2 Provisioning failed❌========" }
+                success { echo "======= EC2 Provisioning Successfully ========" }
+                failure { echo "======= EC2 Provisioning failed ========" }
             }
         } 
     }
