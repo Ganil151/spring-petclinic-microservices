@@ -1,0 +1,119 @@
+- name: Install & Configure MySQL 8 on Amazon Linux 2023
+  hosts: mysql
+  become: true
+
+  vars:
+    # NOTE: It is better practice to use Ansible Vault for passwords in production
+    mysql_root_password: "PetclinicRoot123!"
+    mysql_database_name: "petclinic"
+    mysql_user_name: "petclinic_user"
+    mysql_user_password: "PetClinicUser@12345!"
+    mysql_repo_url: "https://dev.mysql.com/get/mysql80-community-release-el9-1.noarch.rpm"
+    mysql_repo_path: "/tmp/mysql80-community-release.rpm"
+
+  tasks:
+
+    - name: Install required dependencies
+      yum:
+        name:
+          - python3-pip
+          - wget  # <-- Ensure wget is present
+          - perl
+          - shadow-utils
+        state: present
+
+    - name: Install PyMySQL for Ansible MySQL modules
+      pip:
+        name: PyMySQL
+        executable: pip3
+
+    - name: Remove conflicting system MySQL packages (if any)
+      yum:
+        name:
+          - mariadb*
+          - mysql*
+        state: absent
+      ignore_errors: yes
+
+    # --- FIX START: Using shell command to bypass 403 Forbidden ---
+    - name: Download and Install MySQL 8 repository RPM
+      shell: |
+        # Use wget to download the RPM to a temporary location
+        wget -q -O {{ mysql_repo_path }} {{ mysql_repo_url }}
+        # Use yum to install the local RPM file
+        yum install -y {{ mysql_repo_path }}
+      args:
+        # Prevent Ansible from seeing the downloaded file as a change source
+        creates: /etc/yum.repos.d/mysql-community.repo
+    # --- FIX END ---
+
+    - name: Install MySQL 8 Community Server
+      yum:
+        name:
+          - mysql-community-server
+        state: present
+
+    - name: Ensure MySQL service is started
+      systemd:
+        name: mysqld
+        state: started
+        enabled: yes
+
+    - name: Wait for MySQL to be fully up
+      wait_for:
+        port: 3306
+        host: 127.0.0.1
+        delay: 5
+        timeout: 60
+        state: started
+
+    - name: Get temporary MySQL root password
+      shell: grep 'temporary password' /var/log/mysqld.log | awk '{print $NF}'
+      register: temp_pass
+      changed_when: false
+      failed_when: false
+
+    - name: Set MySQL root password
+      shell: |
+        mysql --connect-expired-password -uroot -p"{{ temp_pass.stdout }}" \
+        -e "ALTER USER 'root'@'localhost' IDENTIFIED BY '{{ mysql_root_password }}';"
+      when: temp_pass.stdout is defined and temp_pass.stdout | length > 0
+      ignore_errors: yes
+
+    - name: Create /root/.my.cnf for passwordless root login
+      copy:
+        dest: /root/.my.cnf
+        content: |
+          [client]
+          user=root
+          password={{ mysql_root_password }}
+        owner: root
+        group: root
+        mode: '0600'
+
+    - name: Create PetClinic Database
+      mysql_db:
+        name: "{{ mysql_database_name }}"
+        state: present
+
+    - name: Create PetClinic MySQL user
+      mysql_user:
+        name: "{{ mysql_user_name }}"
+        password: "{{ mysql_user_password }}"
+        host: "%"
+        priv: "{{ mysql_database_name }}.*:ALL"
+        state: present
+
+    - name: Configure MySQL bind-address
+      lineinfile:
+        path: /etc/my.cnf
+        regexp: '^bind-address'
+        line: 'bind-address = 0.0.0.0'
+        state: present
+      notify: Restart MySQL
+
+  handlers:
+    - name: Restart MySQL
+      systemd:
+        name: mysqld
+        state: restarted
