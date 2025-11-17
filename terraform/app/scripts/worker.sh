@@ -62,9 +62,10 @@ echo '=== Installing Docker Compose V2 if missing ==='
 if ! docker compose version &> /dev/null; then
     echo 'Installing Docker Compose V2...'
     sudo mkdir -p /usr/libexec/docker/cli-plugins/
-    # Ensure the binary is downloaded to the correct location and is executable
-    curl -SL https://github.com/docker/compose/releases/latest/download/docker-compose-linux-$(uname -m) -o /usr/libexec/docker/cli-plugins/docker-compose    chmod +x ~/.docker/cli-plugins/docker-compose
-    chmod +x /usr/libexec/docker/cli-plugins/docker-compose
+    sudo curl -SL https://github.com/docker/compose/releases/latest/download/docker-compose-linux-$(uname -m) -o /usr/libexec/docker/cli-plugins/docker-compose
+    sudo chmod +x /usr/libexec/docker/cli-plugins/docker-compose
+    docker compose version
+    
 
     # Optional: Add the directory to PATH if not recognized by default
     # This might be redundant as Docker usually looks in ~/.docker/cli-plugins/

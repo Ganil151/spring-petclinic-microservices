@@ -26,7 +26,7 @@ This directory contains Ansible playbooks and configuration files used for autom
 - `defaults/`: Contains default variable files for roles.
 - `tasks/`: Contains task files for roles.
 
-#### Spring Petclinic Project Structure
+#### Spring Petclinic Mysql Database Project Structure
 ```bash
 /etc/ansible/
    ├── inventory.ini
@@ -356,7 +356,7 @@ sudo cp customers-data.sql /etc/ansible/petclinic/
 ```
 ---
 
-### Running the Playbook
+#### Running the Playbook
 To run the playbook and set up the MySQL server, use the following command:
 ```bash
 cd /etc/ansible
@@ -376,7 +376,7 @@ This stage will run the Ansible playbook as part of your CI/CD pipeline to ensur
 ```
 ---
 
-### Install MySQL on Remote Server
+#### Install MySQL on Remote Server
 To install MySQL server on a remote server using Ansible, ensure that your inventory file is
 correctly set up to point to the remote server. Then, run the following command:
 ```yaml
@@ -484,7 +484,7 @@ python3 -c "import pymysql; print('OK')"
 ```
 If you see `OK`, PyMySQL is installed correctly.
 
-### Fix inside Ansible
+#### Fix inside Ansible
 Update your Ansible playbook to ensure the required MySQL Python module is installed on the MySQL server before any MySQL tasks are executed.
 ```yaml
 - name: Install MySQL Python dependencies
@@ -501,7 +501,7 @@ Or use Pip:
 ```
 Place this task at the beginning of your playbook, before any MySQL-related tasks.
 This ensures that the necessary Python module is available for Ansible to interact with the MySQL server, preventing the "No module named 'MySQLdb'" error.
-### IMPORTANT — Also add this to your inventory
+#### IMPORTANT — Also add this to your inventory
 ```yaml
 [mysql]
 mysql-server ansible_host=54.x.x.x ansible_user=ec2-user ansible_ssh_private_key_file=/home/ec2-user/.ssh/master_keys.pem
@@ -513,6 +513,530 @@ After that, rerun:
 ```bash
 ansible-playbook -i inventory.ini mysql_setup.yml
 ```
+---
+
+### Ansible Playbook for Prometheus & Grafana Setup:
+```bash
+# Tree:
+/etc/ansible/
+│
+├── inventory.ini
+├── mysql_setup.yml
+├── monitoring_setup.yml           <── NEW
+│
+└── roles/
+    ├── mysql_petclinic/           (existing)
+    └── monitoring/                <── NEW ROLE
+         ├── tasks/
+         │    ├── install_prometheus.yml
+         │    ├── install_grafana.yml
+         │    ├── install_node_exporter.yml
+         │    ├── configure_prometheus.yml
+         │    ├── configure_grafana.yml
+         │    └── main.yml
+         ├── templates/
+         │    ├── prometheus.yml.j2
+         │    └── grafana-datasource.yml.j2
+         └── files/
+              └── grafana-dashboards/
+                    ├── spring-boot-dashboard.json
+                    └── docker-metrics-dashboard.json
+```
+Prometheus Targets (Auto-Configured)
+
+Prometheus will scrape:
+
+|Service	     |Server	                    |Port
+|--------------|----------------------------|----------------|  
+|Spring        |Boot Actuator	Docker-Server |8081, 8082, 8083...
+|Docker Metrics|Docker-Server	              |9323
+|Node Exporter |Monitor-Server	            |9100
+|Prometheus	   |Monitor-Server	            |9090
+All dynamic values come from `inventory.ini.`
+
+#### Monitoring Playbook
+```yaml
+#/etc/ansible/monitoring_setup.yml
+# inside
+---
+- name: Install & Configure Monitoring Stack (Prometheus + Grafana)
+  hosts: monitor-server
+  become: yes
+  roles:
+    - monitoring
+```
+---
+#### Monitoring Role Tasks
+```yaml
+#/etc/ansible/roles/monitoring/tasks/main.yml
+# Main entry point for monitoring role
+# inside
+---
+- include_tasks: install_prometheus.yml
+- include_tasks: install_grafana.yml
+- include_tasks: install_node_exporter.yml
+- include_tasks: configure_prometheus.yml
+- include_tasks: configure_grafana.yml
+```
+---
+#### Monitoring Role - Install Prometheus
+```yaml
+#/etc/ansible/roles/monitoring/tasks/install_prometheus.yml
+# inside
+---
+- name: Create Prometheus user
+  user:
+    name: prometheus
+    shell: /sbin/nologin
+
+- name: Create Prometheus directories
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: prometheus
+    group: prometheus
+  loop:
+    - /etc/prometheus
+    - /var/lib/prometheus
+
+- name: Download Prometheus tarball
+  get_url:
+    url: "https://github.com/prometheus/prometheus/releases/download/v2.51.2/prometheus-2.51.2.linux-amd64.tar.gz"
+    dest: "/tmp/prometheus.tar.gz"
+    mode: '0644'
+
+- name: Extract Prometheus
+  unarchive:
+    src: "/tmp/prometheus.tar.gz"
+    dest: "/tmp"
+    remote_src: yes
+
+- name: Install Prometheus binaries
+  copy:
+    src: "/tmp/prometheus-2.51.2.linux-amd64/{{ item }}"
+    dest: "/usr/local/bin/{{ item }}"
+    mode: '0755'
+    remote_src: yes
+  loop:
+    - prometheus
+    - promtool
+
+- name: Install Prometheus config
+  template:
+    src: prometheus.yml.j2
+    dest: /etc/prometheus/prometheus.yml
+    owner: prometheus
+    group: prometheus
+
+- name: Create Prometheus systemd service
+  copy:
+    dest: /etc/systemd/system/prometheus.service
+    content: |
+      [Unit]
+      Description=Prometheus Monitoring Server
+      After=network.target
+
+      [Service]
+      ExecStart=/usr/local/bin/prometheus --config.file=/etc/prometheus/prometheus.yml \
+        --storage.tsdb.path=/var/lib/prometheus
+      User=prometheus
+      Restart=always
+
+      [Install]
+      WantedBy=multi-user.target
+
+- name: Start Prometheus
+  systemd:
+    name: prometheus
+    enabled: yes
+    state: restarted
+```
+--- 
+#### Install Node Exporter
+```yaml
+#/etc/ansible/roles/monitoring/tasks/install_node_exporter.yml  
+# inside
+---
+- name: Download Node Exporter
+  ansible.builtin.get_url:
+    url: "https://github.com/prometheus/node_exporter/releases/download/v1.7.0/node_exporter-1.7.0.linux-amd64.tar.gz"
+    dest: "/tmp/node_exporter-1.7.0.linux-amd64.tar.gz"
+    mode: '0644'
+
+- name: Extract Node Exporter
+  ansible.builtin.unarchive:
+    src: "/tmp/node_exporter-1.7.0.linux-amd64.tar.gz"
+    dest: "/tmp"
+    remote_src: yes 
+
+- name: Move Node Exporter binary to /usr/local/bin
+  ansible.builtin.command:
+    cmd: mv /tmp/node_exporter-1.7.0.linux-amd64/node_exporter /usr/local/bin/node_exporter
+  args:
+    creates: /usr/local/bin/node_exporter 
+  register: move_result
+
+- name: Ensure node_exporter directories exist
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  loop:
+    - /var/lib/node_exporter
+    - /etc/node_exporter
+
+- name: Create systemd service for Node Exporter
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/node_exporter.service
+    content: |
+      [Unit]
+      Description=Node Exporter
+      Wants=network-online.target
+      After=network-online.target
+
+      [Service]
+      User=root
+      ExecStart=/usr/local/bin/node_exporter \
+        --collector.textfile.directory=/var/lib/node_exporter
+
+      [Install]
+      WantedBy=default.target
+  notify:
+    - Reload systemd
+    - Enable node_exporter
+
+- name: Set permissions on node_exporter binary
+  ansible.builtin.file:
+    path: /usr/local/bin/node_exporter
+    mode: '0755'
+  when: move_result is changed 
+
+```
+---
+#### Install Grafana
+```yaml
+#/etc/ansible/roles/monitoring/tasks/install_grafana.yml
+# inside
+---
+- name: Install Grafana repository
+  yum_repository:
+    name: grafana
+    description: Grafana Repository
+    baseurl: https://packages.grafana.com/oss/rpm
+    gpgcheck: yes
+    gpgkey: https://packages.grafana.com/gpg.key
+    repo_gpgcheck: yes
+    enabled: yes
+
+- name: Install Grafana
+  yum:
+    name: grafana
+    state: latest
+
+- name: Enable Grafana
+  systemd:
+    name: grafana-server
+    enabled: yes
+    state: restarted
+```
+---
+#### Prometheus Config Template
+```yaml
+#/etc/ansible/roles/monitoring/templates/prometheus.yml.j2
+# inside
+global:
+  scrape_interval: 5s
+
+scrape_configs:
+
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  - job_name: 'spring-petclinic'
+    static_configs:
+      - targets:
+        - docker-server:8080
+        - worker-server:8081
+        
+  - job_name: 'node_exporter'
+    static_configs:
+      - targets: ['{{ hostvars["monitor"].ansible_host }}:9100']
+
+  - job_name: 'docker_metrics'
+    static_configs:
+      - targets: ['{{ hostvars["docker"].ansible_host }}:9323']
+  - job_name: 'spring_microservices'
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets:
+{% for svc in ['customers','visits','vets','config','discovery'] %}
+          - "{{ hostvars['docker'].ansible_host }}:{{ 8080 + loop.index }}"
+{% endfor %}
+```
+---
+#### Grafana Datasource Template
+```yaml
+#/etc/ansible/roles/monitoring/templates/grafana-datasource.yml.j
+# inside
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    url: http://localhost:9090
+    editable: true
+```
+---
+#### Update Your Inventory File
+```yaml
+#/etc/ansible/inventory.ini
+# inside
+sudo bash -c 'cat > /etc/ansible/inventory.ini << "EOF"
+[monitor]
+monitor-server ansible_host=184.73.123.172 ansible_user=ec2-user ansible_ssh_private_key_file=/home/ec2-user/.ssh/master_keys.pem
+
+[docker]
+docker-server ansible_host=54.205.48.110 ansible_user=ec2-user ansible_ssh_private_key_file=/home/ec2-user/.ssh/master_keys.pem
+
+[mysql]
+mysql-server ansible_host=54.167.194.172 ansible_user=ec2-user ansible_ssh_private_key_file=/home/ec2-user/.ssh/master_keys.pem
+
+[all:vars]
+ansible_python_interpreter=/usr/bin/python3
+EOF'
+``` 
+---
+#### Configure Hosts File
+```yaml
+#/etc/ansible/hosts.ini
+# inside
+```bash
+sudo bash -c 'cat > /etc/ansible/inventory.ini << "EOF"
+[monitor]
+monitor-server ansible_host=184.73.123.172 
+
+[spring-petclinic]
+docker-server ansible_host=54.205.48.110 
+worker-server ansible_host=54.162.181.27 
+
+[all:vars]
+ansible_python_interpreter=/usr/bin/python3
+EOF'
+```
+#### Grafana Dashboards
+Place your Grafana dashboard JSON files in the `files/grafana-dashboards/` directory of the `monitoring` role.
+```bash
+# Tree:
+roles/
+└── monitoring/
+    ├── defaults/
+    │   └── main.yml
+    ├── tasks/
+    │   ├── main.yml
+    │   ├── install_prometheus.yml
+    │   ├── install_grafana.yml
+    │   └── configure_services.yml
+    ├── templates/
+    │   ├── prometheus.yml.j2
+    │   └── grafana_datasource.yml.j2
+    └── handlers/
+        └── main.yml
+```
+#### Create Default Variables File
+```yaml
+#/etc/ansible/roles/monitoring/defaults/main.yml
+# inside
+---
+# Prometheus settings
+prometheus_version: "2.54.1"
+prometheus_install_dir: "/usr/local/prometheus"
+prometheus_config_dir: "/etc/prometheus"
+prometheus_data_dir: "/var/lib/prometheus"
+
+prometheus_port: 9090
+prometheus_host: "localhost"
+prometheus_url: "http://{{ prometheus_host }}:{{ prometheus_port }}"
+
+# Grafana settings
+grafana_version: "11.1.0"
+grafana_download_url: "https://dl.grafana.com/oss/release/grafana-{{ grafana_version }}.linux-amd64.tar.gz"
+
+grafana_install_dir: "/usr/local/grafana"
+grafana_data_dir: "/var/lib/grafana"
+grafana_config_dir: "/etc/grafana"
+
+grafana_service_file: "/etc/systemd/system/grafana-server.service"
+```
+---
+#### Change the tasks/install_grafana.yml to use variables from defaults/main.yml
+```yaml
+#/etc/ansible/roles/monitoring/tasks/install_grafana.yml
+# inside
+---
+- name: Install EPEL on supported systems
+  yum:
+    name: epel-release
+    state: present
+  when:
+    - ansible_facts.os_family == "RedHat"
+    - ansible_facts.distribution_major_version|int < 9
+
+- name: "Download Grafana"
+  get_url:
+    url: "{{ grafana_download_url }}"
+    dest: "/tmp/grafana-{{ grafana_version }}.tar.gz"
+    mode: '0644'
+
+- name: "Extract Grafana"
+  unarchive:
+    src: "/tmp/grafana-{{ grafana_version }}.tar.gz"
+    dest: "/tmp"
+    remote_src: yes
+
+- name: "Move Grafana to installation directory"
+  command: >
+    mv /tmp/grafana-{{ grafana_version }}.linux-amd64 {{ grafana_install_dir }}
+  args:
+    creates: "{{ grafana_install_dir }}/bin/grafana-server"
+
+- name: "Create Grafana directories"
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  loop:
+    - "{{ grafana_data_dir }}"
+    - "{{ grafana_config_dir }}"
+```
+---
+#### tasks/configure_services.yml
+```yaml
+#/etc/ansible/roles/monitoring/tasks/configure_services.yml
+# inside
+---
+- name: "Deploy Prometheus configuration"
+  template:
+    src: prometheus.yml.j2
+    dest: /etc/prometheus/prometheus.yml
+    owner: "{{ monitoring_user }}"
+    group: "{{ monitoring_user }}"
+    mode: '0644'
+
+- name: "Deploy Grafana datasource (Prometheus)"
+  template:
+    src: grafana_datasource.yml.j2
+    dest: "{{ grafana_config_dir }}/datasources/prometheus.yml"
+    mode: '0644'
+
+- name: "Create systemd service for Prometheus"
+  copy:
+    dest: /etc/systemd/system/prometheus.service
+    content: |
+      [Unit]
+      Description=Prometheus Monitoring
+      After=network.target
+
+      [Service]
+      User={{ monitoring_user }}
+      ExecStart={{ prometheus_install_dir }}/prometheus \
+        --config.file=/etc/prometheus/prometheus.yml \
+        --storage.tsdb.path={{ prometheus_data_dir }}
+      Restart=always
+
+      [Install]
+      WantedBy=multi-user.target
+  notify:
+    - restart prometheus
+
+- name: "Create systemd service for Grafana"
+  copy:
+    dest: /etc/systemd/system/grafana.service
+    content: |
+      [Unit]
+      Description=Grafana
+      After=network.target
+
+      [Service]
+      ExecStart={{ grafana_install_dir }}/bin/grafana-server \
+        --homepath={{ grafana_install_dir }} \
+        --config={{ grafana_config_dir }}/grafana.ini
+      Restart=always
+
+      [Install]
+      WantedBy=multi-user.target
+  notify:
+    - restart grafana
+
+- name: "Reload systemd daemon"
+  systemd:
+    daemon_reload: yes
+
+- name: "Enable and start services"
+  systemd:
+    name: "{{ item }}"
+    state: started
+    enabled: yes
+  loop:
+    - prometheus
+    - grafana
+```
+#### handlers/main.yml
+```yaml
+#/etc/ansible/roles/monitoring/handlers/main.yml
+# inside
+---
+- name: restart prometheus
+  systemd:
+    name: prometheus
+    state: restarted
+
+- name: restart grafana
+  systemd:
+    name: grafana
+    state: restarted
+```
+---
+
+#### Verify Monitoring Setup
+After running the monitoring setup playbook, verify that Prometheus and Grafana are running correctly.
+- Access Prometheus at `http://<monitor-server-ip>:9090`
+- Access Grafana at `http://<monitor-server-ip>:3000` (default credentials: admin/admin)
+- Import the provided Grafana dashboards for Spring Boot and Docker Metrics.
+- Check that Prometheus is successfully scraping metrics from the defined targets.
+- Ensure that Grafana can visualize the metrics from Prometheus.
+```bash
+# Check systemd status
+sudo systemctl status prometheus
+
+# Or check if process is running
+ps aux | grep prometheus
+
+# Check listening port (default: 9090)
+sudo netstat -tulpn | grep 9090
+
+# Check Grafana status
+sudo systemctl status grafana-server
+
+# Or check if process is running
+ps aux | grep grafana
+
+# Check listening port (default: 3000)
+sudo netstat -tulpn | grep 3000
+```
+--- 
+
+
+
+
+
+
+
 
 ### Ansible Flags:
 Ansible CLI cheatsheet
