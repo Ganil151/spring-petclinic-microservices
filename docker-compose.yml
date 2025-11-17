@@ -141,7 +141,7 @@ services:
   ## Grafana / Prometheus
 
   grafana-server:
-    build: ./docker/grafana
+    image: ./docker/grafana
     container_name: grafana-server
     deploy:
       resources:
@@ -151,7 +151,7 @@ services:
     - 3030:3030
 
   prometheus-server:
-    build: ./docker/prometheus
+    image: ./docker/prometheus
     container_name: prometheus-server
     deploy:
       resources:

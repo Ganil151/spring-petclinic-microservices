@@ -572,11 +572,11 @@ All dynamic values come from `inventory.ini.`
 # Main entry point for monitoring role
 # inside
 ---
-- include_tasks: install_prometheus.yml
-- include_tasks: install_grafana.yml
-- include_tasks: install_node_exporter.yml
-- include_tasks: configure_prometheus.yml
-- include_tasks: configure_grafana.yml
+- import_tasks: install_prometheus.yml
+- import_tasks: install_grafana.yml
+- import_tasks: install_node_exporter.yml
+- import_tasks: configure_prometheus.yml
+- import_tasks: configure_grafana.yml
 ```
 ---
 #### Monitoring Role - Install Prometheus
@@ -657,23 +657,25 @@ All dynamic values come from `inventory.ini.`
 #/etc/ansible/roles/monitoring/tasks/install_node_exporter.yml  
 # inside
 ---
+# Install Node Exporter (latest version: 1.10.2)
+
 - name: Download Node Exporter
   ansible.builtin.get_url:
-    url: "https://github.com/prometheus/node_exporter/releases/download/v1.7.0/node_exporter-1.7.0.linux-amd64.tar.gz"
-    dest: "/tmp/node_exporter-1.7.0.linux-amd64.tar.gz"
+    url: "{{ node_exporter_download_url }}"
+    dest: "/tmp/node_exporter-{{ node_exporter_version }}.linux-amd64.tar.gz"
     mode: '0644'
 
 - name: Extract Node Exporter
   ansible.builtin.unarchive:
-    src: "/tmp/node_exporter-1.7.0.linux-amd64.tar.gz"
+    src: "/tmp/node_exporter-{{ node_exporter_version }}.linux-amd64.tar.gz"
     dest: "/tmp"
-    remote_src: yes 
+    remote_src: yes
 
 - name: Move Node Exporter binary to /usr/local/bin
   ansible.builtin.command:
-    cmd: mv /tmp/node_exporter-1.7.0.linux-amd64/node_exporter /usr/local/bin/node_exporter
+    cmd: mv /tmp/node_exporter-{{ node_exporter_version }}.linux-amd64/node_exporter {{ node_exporter_install_dir }}/node_exporter
   args:
-    creates: /usr/local/bin/node_exporter 
+    creates: "{{ node_exporter_install_dir }}/node_exporter"
   register: move_result
 
 - name: Ensure node_exporter directories exist
@@ -689,7 +691,7 @@ All dynamic values come from `inventory.ini.`
 
 - name: Create systemd service for Node Exporter
   ansible.builtin.copy:
-    dest: /etc/systemd/system/node_exporter.service
+    dest: "{{ node_exporter_service_file }}"
     content: |
       [Unit]
       Description=Node Exporter
@@ -698,21 +700,21 @@ All dynamic values come from `inventory.ini.`
 
       [Service]
       User=root
-      ExecStart=/usr/local/bin/node_exporter \
+      ExecStart={{ node_exporter_install_dir }}/node_exporter \
         --collector.textfile.directory=/var/lib/node_exporter
 
       [Install]
-      WantedBy=default.target
+      WantedBy=multi-user.target
   notify:
     - Reload systemd
     - Enable node_exporter
+    - Start node_exporter
 
 - name: Set permissions on node_exporter binary
   ansible.builtin.file:
-    path: /usr/local/bin/node_exporter
+    path: "{{ node_exporter_install_dir }}/node_exporter"
     mode: '0755'
-  when: move_result is changed 
-
+  when: move_result is changed
 ```
 ---
 #### Install Grafana
@@ -851,25 +853,42 @@ roles/
 #/etc/ansible/roles/monitoring/defaults/main.yml
 # inside
 ---
-# Prometheus settings
-prometheus_version: "2.54.1"
-prometheus_install_dir: "/usr/local/prometheus"
-prometheus_config_dir: "/etc/prometheus"
+# defaults file for monitoring role
+
+# Prometheus Configuration
+prometheus_version: "3.7.3" # Example version, adjust as needed
+prometheus_download_url: "https://github.com/prometheus/prometheus/releases/download/v{{ prometheus_version }}/prometheus-{{ prometheus_version }}.linux-amd64.tar.gz"
+prometheus_install_dir: "/usr/local/bin"
 prometheus_data_dir: "/var/lib/prometheus"
+prometheus_config_dir: "/etc/prometheus"
+prometheus_service_file: "/etc/systemd/system/prometheus.service"
 
-prometheus_port: 9090
-prometheus_host: "localhost"
-prometheus_url: "http://{{ prometheus_host }}:{{ prometheus_port }}"
+# Example: This might be used in grafana-datasource.yml.j2 or elsewhere where Grafana needs to know Prometheus's address
+prometheus_url: "http://localhost:9090" # Default, assuming Prometheus runs on the same host as Grafana
 
-# Grafana settings
-grafana_version: "11.1.0"
+# Grafana Configuration
+grafana_version: "12.0.3" # Example version, adjust as needed
+# Construct the download URL based on version and architecture (assuming linux-amd64 for Amazon Linux)
 grafana_download_url: "https://dl.grafana.com/oss/release/grafana-{{ grafana_version }}.linux-amd64.tar.gz"
-
-grafana_install_dir: "/usr/local/grafana"
-grafana_data_dir: "/var/lib/grafana"
+grafana_install_dir: "/usr/share/grafana" # Common installation path
 grafana_config_dir: "/etc/grafana"
-
+grafana_data_dir: "/var/lib/grafana"
+grafana_logs_dir: "/var/log/grafana"
+grafana_plugins_dir: "{{ grafana_data_dir }}/plugins"
 grafana_service_file: "/etc/systemd/system/grafana-server.service"
+
+# Node Exporter Configuration
+node_exporter_version: "1.10.2"
+node_exporter_download_url: "https://github.com/prometheus/node_exporter/releases/download/v{{ node_exporter_version }}/node_exporter-{{ node_exporter_version }}.linux-amd64.tar.gz"
+node_exporter_install_dir: "/usr/local/bin"
+node_exporter_service_file: "/etc/systemd/system/node_exporter.service"
+
+# Spring PetClinic Configuration (Example for Prometheus scrape config)
+# Define the host and port where the Spring PetClinic services are running and exposing metrics
+# This should be the IP of the Docker-Server from the Monitor-Server's perspective
+spring_petclinic_metrics_host: "192.168.112.133" # Replace with Docker-Server's private IP
+spring_petclinic_metrics_port: 8080             # Replace with the port services expose metrics on (e.g., API Gateway port)
+spring_petclinic_job_name: "spring-petclinic"
 ```
 ---
 #### Change the tasks/install_grafana.yml to use variables from defaults/main.yml
@@ -920,71 +939,60 @@ grafana_service_file: "/etc/systemd/system/grafana-server.service"
 #/etc/ansible/roles/monitoring/tasks/configure_services.yml
 # inside
 ---
-- name: "Deploy Prometheus configuration"
-  template:
-    src: prometheus.yml.j2
-    dest: /etc/prometheus/prometheus.yml
-    owner: "{{ monitoring_user }}"
-    group: "{{ monitoring_user }}"
-    mode: '0644'
+# Configure Prometheus & Grafana
 
-- name: "Deploy Grafana datasource (Prometheus)"
-  template:
-    src: grafana_datasource.yml.j2
-    dest: "{{ grafana_config_dir }}/datasources/prometheus.yml"
-    mode: '0644'
+# -------------------------------
+# Grafana Datasource
+# -------------------------------
+- name: Ensure Grafana datasource folder exists
+  ansible.builtin.file:
+    path: "{{ grafana_config_dir }}/provisioning/datasources"
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
 
-- name: "Create systemd service for Prometheus"
-  copy:
-    dest: /etc/systemd/system/prometheus.service
+- name: Configure Grafana datasource
+  ansible.builtin.template:
+    src: grafana-datasource.yml.j2
+    dest: "{{ grafana_config_dir }}/provisioning/datasources/datasource.yml"
+    owner: root
+    group: root
+    mode: '0644'
+  notify: Restart Grafana
+
+
+# -------------------------------
+# Node Exporter — only ensure running
+# (installation handled in install_node_exporter.yml)
+# -------------------------------
+- name: Ensure node_exporter service file exists
+  ansible.builtin.copy:
+    dest: "{{ node_exporter_service_file }}"
     content: |
       [Unit]
-      Description=Prometheus Monitoring
-      After=network.target
+      Description=Node Exporter
+      Wants=network-online.target
+      After=network-online.target
 
       [Service]
-      User={{ monitoring_user }}
-      ExecStart={{ prometheus_install_dir }}/prometheus \
-        --config.file=/etc/prometheus/prometheus.yml \
-        --storage.tsdb.path={{ prometheus_data_dir }}
-      Restart=always
+      User=root
+      ExecStart={{ node_exporter_install_dir }}/node_exporter \
+        --collector.textfile.directory=/var/lib/node_exporter
 
       [Install]
       WantedBy=multi-user.target
   notify:
-    - restart prometheus
+    - Reload systemd
+    - Restart Node Exporter
+    - Enable Node Exporter
 
-- name: "Create systemd service for Grafana"
-  copy:
-    dest: /etc/systemd/system/grafana.service
-    content: |
-      [Unit]
-      Description=Grafana
-      After=network.target
-
-      [Service]
-      ExecStart={{ grafana_install_dir }}/bin/grafana-server \
-        --homepath={{ grafana_install_dir }} \
-        --config={{ grafana_config_dir }}/grafana.ini
-      Restart=always
-
-      [Install]
-      WantedBy=multi-user.target
-  notify:
-    - restart grafana
-
-- name: "Reload systemd daemon"
-  systemd:
-    daemon_reload: yes
-
-- name: "Enable and start services"
-  systemd:
-    name: "{{ item }}"
+- name: Ensure Node Exporter is started
+  ansible.builtin.systemd:
+    name: node_exporter
     state: started
-    enabled: yes
-  loop:
-    - prometheus
-    - grafana
+    enabled: true
+
 ```
 #### handlers/main.yml
 ```yaml
