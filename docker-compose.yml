@@ -141,7 +141,9 @@ services:
   ## Grafana / Prometheus
 
   grafana-server:
-    build: ./docker/grafana
+    build: 
+      context: /home/ec2-user/petclinic_deploy/docker/grafana
+      dockerfile: Dockerfile
     container_name: grafana-server
     deploy:
       resources:
