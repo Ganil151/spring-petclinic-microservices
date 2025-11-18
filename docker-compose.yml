@@ -149,7 +149,7 @@ services:
       - "--config.file=/etc/prometheus/prometheus.yml"
       - "--storage.tsdb.path=/prometheus"
     ports:
-      - "9091:9090"   # host:container (you used 9091 previously)
+      - "9091:9090"   
     networks:
       - petclinic_net
     healthcheck:
@@ -170,7 +170,7 @@ services:
       - ./grafana/provisioning:/etc/grafana/provisioning:ro
       - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
     ports:
-      - "3030:3000"   # host:container -> exposes Grafana on host 3030
+      - "3030:3000"   
     networks:
       - petclinic_net
     healthcheck:
