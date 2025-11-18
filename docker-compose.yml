@@ -151,11 +151,15 @@ services:
     - 3030:3030
 
   prometheus-server:
-    image: ./docker/prometheus
     container_name: prometheus-server
     deploy:
       resources:
         limits:
-          memory: 256M
+          memory: "268435456"
+    build:
+      context: ./docker/prometheus
+      dockerfile: Dockerfile
+    image: custom-prometheus
     ports:
-    - 9091:9090
+      - "9091:9090"
+
