@@ -1,167 +1,180 @@
+version: "3.8"
+
+networks:
+  petclinic_net:
+    driver: bridge
+
+volumes:
+  prometheus_data:
+  grafana_data:
+
 services:
   config-server:
     image: springcommunity/spring-petclinic-config-server
     container_name: config-server
-    deploy:
-      resources:
-        limits:
-          memory: 512M
+    restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-I", "http://config-server:8888"]
+      test: ["CMD", "curl", "-I", "http://localhost:8888"]
       interval: 5s
       timeout: 5s
       retries: 10
     ports:
-     - 8888:8888
+      - "8888:8888"
+    networks:
+      - petclinic_net
 
   discovery-server:
     image: springcommunity/spring-petclinic-discovery-server
     container_name: discovery-server
-    deploy:
-      resources:
-        limits:
-          memory: 512M
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://discovery-server:8761"]
-      interval: 5s
-      timeout: 3s
-      retries: 10
+    restart: unless-stopped
     depends_on:
       config-server:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8761"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
     ports:
-     - 8761:8761
+      - "8761:8761"
+    networks:
+      - petclinic_net
 
   customers-service:
     image: springcommunity/spring-petclinic-customers-service
     container_name: customers-service
-    deploy:
-      resources:
-        limits:
-          memory: 512M
+    restart: unless-stopped
     depends_on:
       config-server:
         condition: service_healthy
       discovery-server:
         condition: service_healthy
     ports:
-    - 8081:8081
+      - "8081:8081"
+    networks:
+      - petclinic_net
 
   visits-service:
     image: springcommunity/spring-petclinic-visits-service
     container_name: visits-service
-    deploy:
-      resources:
-        limits:
-          memory: 512M
+    restart: unless-stopped
     depends_on:
       config-server:
         condition: service_healthy
       discovery-server:
         condition: service_healthy
     ports:
-     - 8082:8082
+      - "8082:8082"
+    networks:
+      - petclinic_net
 
   vets-service:
     image: springcommunity/spring-petclinic-vets-service
     container_name: vets-service
-    deploy:
-      resources:
-        limits:
-          memory: 512M
+    restart: unless-stopped
     depends_on:
       config-server:
         condition: service_healthy
       discovery-server:
         condition: service_healthy
     ports:
-     - 8083:8083
-
+      - "8083:8083"
+    networks:
+      - petclinic_net
 
   genai-service:
     image: springcommunity/spring-petclinic-genai-service
     container_name: genai-service
+    restart: unless-stopped
     environment:
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - AZURE_OPENAI_KEY=${AZURE_OPENAI_KEY}
-      - AZURE_OPENAI_ENDPOINT=${AZURE_OPENAI_ENDPOINT}
-    deploy:
-      resources:
-        limits:
-          memory: 512M
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - AZURE_OPENAI_KEY=${AZURE_OPENAI_KEY:-}
+      - AZURE_OPENAI_ENDPOINT=${AZURE_OPENAI_ENDPOINT:-}
     depends_on:
       config-server:
         condition: service_healthy
       discovery-server:
         condition: service_healthy
     ports:
-     - 8084:8084
-
+      - "8084:8084"
+    networks:
+      - petclinic_net
 
   api-gateway:
     image: springcommunity/spring-petclinic-api-gateway
     container_name: api-gateway
-    deploy:
-      resources:
-        limits:
-          memory: 512M
+    restart: unless-stopped
     depends_on:
       config-server:
         condition: service_healthy
       discovery-server:
         condition: service_healthy
     ports:
-     - 8080:8080
+      - "8080:8080"
+    networks:
+      - petclinic_net
 
   tracing-server:
     image: openzipkin/zipkin
     container_name: tracing-server
-    deploy:
-      resources:
-        limits:
-          memory: 512M
+    restart: unless-stopped
     ports:
-     - 9411:9411
+      - "9411:9411"
+    networks:
+      - petclinic_net
 
   admin-server:
     image: springcommunity/spring-petclinic-admin-server
     container_name: admin-server
-    deploy:
-      resources:
-        limits:
-          memory: 512M
+    restart: unless-stopped
     depends_on:
       config-server:
         condition: service_healthy
       discovery-server:
         condition: service_healthy
     ports:
-     - 9090:9090
+      - "9090:9090"
+    networks:
+      - petclinic_net
 
-  ## Grafana / Prometheus
-
-  grafana-server:
-    build: 
-      context: /home/ec2-user/petclinic_deploy/docker/grafana
-      dockerfile: Dockerfile
-    container_name: grafana-server
-    deploy:
-      resources:
-        limits:
-          memory: 256M
-    ports:
-    - 3030:3030
-
+  # Prometheus (official image) -----------------------------------------------
   prometheus-server:
+    image: prom/prometheus:latest
     container_name: prometheus-server
-    deploy:
-      resources:
-        limits:
-          memory: "268435456"
-    build:
-      context: ./docker/prometheus
-      dockerfile: Dockerfile
-    image: custom-prometheus
+    restart: unless-stopped
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
     ports:
-      - "9091:9090"
+      - "9091:9090"   # host:container (you used 9091 previously)
+    networks:
+      - petclinic_net
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:9090/-/healthy" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
+  # Grafana (official image) --------------------------------------------------
+  grafana-server:
+    image: grafana/grafana:latest
+    container_name: grafana-server
+    restart: unless-stopped
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GF_SECURITY_ADMIN_PASSWORD:-admin}
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+    ports:
+      - "3030:3000"   # host:container -> exposes Grafana on host 3030
+    networks:
+      - petclinic_net
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3000/api/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
