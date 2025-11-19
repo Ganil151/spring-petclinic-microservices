@@ -1,3 +1,4 @@
+---
 - name: Install & Configure MySQL 8 on Amazon Linux 2023
   hosts: mysql
   become: true
@@ -43,8 +44,7 @@
         # Use yum to install the local RPM file
         yum install -y {{ mysql_repo_path }}
       args:
-        # Prevent Ansible from seeing the downloaded file as a change source
-        creates: /etc/yum.repos.d/mysql-community.repo
+        # Prevent Ansible from seeing the downloaded file as a change source creates: /etc/yum.repos.d/mysql-community.repo
     # --- FIX END ---
 
     - name: Install MySQL 8 Community Server
@@ -117,3 +117,4 @@
       systemd:
         name: mysqld
         state: restarted
+                                              
