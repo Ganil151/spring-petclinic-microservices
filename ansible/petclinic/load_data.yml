@@ -1,0 +1,8 @@
+- name: Load sample data
+  mysql_db:
+    name: "{{ item }}"
+    state: import
+    target: "/etc/ansible/petclinic/{{ item }}-data.sql"
+    login_user: root
+    login_password: "{{ mysql_root_password }}"
+  loop: "{{ petclinic_databases }}"

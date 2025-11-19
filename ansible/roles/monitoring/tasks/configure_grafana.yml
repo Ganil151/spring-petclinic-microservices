@@ -1,0 +1,16 @@
+---
+- name: Install Grafana datasource config
+  template:
+    src: grafana-datasource.yml.j2
+    dest: /etc/grafana/provisioning/datasources/prometheus.yml
+
+- name: Install Grafana dashboards
+  template:
+    src: grafana-dashboards.json.j2
+    dest: /etc/grafana/provisioning/dashboards/spring-boot.json
+
+- name: Restart Grafana
+  systemd:
+    name: grafana-server
+    state: restarted
+

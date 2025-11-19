@@ -1,0 +1,37 @@
+---
+# defaults file for monitoring role
+
+# Prometheus Configuration
+prometheus_version: "3.7.3" # Example version, adjust as needed
+prometheus_download_url: "https://github.com/prometheus/prometheus/releases/download/v{{ prometheus_version }}/prometheus-{{ prometheus_version }}.linux-amd64.tar.gz"
+prometheus_install_dir: "/usr/local/bin"
+prometheus_data_dir: "/var/lib/prometheus"
+prometheus_config_dir: "/etc/prometheus"
+prometheus_service_file: "/etc/systemd/system/prometheus.service"
+
+# Example: This might be used in grafana-datasource.yml.j2 or elsewhere where Grafana needs to know Prometheus's address
+prometheus_url: "http://localhost:9090" # Default, assuming Prometheus runs on the same host as Grafana
+
+# Grafana Configuration
+grafana_version: "12.0.3" # Example version, adjust as needed
+# Construct the download URL based on version and architecture (assuming linux-amd64 for Amazon Linux)
+grafana_download_url: "https://dl.grafana.com/oss/release/grafana-{{ grafana_version }}.linux-amd64.tar.gz"
+grafana_install_dir: "/usr/share/grafana" # Common installation path
+grafana_config_dir: "/etc/grafana"
+grafana_data_dir: "/var/lib/grafana"
+grafana_logs_dir: "/var/log/grafana"
+grafana_plugins_dir: "{{ grafana_data_dir }}/plugins"
+grafana_service_file: "/etc/systemd/system/grafana-server.service"
+
+# Node Exporter Configuration
+node_exporter_version: "1.10.2"
+node_exporter_download_url: "https://github.com/prometheus/node_exporter/releases/download/v{{ node_exporter_version }}/node_exporter-{{ node_exporter_version }}.linux-amd64.tar.gz"
+node_exporter_install_dir: "/usr/local/bin"
+node_exporter_service_file: "/etc/systemd/system/node_exporter.service"
+
+# Spring PetClinic Configuration (Example for Prometheus scrape config)
+# Define the host and port where the Spring PetClinic services are running and exposing metrics
+# This should be the IP of the Docker-Server from the Monitor-Server's perspective
+spring_petclinic_metrics_host: "192.168.112.133" # Replace with Docker-Server's private IP
+spring_petclinic_metrics_port: 8080             # Replace with the port services expose metrics on (e.g., API Gateway port)
+spring_petclinic_job_name: "spring-petclinic"

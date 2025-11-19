@@ -1,0 +1,38 @@
+---
+- name: Install EPEL on supported systems
+  yum:
+    name: epel-release
+    state: present
+  when:
+    - ansible_facts.os_family == "RedHat"
+    - ansible_facts.distribution_major_version|int < 9
+
+- name: Download Grafana
+  get_url:
+    url: "{{ grafana_download_url }}"
+    dest: "/tmp/grafana-{{ grafana_version }}.tar.gz"
+    mode: "0644"
+
+- name: Extract Grafana archive
+  unarchive:
+    src: "/tmp/grafana-{{ grafana_version }}.tar.gz"
+    dest: "/tmp"
+    remote_src: yes
+
+- name: Find extracted Grafana directory
+  find:
+    paths: /tmp
+    file_type: directory
+    patterns: "grafana-*"
+  register: grafana_extract
+
+- name: Fail if Grafana directory not found
+  fail:
+    msg: "Grafana extraction directory not found in /tmp"
+  when: grafana_extract.files | length == 0
+
+- name: Move Grafana into installation directory
+  command: >
+    mv {{ grafana_extract.files[0].path }} {{ grafana_install_dir }}
+  args:
+    creates: "{{ grafana_install_dir }}/bin/grafana-server"

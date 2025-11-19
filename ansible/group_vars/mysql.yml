@@ -1,0 +1,13 @@
+---
+mysql_root_password: "PetclinicRoot123!"
+mysql_petclinic_password: "PetClinic@12345!"
+
+petclinic_databases:
+  - customers
+  - visits
+  - vets
+
+petclinic_users:
+  - name: petclinic_user
+    password: "{{ mysql_petclinic_password }}"
+    priv: "*.*:ALL"
