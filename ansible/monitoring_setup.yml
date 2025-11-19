@@ -1,0 +1,6 @@
+---
+- name: Install & Configure Monitoring Stack (Prometheus + Grafana)
+  hosts: monitor-server
+  become: yes
+  roles:
+    - monitoring
