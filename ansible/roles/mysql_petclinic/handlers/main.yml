@@ -1,0 +1,5 @@
+---
+- name: Start Mysql
+  systemd:
+    name: mysqld
+    state: start

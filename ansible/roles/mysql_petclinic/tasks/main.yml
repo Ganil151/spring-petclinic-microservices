@@ -1,0 +1,21 @@
+---
+- name: Load database schema
+  mysql_db:
+    name: "{{ item }}"
+    state: import
+    target: "/etc/ansible/petclinic/{{ item }}-schema.sql"
+    login_user: root
+    login_password: "{{ mysql_root_password }}"
+  loop: "{{ petclinic_databases }}"
+[ec2-user@Worker-Server mysql_petclinic]$ sudo cat tasks/main.yml
+- name: Copy SQL Schema files to remote host for execution
+  copy:
+    src: "{{ role_path }}/files/{{ item }}-schema.sql"
+    dest: "/tmp/petclinic/{{ item }}-schema.sql"
+    owner: root
+    group: root
+    mode: '0644'
+  loop:
+    - customers
+    - visits
+    - vets

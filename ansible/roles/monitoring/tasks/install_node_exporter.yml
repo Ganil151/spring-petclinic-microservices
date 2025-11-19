@@ -1,0 +1,59 @@
+---
+# Install Node Exporter (latest version: 1.10.2)
+
+- name: Download Node Exporter
+  ansible.builtin.get_url:
+    url: "{{ node_exporter_download_url }}"
+    dest: "/tmp/node_exporter-{{ node_exporter_version }}.linux-amd64.tar.gz"
+    mode: '0644'
+
+- name: Extract Node Exporter
+  ansible.builtin.unarchive:
+    src: "/tmp/node_exporter-{{ node_exporter_version }}.linux-amd64.tar.gz"
+    dest: "/tmp"
+    remote_src: yes
+
+- name: Move Node Exporter binary to /usr/local/bin
+  ansible.builtin.command:
+    cmd: mv /tmp/node_exporter-{{ node_exporter_version }}.linux-amd64/node_exporter {{ node_exporter_install_dir }}/node_exporter
+  args:
+    creates: "{{ node_exporter_install_dir }}/node_exporter"
+  register: move_result
+
+- name: Ensure node_exporter directories exist
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  loop:
+    - /var/lib/node_exporter
+    - /etc/node_exporter
+
+- name: Create systemd service for Node Exporter
+  ansible.builtin.copy:
+    dest: "{{ node_exporter_service_file }}"
+    content: |
+      [Unit]
+      Description=Node Exporter
+      Wants=network-online.target
+      After=network-online.target
+
+      [Service]
+      User=root
+      ExecStart={{ node_exporter_install_dir }}/node_exporter \
+        --collector.textfile.directory=/var/lib/node_exporter
+
+      [Install]
+      WantedBy=multi-user.target
+  notify:
+    - Reload systemd
+    - Enable node_exporter
+    - Start node_exporter
+
+- name: Set permissions on node_exporter binary
+  ansible.builtin.file:
+    path: "{{ node_exporter_install_dir }}/node_exporter"
+    mode: '0755'
+  when: move_result is changed
