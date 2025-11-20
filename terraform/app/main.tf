@@ -37,7 +37,7 @@ module "jenkins_instance" {
   instance_type               = var.instance_type
   subnet_id                   = element(module.vpc.public_subnet_ids, 0)
   user_data                   = file("${path.module}/scripts/master.sh")
-  user_data_replace_on_change = var.user_data_replace_on_change
+  user_data_replace_on_change = false
   security_group_ids          = [module.master_sg.master_sg]
   environment                 = var.environment
 
@@ -52,7 +52,7 @@ module "worker_instance" {
   instance_type               = var.instance_type
   subnet_id                   = element(module.vpc.public_subnet_ids, 0)
   user_data                   = file("${path.module}/scripts/worker.sh")
-  user_data_replace_on_change = var.user_data_replace_on_change
+  user_data_replace_on_change = false
   security_group_ids          = [module.master_sg.master_sg]
   environment                 = var.environment
 
@@ -67,7 +67,7 @@ module "monitor_instance" {
   instance_type               = var.instance_type
   subnet_id                   = element(module.vpc.public_subnet_ids, 0)
   user_data                   = file("${path.module}/scripts/monitoring.sh")
-  user_data_replace_on_change = var.user_data_replace_on_change
+  user_data_replace_on_change = false
   security_group_ids          = [module.master_sg.master_sg]
   environment                 = var.environment
 
@@ -82,10 +82,38 @@ module "mysql_instance" {
   instance_type               = var.instance_type
   subnet_id                   = element(module.vpc.public_subnet_ids, 0)
   user_data                   = file("${path.module}/scripts/mysql.sh")
-  user_data_replace_on_change = var.user_data_replace_on_change
+  user_data_replace_on_change = false
   security_group_ids          = [module.master_sg.master_sg]
   environment                 = var.environment
 
+}
+
+# K8s Master
+module "k8s_master_instance" {
+  source                      = "../MODULES/EC2"
+  ami                         = var.ami
+  key_name                    = var.key_name
+  project_name_1              = var.project_name_5
+  instance_type               = var.instance_type
+  subnet_id                   = element(module.vpc.public_subnet_ids, 0)
+  user_data                   = file("${path.module}/scripts/k8s_master.sh")
+  user_data_replace_on_change = var.user_data_replace_on_change
+  security_group_ids          = [module.master_sg.master_sg]
+  environment                 = var.environment
+}
+
+# K8s Worker
+module "K8s_worker_instance" {
+  source                      = "../MODULES/EC2"
+  ami                         = var.ami
+  key_name                    = var.key_name
+  project_name_1              = var.project_name_6
+  instance_type               = var.instance_type
+  subnet_id                   = element(module.vpc.public_subnet_ids, 0)
+  user_data                   = file("${path.module}/scripts/worker.sh")
+  user_data_replace_on_change = var.user_data_replace_on_change
+  security_group_ids          = [module.master_sg.master_sg]
+  environment                 = var.environment
 }
 
 

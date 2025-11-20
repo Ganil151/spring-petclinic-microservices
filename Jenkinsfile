@@ -389,55 +389,6 @@ REMOTE
             }
         }
 
-
-
-        stage('Install MySQL via Ansible (Mysql-Server)') {
-            steps {
-                sh '''
-                set -e
-
-                # Use an Ansible ad-hoc command to check for the 'pymysql' Python package existence on the target hosts.
-                echo "Checking if pymysql is present on remote hosts in the 'mysql' group..."
-                
-                ANSIBLE_CHECK_RESULT=$(ansible mysql -i /etc/ansible/inventory.ini -m ansible.builtin.command -a "pip show PyMySQL" || true)
-
-                if echo "$ANSIBLE_CHECK_RESULT" | grep -q "Package\ Version"; then
-                    echo "PyMySQL/MySQL appears to be configured already. Skipping full install playbook."
-                else
-                    echo "PyMySQL/MySQL not fully detected. Running full installation playbook."
-                    # Run the idempotent playbook
-                    ansible-playbook -i /etc/ansible/inventory.ini /etc/ansible/mysql_install.yml
-                fi
-                '''
-            }
-        }
-
-
-        stage('Configure MySQL via Ansible (Mysql-Server)') {
-            steps {
-                sh '''
-                set -e
-                if [ -f /etc/ansible/mysql_setup.yml ]; then
-                    ansible-playbook -i /etc/ansible/inventory.ini /etc/ansible/mysql_setup.yml
-                else
-                    echo "No ansible playbook at /etc/ansible/mysql_setup.yml - skipping"
-                fi
-                '''
-            }
-        }
-
-        stage('Configure Monitoring via Ansible (Prometheus & Grafana)') {
-            steps {
-                sh '''
-                set -e
-                if [ -f /etc/ansible/monitoring_setup.yml ]; then
-                    ansible-playbook -i /etc/ansible/inventory.ini /etc/ansible/monitoring_setup.yml
-                else
-                    echo "No ansible playbook at /etc/ansible/monitoring_setup.yml - skipping"
-                fi
-                '''
-            }
-        }
     } // <--- End of stages block
 
     post {

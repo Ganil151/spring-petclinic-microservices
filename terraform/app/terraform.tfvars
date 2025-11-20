@@ -3,7 +3,8 @@ project_name_1 = "Spring-Petclinic-Master"
 project_name_2 = "Spring-Petclinic-Worker"
 project_name_3 = "Spring-Petclinic-Moniter"
 project_name_4 = "Spring-Petclinic-MySqlDB"
-
+project_name_5 = "K8s-Master-Server"
+project_name_6 = "K8s-Worker-Server"
 
 # Environment
 environment = "dev"
@@ -19,8 +20,27 @@ enable_dns_hostnames    = true
 map_public_ip_on_launch = true
 
 # Security Group
-ingress_rules = [22, 25, 80, 443, 465, 3000, 3306, 6443, 8080, 8761, 8888, 9000, 9090, 9091, 9100]
-egress_rules  = [0]
+ingress_rules = [
+  22,    # SSH
+  25,    # SMTP
+  80,    # HTTP
+  443,   # HTTPS
+  465,   # SMTPS
+  3000,  # Grafana
+  3306,  # MySQL
+  6443,  # Kubernetes API
+  2379,  # etcd client
+  2380,  # etcd peer
+  10250, # Kubelet API
+  10251, # scheduler
+  10252, # controller-manager
+  10256, # kube-proxy
+  9090,  # Prometheus
+  9091,  # Pushgateway
+  9100   # Node Exporter
+]
+
+egress_rules = [0]
 
 # Keys
 key_name = "master_keys"

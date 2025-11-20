@@ -20,6 +20,20 @@ variable "project_name_4" {
 
 }
 
+variable "project_name_5" {
+  description = "Dynamic project name"
+  type        = string
+
+}
+
+variable "project_name_6" {
+  description = "Dynamic project name"
+  type        = string
+
+}
+
+
+
 # Environment
 variable "environment" {
   description = "The environment for the resources (e.g., dev, prod)"
