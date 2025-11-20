@@ -35,6 +35,7 @@ ingress_rules = [
   10251, # scheduler
   10252, # controller-manager
   10256, # kube-proxy
+  8080,  # API Gateway
   9090,  # Prometheus
   9091,  # Pushgateway
   9100   # Node Exporter
