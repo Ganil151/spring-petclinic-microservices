@@ -54,6 +54,10 @@ sudo sed -i 's/^SELINUX=enforcing/SELINUX=permissive/' /etc/selinux/config
 # --- 6. Install & Configure Container Runtime (Containerd) ---
 echo "[Step 6] Installing and Configuring Containerd..."
 sudo dnf install -y containerd
+# Install Docker (needed for Jenkins Agent to build images)
+sudo dnf install -y docker
+sudo systemctl enable --now docker
+sudo usermod -aG docker ec2-user
 
 # Generate default config and configure SystemdCgroup
 sudo mkdir -p /etc/containerd

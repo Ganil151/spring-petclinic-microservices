@@ -81,40 +81,34 @@ pipeline {
                 echo "Using build command: $BUILD_CMD"
                 $BUILD_CMD
 
+                echo "Copying JAR to docker directory..."
                 JAR=$(ls spring-petclinic-config-server/target/*.jar 2>/dev/null | head -n1 || true)
-                if [ -z "$JAR" ]; then
-                    echo "ERROR: built jar not found"
-                    exit 2
+                if [ -n "$JAR" ]; then
+                    cp "$JAR" docker/application.jar
+                else
+                    echo "Error: JAR file not found in spring-petclinic-config-server/target/"
+                    exit 1
                 fi
-                mkdir -p docker
-                cp "$JAR" docker/application.jar
                 '''
             }
         }
-        
+
         stage('Docker Build & Push') {
             steps {
                 withCredentials([usernamePassword(credentialsId: DOCKERHUB_CRED_ID, usernameVariable: 'D_USER', passwordVariable: 'D_PASS')]) {
                     sh '''
                     set -e
-                    echo "$D_PASS" | docker login -u "$D_USER" --password-stdin
+                    echo "Logging in to DockerHub..."
+                    echo "$D_PASS" | sudo docker login -u "$D_USER" --password-stdin
 
+                    echo "Building Docker image..."
                     cd docker
-                    docker build --no-cache --pull --build-arg JAR_FILE=application.jar -t ${DOCKER_IMAGE}:${IMAGE_TAG} -t ${DOCKER_IMAGE}:latest -f Dockerfile .
-                    for tag in "${IMAGE_TAG}" "latest"; do
-                        n=0
-                        until [ $n -ge 3 ]
-                        do
-                            docker push ${DOCKER_IMAGE}:$tag && break
-                            n=$((n+1))
-                            echo "Retrying push (${n})..."
-                            sleep 5
-                        done
-                        if [ $n -ge 3 ]; then
-                            echo "Failed to push ${DOCKER_IMAGE}:$tag after retries"
-                            exit 1
-                        fi
-                    done
+                    sudo docker build -t ${DOCKER_IMAGE}:${IMAGE_TAG} .
+                    sudo docker tag ${DOCKER_IMAGE}:${IMAGE_TAG} ${DOCKER_IMAGE}:latest
+
+                    echo "Pushing Docker image..."
+                    sudo docker push ${DOCKER_IMAGE}:${IMAGE_TAG}
+                    sudo docker push ${DOCKER_IMAGE}:latest
                     '''
                 }
             }
@@ -122,16 +116,11 @@ pipeline {
 
         stage('Provision or Reuse Docker-Server') {
             steps {
-                script {
-                    def instanceId = ''
-                    def state = ''
-                    def publicIp = ''
-                    env.IS_NEW_INSTANCE = 'false' 
-
-                    withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: env.AWS_CREDENTIALS_ID]]) {
+                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: env.AWS_CREDENTIALS_ID]]) {
+                    script {
                         echo "Looking up EC2 instance by Name tag: ${env.EC2_INSTANCE_NAME}"
 
-                        instanceId = sh(
+                        def instanceId = sh(
                             returnStdout: true,
                             script: """
                                 export AWS_DEFAULT_REGION=${env.EC2_REGION}
@@ -150,10 +139,10 @@ pipeline {
                                     export AWS_DEFAULT_REGION=${env.EC2_REGION}
                                     aws ec2 run-instances \\
                                         --image-id ami-052064a798f08f0d3 \\
-                                        --instance-type c7i-flex.large \\
+                                        --instance-type t2.medium \\
                                         --key-name master_keys \\
-                                        --security-group-ids sg-00c6bccfbdec3bb9d \\
-                                        --subnet-id subnet-0e2489f42748d00f3 \\
+                                        --security-group-ids sg-04f82bf215352511d \\
+                                        --subnet-id subnet-06a3b69943a68eff9 \\
                                         --associate-public-ip-address \\
                                         --tag-specifications "ResourceType=instance,Tags=[{Key=Name,Value=${env.EC2_INSTANCE_NAME}}]" \\
                                         --query "Instances[0].InstanceId" --output text
@@ -162,10 +151,10 @@ pipeline {
 
                             echo "Launched: ${instanceId}"
                             env.IS_NEW_INSTANCE = 'true' // Set flag for conditional bootstrap
-                            state = 'pending' 
+                            def state = 'pending' 
                         } else {
                             instanceId = instanceId.split('\\s+')[0] // Take only the first ID
-                            state = sh(
+                            def state = sh(
                                 returnStdout: true,
                                 script: "aws ec2 describe-instances --region ${env.EC2_REGION} --instance-ids ${instanceId} --query \"Reservations[0].Instances[0].State.Name\" --output text"
                             ).trim()
@@ -179,12 +168,10 @@ pipeline {
                             }
                         }
 
-                        if (state != "running") {
-                            echo "Waiting for instance to enter running state..."
-                            sh "aws ec2 wait instance-running --region ${env.EC2_REGION} --instance-ids ${instanceId}"
-                        }
+                        // Wait for instance to be running
+                        sh "aws ec2 wait instance-running --region ${env.EC2_REGION} --instance-ids ${instanceId}"
                         
-                        publicIp = sh(
+                        def publicIp = sh(
                             returnStdout: true,
                             script: "aws ec2 describe-instances --region ${env.EC2_REGION} --instance-ids ${instanceId} --query \"Reservations[0].Instances[0].PublicIpAddress\" --output text"
                         ).trim()
@@ -201,11 +188,9 @@ pipeline {
         }
 
         stage('Bootstrap Docker-Server (install Docker / Java / Compose)') {
-            when {
-                expression { env.IS_NEW_INSTANCE == 'true' }
-            }
+            // Removed 'when' condition to ensure bootstrap runs on every execution (idempotent)
             steps {
-                echo "Running Bootstrap: Instance is new, installing dependencies..."
+                echo "Running Bootstrap: Installing dependencies..."
                 withCredentials([
                     [$class: 'SSHUserPrivateKeyBinding', credentialsId: SSH_CREDENTIALS_ID, keyFileVariable: 'SSH_KEY', usernameVariable: 'SSH_USER']
                 ]) {
@@ -388,7 +373,7 @@ REMOTE
                 }
             }
         }
-
+        
     } // <--- End of stages block
 
     post {
@@ -400,7 +385,11 @@ REMOTE
         }
         always {
             archiveArtifacts artifacts: 'docker/application.jar', allowEmptyArchive: true
-            stash includes: 'public_ip.txt', name: 'public_ip' // keep for downstream pipelines
+            script {
+                if (fileExists('public_ip.txt')) {
+                    stash includes: 'public_ip.txt', name: 'public_ip'
+                }
+            }
         }
     }
 }

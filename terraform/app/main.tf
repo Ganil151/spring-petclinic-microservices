@@ -37,7 +37,7 @@ module "jenkins_instance" {
   instance_type               = var.instance_type
   subnet_id                   = element(module.vpc.public_subnet_ids, 0)
   user_data                   = file("${path.module}/scripts/master.sh")
-  user_data_replace_on_change = false
+  user_data_replace_on_change = var.user_data_replace_on_change
   security_group_ids          = [module.master_sg.master_sg]
   environment                 = var.environment
 
@@ -52,7 +52,7 @@ module "worker_instance" {
   instance_type               = var.instance_type
   subnet_id                   = element(module.vpc.public_subnet_ids, 0)
   user_data                   = file("${path.module}/scripts/worker.sh")
-  user_data_replace_on_change = false
+  user_data_replace_on_change = var.user_data_replace_on_change
   security_group_ids          = [module.master_sg.master_sg]
   environment                 = var.environment
 
@@ -64,10 +64,10 @@ module "monitor_instance" {
   ami                         = var.ami
   key_name                    = var.key_name
   project_name_1              = var.project_name_3
-  instance_type               = var.instance_type
+  instance_type               = "t2.small"
   subnet_id                   = element(module.vpc.public_subnet_ids, 0)
   user_data                   = file("${path.module}/scripts/monitoring.sh")
-  user_data_replace_on_change = false
+  user_data_replace_on_change = var.user_data_replace_on_change
   security_group_ids          = [module.master_sg.master_sg]
   environment                 = var.environment
 
@@ -79,7 +79,7 @@ module "mysql_instance" {
   ami                         = var.ami
   key_name                    = var.key_name
   project_name_1              = var.project_name_4
-  instance_type               = var.instance_type
+  instance_type               = "t2.small"
   subnet_id                   = element(module.vpc.public_subnet_ids, 0)
   user_data                   = file("${path.module}/scripts/mysql.sh")
   user_data_replace_on_change = false
@@ -94,7 +94,7 @@ module "k8s_master_instance" {
   ami                         = var.ami
   key_name                    = var.key_name
   project_name_1              = var.project_name_5
-  instance_type               = "t2.medium"
+  instance_type               = var.instance_type
   subnet_id                   = element(module.vpc.public_subnet_ids, 0)
   user_data                   = file("${path.module}/scripts/k8s_master.sh")
   user_data_replace_on_change = var.user_data_replace_on_change
@@ -108,7 +108,7 @@ module "K8s_worker_instance" {
   ami                         = var.ami
   key_name                    = var.key_name
   project_name_1              = var.project_name_6
-  instance_type               = "t2.medium"
+  instance_type               = var.instance_type
   subnet_id                   = element(module.vpc.public_subnet_ids, 0)
   user_data                   = file("${path.module}/scripts/worker.sh")
   user_data_replace_on_change = var.user_data_replace_on_change
