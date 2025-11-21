@@ -61,6 +61,9 @@ sudo containerd config default | sudo tee /etc/containerd/config.toml >/dev/null
 
 # CRITICAL FIX: Ensure SystemdCgroup is true (already present, but confirmed here)
 sudo sed -i 's/SystemdCgroup = false/SystemdCgroup = true/g' /etc/containerd/config.toml
+# FIX: Set the correct sandbox image for Kubernetes v1.31+
+sudo sed -i 's|sandbox_image = "registry.k8s.io/pause:3.6"|sandbox_image = "registry.k8s.io/pause:3.10"|g' /etc/containerd/config.toml
+
 
 sudo systemctl enable --now containerd
 sudo systemctl restart containerd
@@ -83,46 +86,19 @@ echo "[Step 8] Installing Kubelet, Kubeadm, Kubectl..."
 sudo dnf install -y kubelet kubeadm kubectl --disableexcludes=kubernetes
 sudo systemctl enable --now kubelet
 
-# --- 9. Initialize Cluster (Master Node Only) ---
-echo "[Step 9] Initializing Kubernetes Cluster..."
+# --- 9. Prepare for Join ---
+echo "[Step 9] Preparing Node for Join..."
 
-# Check if cluster is already running to prevent errors
-if [ -f /etc/kubernetes/admin.conf ]; then
-    echo "Cluster already initialized. Skipping kubeadm init."
-else
-    # The kubeadm init command MUST be run as root
-    # Using 'sudo' here ensures the command runs with the required privileges.
-    sudo kubeadm init --pod-network-cidr=192.168.0.0/16 --ignore-preflight-errors=NumCPU
+# Check for partial initialization (Port 10250 in use)
+if netstat -tuln | grep :10250 >/dev/null; then
+    echo "WARN: Port 10250 is in use. Resetting kubeadm to ensure clean state..."
+    sudo kubeadm reset -f || true
+    sudo rm -rf /etc/cni/net.d
+    sudo rm -rf /var/lib/etcd
+    sudo rm -rf /var/lib/kubelet
 fi
 
-# --- 10. Configure Kubectl for the standard user ---
-echo "[Step 10] Configuring kubectl..."
-# This step does NOT require sudo, but operates on user's home directory.
-mkdir -p $HOME/.kube
-sudo cp -f /etc/kubernetes/admin.conf $HOME/.kube/config
-sudo chown $(id -u):$(id -g) $HOME/.kube/config
-
-# --- 11. Install Pod Network (Calico) ---
-echo "[Step 11] Installing Calico Network Plugin..."
-# kubectl commands use the configuration file created in Step 10 and do not require sudo.
-if ! kubectl get deployment tigera-operator -n calico-system >/dev/null 2>&1; then
-    kubectl apply -f https://raw.githubusercontent.com/projectcalico/calico/v3.27.2/manifests/tigera-operator.yaml
-fi
-kubectl apply -f https://raw.githubusercontent.com/projectcalico/calico/v3.27.2/manifests/custom-resources.yaml
-
-# --- 12. Generate Join Script ---
-echo "[Step 12] Generating Worker Join Script..."
-# We generate the join command with 'sudo' prepended so the worker can just run the output.
-sudo kubeadm token create --print-join-command > /root/k8s_join_command.sh
-chmod +x /root/k8s_join_command.sh
-
 echo ""
-echo "=== MASTER SETUP COMPLETE ==="
-echo "To check the cluster status: kubectl get nodes"
-echo "Run the following command on your Worker Nodes to join the cluster:"
-cat /root/k8s_join_command.sh
-
-echo ""
-echo "=== WORKER READY TO JOIN ==="
-echo "Now copy the 'kubeadm join' command from the K8s-Master node and run it here (using sudo)."
-echo "Example command structure: sudo kubeadm join <MASTER_IP>:6443 --token <token> --discovery-token-ca-cert-hash <hash>"
+echo "=== WORKER SETUP COMPLETE ==="
+echo "This node is now ready to join the cluster."
+echo "Run the 'kubeadm join' command from the Master node here (using sudo)."

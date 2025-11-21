@@ -48,7 +48,7 @@ key_name = "master_keys"
 
 # Ec2
 ami                         = "ami-052064a798f08f0d3"
-instance_type               = "c7i-flex.large"
+instance_type               = "t2.medium"
 subnet_id                   = "master_subnet"
 user_data                   = ""
 user_data_replace_on_change = true

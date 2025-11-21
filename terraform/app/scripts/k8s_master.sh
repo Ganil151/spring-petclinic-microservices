@@ -58,6 +58,9 @@ sudo systemctl enable --now containerd
 sudo mkdir -p /etc/containerd
 sudo containerd config default | sudo tee /etc/containerd/config.toml >/dev/null
 sudo sed -i 's/SystemdCgroup = false/SystemdCgroup = true/g' /etc/containerd/config.toml
+# FIX: Set the correct sandbox image for Kubernetes v1.31+
+sudo sed -i 's|sandbox_image = "registry.k8s.io/pause:3.6"|sandbox_image = "registry.k8s.io/pause:3.10"|g' /etc/containerd/config.toml
+
 
 sudo systemctl restart containerd
 
@@ -87,6 +90,16 @@ echo "[Step 9] Initializing Kubernetes Cluster..."
 if [ -f /etc/kubernetes/admin.conf ]; then
     echo "Cluster already initialized. Skipping kubeadm init."
 else
+    # FIX: Check for partial initialization (Port 10250 in use but no admin.conf)
+    if netstat -tuln | grep :10250 >/dev/null; then
+        echo "WARN: Port 10250 is in use but admin.conf is missing. Resetting kubeadm..."
+        sudo kubeadm reset -f || true
+        # Cleanup CNI and other artifacts to ensure a clean slate
+        sudo rm -rf /etc/cni/net.d
+        sudo rm -rf /var/lib/etcd
+        sudo rm -rf /var/lib/kubelet
+    fi
+
     # FIX: Removed '--kubernetes-version' flag. 
     # Letting kubeadm detect the installed version prevents "remote version is much newer" warnings.
     sudo kubeadm init --pod-network-cidr=192.168.0.0/16 --ignore-preflight-errors=NumCPU
@@ -106,7 +119,30 @@ kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/v3.27.2
 
 # --- 12. Generate Join Script ---
 echo "[Step 12] Generating Worker Join Script..."
-kubeadm token create --print-join-command > /root/k8s_join_command.sh
+# Create a smarter join script that handles resets
+cat <<EOF > /root/k8s_join_command.sh
+#!/bin/bash
+set -e
+
+echo "=== Joining Cluster ==="
+
+# Check if already joined
+if [ -f /etc/kubernetes/kubelet.conf ]; then
+    echo "Node already joined (kubelet.conf exists)."
+    exit 0
+fi
+
+# Check for partial state and reset if needed
+if netstat -tuln | grep :10250 >/dev/null; then
+    echo "WARN: Port 10250 in use. Resetting node before join..."
+    sudo kubeadm reset -f || true
+    sudo rm -rf /etc/cni/net.d
+    sudo rm -rf /var/lib/kubelet
+fi
+
+# Run the join command
+$(kubeadm token create --print-join-command)
+EOF
 chmod +x /root/k8s_join_command.sh
 
 echo ""
