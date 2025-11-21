@@ -1,0 +1,109 @@
+---
+- name: Reset and Reinstall MySQL 8 on Amazon Linux 2023
+  hosts: mysql
+  become: true
+
+  vars:
+    mysql_root_password: "PetclinicRoot123!"
+    mysql_database_name: "petclinic"
+    mysql_user_name: "petclinic_user"
+    mysql_user_password: "PetClinicUser@12345!"
+
+  tasks:
+    - name: Stop MySQL service
+      systemd:
+        name: mysqld
+        state: stopped
+      ignore_errors: yes
+
+    - name: Remove MySQL data directory
+      file:
+        path: /var/lib/mysql
+        state: absent
+
+    - name: Remove .my.cnf files
+      file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - /root/.my.cnf
+        - /home/ec2-user/.my.cnf
+      ignore_errors: yes
+
+    - name: Recreate MySQL data directory
+      file:
+        path: /var/lib/mysql
+        state: directory
+        owner: mysql
+        group: mysql
+        mode: '0755'
+
+    - name: Start MySQL service
+      systemd:
+        name: mysqld
+        state: started
+        enabled: yes
+
+    - name: Wait for MySQL to be fully up
+      wait_for:
+        port: 3306
+        host: 127.0.0.1
+        delay: 5
+        timeout: 60
+        state: started
+
+    - name: Get temporary MySQL root password
+      shell: grep 'temporary password' /var/log/mysqld.log | tail -1 | awk '{print $NF}'
+      register: temp_pass
+      changed_when: false
+
+    - name: Display temporary password for debugging
+      debug:
+        msg: "Temporary password: {{ temp_pass.stdout }}"
+
+    - name: Set MySQL root password
+      shell: |
+        mysql --connect-expired-password -uroot -p"{{ temp_pass.stdout }}" \
+        -e "ALTER USER 'root'@'localhost' IDENTIFIED BY '{{ mysql_root_password }}';"
+      register: password_change
+      failed_when: password_change.rc != 0
+
+    - name: Create /root/.my.cnf for passwordless root login
+      copy:
+        dest: /root/.my.cnf
+        content: |
+          [client]
+          user=root
+          password={{ mysql_root_password }}
+        owner: root
+        group: root
+        mode: '0600'
+
+    - name: Test MySQL authentication
+      shell: mysql -e "SELECT 1;"
+      changed_when: false
+
+    - name: Create PetClinic Database
+      shell: mysql -e "CREATE DATABASE IF NOT EXISTS {{ mysql_database_name }};"
+      changed_when: false
+
+    - name: Create PetClinic MySQL user
+      shell: |
+        mysql -e "CREATE USER IF NOT EXISTS '{{ mysql_user_name }}'@'%' IDENTIFIED BY '{{ mysql_user_password }}';"
+        mysql -e "GRANT ALL PRIVILEGES ON {{ mysql_database_name }}.* TO '{{ mysql_user_name }}'@'%';"
+        mysql -e "FLUSH PRIVILEGES;"
+      changed_when: false
+
+    - name: Configure MySQL bind-address
+      lineinfile:
+        path: /etc/my.cnf
+        regexp: '^bind-address'
+        line: 'bind-address = 0.0.0.0'
+        state: present
+      notify: Restart MySQL
+
+  handlers:
+    - name: Restart MySQL
+      systemd:
+        name: mysqld
+        state: restarted

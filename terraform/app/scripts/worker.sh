@@ -24,7 +24,18 @@ echo "export PATH=$PATH:$HOME/bin:$JAVA_HOME" | sudo tee -a ~/.bashrc
 # Install Maven (Already in the dependencies list, but we'll re-verify)
 if ! command -v mvn &> /dev/null; then
     echo "Maven is not installed. Installing Maven..."
-    sudo yum install -y maven 
+    sudo yum install -y maven
+fi
+
+# Install Ansible
+echo "Installing Ansible..."
+if ! command -v ansible &> /dev/null; then
+    sudo yum install -y ansible-core
+    echo "Ansible installed successfully."
+    ansible --version
+else
+    echo "Ansible is already installed."
+    ansible --version
 fi
 
 JAVA_HOME="/usr/lib/jvm/java-21-amazon-corretto"
@@ -65,13 +76,11 @@ if ! docker compose version &> /dev/null; then
     sudo curl -SL https://github.com/docker/compose/releases/latest/download/docker-compose-linux-$(uname -m) -o /usr/libexec/docker/cli-plugins/docker-compose
     sudo chmod +x /usr/libexec/docker/cli-plugins/docker-compose
     docker compose version
-    
 
     # Optional: Add the directory to PATH if not recognized by default
     # This might be redundant as Docker usually looks in ~/.docker/cli-plugins/
     export PATH=\$PATH:/home/ec2-user/.docker/cli-plugins
     echo 'export PATH=\$PATH:/home/ec2-user/.docker/cli-plugins' >> ~/.bashrc
-
 fi
 
 echo '=== Verify Docker & Compose ==='
@@ -80,7 +89,7 @@ docker compose version || { echo 'Docker Compose V2 not working or not found in 
 
 # Add the current user to the docker group
 echo "Adding the current user to the docker group..."
-sudo usermod -a -G docker ${whoami}
+sudo usermod -a -G docker $(whoami)
 
 # Configure Docker to start on boot
 echo "Configuring Docker to start on boot..."

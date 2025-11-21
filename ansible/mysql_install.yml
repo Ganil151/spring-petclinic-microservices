@@ -2,7 +2,7 @@
 - name: Install & Configure MySQL 8 on Amazon Linux 2023
   hosts: mysql
   become: true
-
+  
   vars:
     # NOTE: It is better practice to use Ansible Vault for passwords in production
     mysql_root_password: "PetclinicRoot123!"
@@ -23,10 +23,7 @@
           - shadow-utils
         state: present
 
-    - name: Install PyMySQL for Ansible MySQL modules
-      pip:
-        name: PyMySQL
-        executable: pip3
+    # PyMySQL is not needed when using shell commands instead of community.mysql modules
 
     - name: Remove conflicting system MySQL packages (if any)
       yum:
@@ -44,7 +41,7 @@
         # Use yum to install the local RPM file
         yum install -y {{ mysql_repo_path }}
       args:
-        # Prevent Ansible from seeing the downloaded file as a change source creates: /etc/yum.repos.d/mysql-community.repo
+        creates: /etc/yum.repos.d/mysql-community.repo
     # --- FIX END ---
 
     - name: Install MySQL 8 Community Server
@@ -73,12 +70,22 @@
       changed_when: false
       failed_when: false
 
-    - name: Set MySQL root password
+    - name: Check if root password is already set
+      shell: mysql -uroot -p"{{ mysql_root_password }}" -e "SELECT 1;" 2>/dev/null
+      register: password_check
+      changed_when: false
+      failed_when: false
+
+    - name: Set MySQL root password using temporary password
       shell: |
         mysql --connect-expired-password -uroot -p"{{ temp_pass.stdout }}" \
         -e "ALTER USER 'root'@'localhost' IDENTIFIED BY '{{ mysql_root_password }}';"
-      when: temp_pass.stdout is defined and temp_pass.stdout | length > 0
-      ignore_errors: yes
+      when: 
+        - temp_pass.stdout is defined 
+        - temp_pass.stdout | length > 0
+        - password_check.rc != 0
+      register: password_set
+      failed_when: false
 
     - name: Create /root/.my.cnf for passwordless root login
       copy:
@@ -91,18 +98,23 @@
         group: root
         mode: '0600'
 
+    - name: Verify MySQL authentication works
+      shell: mysql -e "SELECT 1;"
+      register: auth_test
+      changed_when: false
+      failed_when: auth_test.rc != 0
+
     - name: Create PetClinic Database
-      mysql_db:
-        name: "{{ mysql_database_name }}"
-        state: present
+      shell: |
+        mysql -e "CREATE DATABASE IF NOT EXISTS {{ mysql_database_name }};"
+      changed_when: false
 
     - name: Create PetClinic MySQL user
-      mysql_user:
-        name: "{{ mysql_user_name }}"
-        password: "{{ mysql_user_password }}"
-        host: "%"
-        priv: "{{ mysql_database_name }}.*:ALL"
-        state: present
+      shell: |
+        mysql -e "CREATE USER IF NOT EXISTS '{{ mysql_user_name }}'@'%' IDENTIFIED BY '{{ mysql_user_password }}';"
+        mysql -e "GRANT ALL PRIVILEGES ON {{ mysql_database_name }}.* TO '{{ mysql_user_name }}'@'%';"
+        mysql -e "FLUSH PRIVILEGES;"
+      changed_when: false
 
     - name: Configure MySQL bind-address
       lineinfile:

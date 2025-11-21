@@ -268,15 +268,21 @@ kubectl exec dns-test -- nslookup kubernetes.default
 COMPLETELY RESET AND REBUILD THE MASTER
 - Step 1: Full Reset the Master
 ```bash
-sudo kubeadm reset
+sudo kubeadm reset -f
 sudo systemctl stop kubelet
-sudo systemctl stop docker
-sudo rm -rf /var/lib/cni
-sudo rm -rf /var/lib/etcd/*
-sudo rm -rf /var/lib/kubelet/*
-sudo rm -rf /var/lib/containers/*
-sudo rm -rf /var/lib/docker/*
-sudo rm -rf /var/lib/etcd/*
+sudo systemctl stop containerd
+
+# remove state
+sudo rm -rf /etc/kubernetes /var/lib/etcd /var/lib/kubelet /var/lib/cni /etc/cni/net.d
+
+# ensure containerd configured properly
+sudo mkdir -p /etc/containerd
+sudo containerd config default | sudo tee /etc/containerd/config.toml
+sudo sed -i 's/SystemdCgroup = false/SystemdCgroup = true/' /etc/containerd/config.toml
+sudo systemctl restart containerd
+
+# re-run init
+sudo kubeadm init --pod-network-cidr=192.168.0.0/16
 ```
 
 - Step 2: Rebuild the Master
