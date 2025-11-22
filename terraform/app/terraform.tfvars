@@ -5,6 +5,7 @@ project_name_3 = "Spring-Petclinic-Moniter"
 project_name_4 = "Spring-Petclinic-MySqlDB"
 project_name_5 = "K8s-Master-Server"
 project_name_6 = "K8s-Worker-Server"
+project_name_7 = "Webhook-Receiver-Server"
 
 # Environment
 environment = "dev"
@@ -36,6 +37,7 @@ ingress_rules = [
   10252, # controller-manager
   10256, # kube-proxy
   8080,  # API Gateway
+  9000,  # Webhook Receiver  
   9090,  # Prometheus
   9091,  # Pushgateway
   9100   # Node Exporter

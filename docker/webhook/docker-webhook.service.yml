@@ -1,0 +1,19 @@
+[Unit]
+Description=Docker Hub Webhook Receiver for Kubernetes
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/root
+ExecStart=/usr/bin/python3 /root/webhook-receiver.py
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+# Environment variables
+Environment="KUBECONFIG=/root/.kube/config"
+
+[Install]
+WantedBy=multi-user.target
