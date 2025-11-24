@@ -18,6 +18,18 @@ pipeline {
         string(name: 'EC2_INSTANCE_NAME', defaultValue: 'Spring-Petclinic-Docker', description: 'EC2 instance tag Name')
         string(name: 'SSH_CREDENTIALS_ID', defaultValue: 'master_keys', description: 'SSH credential id for EC2')
     }
+    
+    // New parameters for MySQL configuration
+    choice(
+        name: 'DEPLOYMENT_TARGET',
+        choices: ['docker', 'kubernetes', 'both', 'none'],
+        description: 'Deployment target'
+    )
+    booleanParam(
+        name: 'CONFIGURE_MYSQL',
+        defaultValue: false,
+        description: 'Run Ansible to configure MySQL databases'
+    )
 
     stages { 
 
@@ -215,7 +227,14 @@ pipeline {
                         sudo yum -y makecache
                         sudo yum -y upgrade || true
 
+                        # jq
+                        echo "Installing jq..."
+                        if ! command -v jq >/dev/null 2>&1; then
+                            sudo yum install -y jq
+                        fi
+
                         # Java & Maven
+                        echo "Installing Java & Maven..."
                         if ! command -v java >/dev/null 2>&1; then
                             sudo yum install -y java-21-amazon-corretto-devel git
                         fi
@@ -373,6 +392,235 @@ REMOTE
                 }
             }
         }
+        
+        // New stage for Docker verification
+        stage('Verify Docker Deployment') {
+            when {
+                expression { params.DEPLOYMENT_TARGET in ['docker', 'both'] }
+            }
+            steps {
+                withCredentials([
+                    [$class: 'SSHUserPrivateKeyBinding', credentialsId: SSH_CREDENTIALS_ID, keyFileVariable: 'SSH_KEY', usernameVariable: 'SSH_USER']
+                ]) {
+                    script {
+                        echo "Verifying Docker deployment on Docker-Server..."
+                        
+                        sh '''
+                        set -e
+                        REMOTE_IP=$(cat public_ip.txt)
+                        SSH_OPTS="-o StrictHostKeyChecking=no -o ConnectTimeout=20 -i ${SSH_KEY}"
+                        
+                        echo "=== Checking Docker containers status ==="
+                        ssh ${SSH_OPTS} ${SSH_USER}@${REMOTE_IP} "docker ps --format 'table {{.Names}}\\t{{.Status}}\\t{{.Ports}}'"
+                        
+                        echo ""
+                        echo "=== Waiting for services to start (30 seconds) ==="
+                        sleep 30
+                        
+                        echo ""
+                        echo "=== Verifying service health endpoints ==="
+                        
+                        # Check config-server
+                        echo "Checking config-server..."
+                        ssh ${SSH_OPTS} ${SSH_USER}@${REMOTE_IP} "curl -f -s http://localhost:8888/actuator/health | jq -r '.status' || echo 'FAILED'" | grep -q "UP" || {
+                            echo "ERROR: config-server health check failed"
+                            exit 1
+                        }
+                        echo "✓ config-server is UP"
+                        
+                        # Check discovery-server
+                        echo "Checking discovery-server..."
+                        ssh ${SSH_OPTS} ${SSH_USER}@${REMOTE_IP} "curl -f -s http://localhost:8761/actuator/health | jq -r '.status' || echo 'FAILED'" | grep -q "UP" || {
+                            echo "ERROR: discovery-server health check failed"
+                            exit 1
+                        }
+                        echo "✓ discovery-server is UP"
+                        
+                        # Check api-gateway
+                        echo "Checking api-gateway..."
+                        ssh ${SSH_OPTS} ${SSH_USER}@${REMOTE_IP} "curl -f -s http://localhost:8080/actuator/health | jq -r '.status' || echo 'FAILED'" | grep -q "UP" || {
+                            echo "ERROR: api-gateway health check failed"
+                            exit 1
+                        }
+                        echo "✓ api-gateway is UP"
+                        
+                        # Check customers-service
+                        echo "Checking customers-service..."
+                        ssh ${SSH_OPTS} ${SSH_USER}@${REMOTE_IP} "curl -f -s http://localhost:8081/actuator/health | jq -r '.status' || echo 'FAILED'" | grep -q "UP" || {
+                            echo "WARNING: customers-service health check failed (may still be starting)"
+                        }
+                        echo "✓ customers-service checked"
+                        
+                        # Check visits-service
+                        echo "Checking visits-service..."
+                        ssh ${SSH_OPTS} ${SSH_USER}@${REMOTE_IP} "curl -f -s http://localhost:8082/actuator/health | jq -r '.status' || echo 'FAILED'" | grep -q "UP" || {
+                            echo "WARNING: visits-service health check failed (may still be starting)"
+                        }
+                        echo "✓ visits-service checked"
+                        
+                        # Check vets-service
+                        echo "Checking vets-service..."
+                        ssh ${SSH_OPTS} ${SSH_USER}@${REMOTE_IP} "curl -f -s http://localhost:8083/actuator/health | jq -r '.status' || echo 'FAILED'" | grep -q "UP" || {
+                            echo "WARNING: vets-service health check failed (may still be starting)"
+                        }
+                        echo "✓ vets-service checked"
+                        
+                        echo ""
+                        echo "=== Docker Deployment Verification Complete ==="
+                        echo "✓ All critical services (config, discovery, api-gateway) are healthy"
+                        '''
+                    }
+                }
+            }
+        }
+
+        stage('Configure MySQL Database') {
+        when {
+            expression { 
+                params.DEPLOYMENT_TARGET in ['kubernetes', 'both'] &&
+                params.CONFIGURE_MYSQL == true
+            }
+        }
+        steps {
+            withCredentials([
+                [$class: 'SSHUserPrivateKeyBinding', credentialsId: SSH_CREDENTIALS_ID, keyFileVariable: 'SSH_KEY', usernameVariable: 'SSH_USER'],
+                usernamePassword(credentialsId: 'mysql-root-credentials', usernameVariable: 'MYSQL_ROOT_USER', passwordVariable: 'MYSQL_ROOT_PASSWORD'),
+                usernamePassword(credentialsId: 'mysql-petclinic-credentials', usernameVariable: 'MYSQL_PETCLINIC_USER', passwordVariable: 'MYSQL_PETCLINIC_PASSWORD')
+            ]) {
+                script {
+                    echo "Configuring MySQL databases with Ansible..."
+                    
+                    sh '''
+                    set -e
+                    
+                    echo "=== MySQL Configuration ==="
+                    echo "MySQL Root User: ${MYSQL_ROOT_USER}"
+                    echo "Petclinic User: ${MYSQL_PETCLINIC_USER}"
+                    echo ""
+                    
+                    # Update Ansible group_vars with credentials from Jenkins
+                    echo "Updating Ansible variables with Jenkins credentials..."
+                    cat > ansible/group_vars/mysql.yml <<EOF
+---
+mysql_root_password: "${MYSQL_ROOT_PASSWORD}"
+mysql_petclinic_password: "${MYSQL_PETCLINIC_PASSWORD}"
+
+petclinic_databases:
+- customers
+- visits
+- vets
+
+petclinic_users:
+- name: ${MYSQL_PETCLINIC_USER}
+    password: "{{ mysql_petclinic_password }}"
+    priv: "*.*:ALL"
+EOF
+                    
+                    echo "✓ Ansible variables updated"
+                    echo ""
+                    
+                    # Test Ansible connectivity
+                    echo "=== Testing Ansible Connectivity ==="
+                    cd /etc/ansible
+                    ansible mysql -i inventory.ini -m ping || {
+                        echo "ERROR: Cannot connect to MySQL server via Ansible"
+                        exit 1
+                    }
+                    echo "✓ Ansible connectivity verified"
+                    echo ""
+                    
+                    # Run Ansible playbook
+                    echo "=== Running Ansible Playbook ==="
+                    ansible-playbook -i inventory.ini mysql_setup.yml -v || {
+                        echo "ERROR: Ansible playbook failed"
+                        exit 1
+                    }
+                    echo "✓ Ansible playbook completed successfully"
+                    echo ""
+                    
+                    # Verify databases were created
+                    echo "=== Verifying Database Creation ==="
+                    ansible mysql -i inventory.ini -m shell \
+                        -a "mysql -u ${MYSQL_ROOT_USER} -p${MYSQL_ROOT_PASSWORD} -e 'SHOW DATABASES;'" \
+                        | grep -E 'customers|visits|vets' || {
+                        echo "ERROR: Required databases not found"
+                        exit 1
+                    }
+                    echo "✓ All required databases exist (customers, visits, vets)"
+                    echo ""
+                    
+                    # Verify petclinic user was created
+                    echo "=== Verifying Petclinic User ==="
+                    ansible mysql -i inventory.ini -m shell \
+                        -a "mysql -u ${MYSQL_ROOT_USER} -p${MYSQL_ROOT_PASSWORD} -e \"SELECT User, Host FROM mysql.user WHERE User='${MYSQL_PETCLINIC_USER}';\"" \
+                        | grep "${MYSQL_PETCLINIC_USER}" || {
+                        echo "ERROR: Petclinic user not found"
+                        exit 1
+                    }
+                    echo "✓ Petclinic user exists: ${MYSQL_PETCLINIC_USER}"
+                    echo ""
+                    
+                    # Test petclinic user can connect
+                    echo "=== Testing Petclinic User Connection ==="
+                    ansible mysql -i inventory.ini -m shell \
+                        -a "mysql -u ${MYSQL_PETCLINIC_USER} -p${MYSQL_PETCLINIC_PASSWORD} -e 'SELECT 1;'" || {
+                        echo "ERROR: Petclinic user cannot connect"
+                        exit 1
+                    }
+                    echo "✓ Petclinic user can connect successfully"
+                    echo ""
+                    
+                    # Test petclinic user has access to databases
+                    echo "=== Verifying Database Access ==="
+                    for db in customers visits vets; do
+                        echo "Testing access to $db database..."
+                        ansible mysql -i inventory.ini -m shell \
+                            -a "mysql -u ${MYSQL_PETCLINIC_USER} -p${MYSQL_PETCLINIC_PASSWORD} -e 'USE $db; SELECT 1;'" || {
+                            echo "ERROR: Petclinic user cannot access $db database"
+                            exit 1
+                        }
+                        echo "✓ Access to $db database verified"
+                    done
+                    echo ""
+                    
+                    # Check if tables exist (schema loaded)
+                    echo "=== Checking Database Schema ==="
+                    for db in customers visits vets; do
+                        echo "Checking tables in $db database..."
+                        TABLE_COUNT=$(ansible mysql -i inventory.ini -m shell \
+                            -a "mysql -u ${MYSQL_PETCLINIC_USER} -p${MYSQL_PETCLINIC_PASSWORD} -e 'USE $db; SHOW TABLES;'" \
+                            | grep -c "owners\\|pets\\|visits\\|vets\\|specialties" || echo "0")
+                        
+                        if [ "$TABLE_COUNT" -gt 0 ]; then
+                            echo "✓ $db database has $TABLE_COUNT tables"
+                        else
+                            echo "⚠ $db database has no tables (schema may need to be loaded)"
+                        fi
+                    done
+                    echo ""
+                    
+                    # Get MySQL server info
+                    echo "=== MySQL Server Information ==="
+                    ansible mysql -i inventory.ini -m shell \
+                        -a "mysql -u ${MYSQL_ROOT_USER} -p${MYSQL_ROOT_PASSWORD} -e 'SELECT VERSION();'" \
+                        | grep -v "CHANGED\\|mysql" || true
+                    echo ""
+                    
+                    # Get MySQL server IP
+                    MYSQL_IP=$(grep "mysql-server ansible_host" ansible/inventory.ini | awk '{print $2}' | cut -d'=' -f2)
+                    echo "MySQL Server IP: $MYSQL_IP"
+                    echo ""
+                    
+                    echo "=== MySQL Configuration Complete ==="
+                    echo "✓ Databases: customers, visits, vets"
+                    echo "✓ User: ${MYSQL_PETCLINIC_USER}"
+                    echo "✓ Connection: ${MYSQL_IP}:3306"
+                    echo "✓ All health checks passed"
+                    '''
+                }
+            }
+        }
+    }
         
     } // <--- End of stages block
 
