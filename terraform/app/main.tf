@@ -40,7 +40,9 @@ module "jenkins_instance" {
   user_data_replace_on_change = false
   security_group_ids          = [module.master_sg.master_sg]
   environment                 = var.environment
-
+  root_volume_size            = var.jenkins_root_volume_size
+  root_volume_type            = var.root_volume_type
+}
 
 
 # Worker Instance
@@ -55,7 +57,8 @@ module "worker_instance" {
   user_data_replace_on_change = false
   security_group_ids          = [module.master_sg.master_sg]
   environment                 = var.environment
-
+  root_volume_size            = var.worker_root_volume_size
+  root_volume_type            = var.root_volume_type
 }
 
 # Monitoring Instance
@@ -70,7 +73,8 @@ module "monitor_instance" {
   user_data_replace_on_change = false
   security_group_ids          = [module.master_sg.master_sg]
   environment                 = var.environment
-
+  root_volume_size            = var.monitor_root_volume_size
+  root_volume_type            = var.root_volume_type
 }
 
 # MySQL Instance
@@ -85,7 +89,8 @@ module "mysql_instance" {
   user_data_replace_on_change = false
   security_group_ids          = [module.master_sg.master_sg]
   environment                 = var.environment
-
+  root_volume_size            = var.mysql_root_volume_size
+  root_volume_type            = var.root_volume_type
 }
 
 # K8s Master
@@ -94,12 +99,14 @@ module "k8s_master_instance" {
   ami                         = var.ami
   key_name                    = var.key_name
   project_name_1              = var.project_name_5
-  instance_type               = var.instance_type
+  instance_type               = "t3.large"
   subnet_id                   = element(module.vpc.public_subnet_ids, 0)
   user_data                   = file("${path.module}/scripts/k8s_master.sh")
-  user_data_replace_on_change = false
+  user_data_replace_on_change = var.user_data_replace_on_change
   security_group_ids          = [module.master_sg.master_sg]
   environment                 = var.environment
+  root_volume_size            = var.k8s_master_root_volume_size
+  root_volume_type            = var.root_volume_type
 }
 
 # K8s Worker
@@ -108,12 +115,14 @@ module "K8s_worker_instance" {
   ami                         = var.ami
   key_name                    = var.key_name
   project_name_1              = var.project_name_6
-  instance_type               = var.instance_type
+  instance_type               = "t3.xlarge"
   subnet_id                   = element(module.vpc.public_subnet_ids, 0)
-  user_data                   = file("${path.module}/scripts/worker.sh")
-  user_data_replace_on_change = false
+  user_data                   = file("${path.module}/scripts/k8s_worker.sh")
+  user_data_replace_on_change = var.user_data_replace_on_change
   security_group_ids          = [module.master_sg.master_sg]
   environment                 = var.environment
+  root_volume_size            = var.k8s_worker_root_volume_size
+  root_volume_type            = var.root_volume_type
 }
 
 # Webhook Receiver
@@ -125,9 +134,11 @@ module "webhook_receiver_instance" {
   instance_type               = var.instance_type
   subnet_id                   = element(module.vpc.public_subnet_ids, 0)
   user_data                   = file("${path.module}/scripts/webhook_receiver.sh")
-  user_data_replace_on_change = var.user_data_replace_on_change
-  security_group_ids          = [module.master_sg.master_sg]  
+  user_data_replace_on_change = false
+  security_group_ids          = [module.master_sg.master_sg]
   environment                 = var.environment
+  root_volume_size            = var.webhook_root_volume_size
+  root_volume_type            = var.root_volume_type
 }
 
 

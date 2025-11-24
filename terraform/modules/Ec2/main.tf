@@ -3,14 +3,20 @@ resource "aws_instance" "master-server" {
   key_name                    = var.key_name
   instance_type               = var.instance_type
   subnet_id                   = var.subnet_id
-  vpc_security_group_ids      = var.security_group_ids # Use the passed security_group_ids
+  vpc_security_group_ids      = var.security_group_ids
   user_data                   = var.user_data
   user_data_replace_on_change = var.user_data_replace_on_change
+
+  # Root volume configuration
+  root_block_device {
+    volume_size           = var.root_volume_size
+    volume_type           = var.root_volume_type
+    delete_on_termination = true
+    encrypted             = false
+  }
 
   tags = {
     Name        = var.project_name_1
     Environment = var.environment
   }
-
-  
 }

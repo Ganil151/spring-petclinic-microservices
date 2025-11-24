@@ -56,3 +56,16 @@ user_data                   = ""
 user_data_replace_on_change = true
 security_group_ids          = [""]
 
+# Root Block Device Configuration
+# Volume sizes optimized for each instance type
+jenkins_root_volume_size    = 30 # Jenkins Master - 30 GB for builds and artifacts
+worker_root_volume_size     = 30 # Jenkins Worker - 30 GB for Docker images
+monitor_root_volume_size    = 20 # Monitoring - 20 GB for Prometheus/Grafana data
+mysql_root_volume_size      = 20 # MySQL - 20 GB (data should be on separate volume)
+k8s_master_root_volume_size = 50 # K8s Master - 50 GB for etcd and system components
+k8s_worker_root_volume_size = 50 # K8s Worker - 50 GB for container images and pods
+webhook_root_volume_size    = 20 # Webhook Receiver - 20 GB
+
+# Volume type (gp3 is faster and cheaper than gp2)
+root_volume_type = "gp3"
+

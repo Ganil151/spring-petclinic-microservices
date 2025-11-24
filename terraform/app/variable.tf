@@ -32,6 +32,12 @@ variable "project_name_6" {
 
 }
 
+variable "project_name_7" {
+  description = "Dynamic project name"
+  type        = string
+
+}
+
 
 
 # Environment
@@ -122,3 +128,51 @@ variable "security_group_ids" {
   type        = list(string)
 }
 
+# Root Block Device Configuration
+variable "jenkins_root_volume_size" {
+  description = "Root volume size for Jenkins Master instance in GB"
+  type        = number
+  default     = 30
+}
+
+variable "worker_root_volume_size" {
+  description = "Root volume size for Jenkins Worker instance in GB"
+  type        = number
+  default     = 30
+}
+
+variable "monitor_root_volume_size" {
+  description = "Root volume size for Monitoring instance in GB"
+  type        = number
+  default     = 20
+}
+
+variable "mysql_root_volume_size" {
+  description = "Root volume size for MySQL instance in GB"
+  type        = number
+  default     = 20
+}
+
+variable "k8s_master_root_volume_size" {
+  description = "Root volume size for K8s Master instance in GB"
+  type        = number
+  default     = 40
+}
+
+variable "k8s_worker_root_volume_size" {
+  description = "Root volume size for K8s Worker instance in GB"
+  type        = number
+  default     = 40
+}
+
+variable "webhook_root_volume_size" {
+  description = "Root volume size for Webhook Receiver instance in GB"
+  type        = number
+  default     = 20
+}
+
+variable "root_volume_type" {
+  description = "Type of root volume (gp3, gp2, io1, etc.)"
+  type        = string
+  default     = "gp3"
+}

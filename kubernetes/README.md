@@ -1,3 +1,17 @@
+## What is Kubernetes?
+
+Kubernetes is an open-source container orchestration platform that automates the deployment, scaling, and management of containerized applications.
+
+## Why use Kubernetes?
+
+Kubernetes provides a number of benefits for containerized applications, including:
+
+- Automatic scaling and load balancing
+- Self-healing and self-healing
+- Automatic updates and rollbacks
+- Easy management of containerized applications
+
+
 ## Kubernetes Prerequisites Installed Successfully 
 
 1. On the Master-Server: Initialize the cluster using 'kubeadm init'."
@@ -203,6 +217,7 @@ kubectl apply -f kubernetes/deployments/secrets.yaml
 ```
 
 ### 2. Apply Deployments
+
 Apply all deployments and services:
 
 ```bash
@@ -210,6 +225,7 @@ kubectl apply -f kubernetes/deployments/
 ```
 
 ### 3. Verify Deployment
+
 Check the status of the pods:
 
 ```bash
@@ -219,6 +235,7 @@ kubectl get pods
 Wait until all pods are in `Running` state.
 
 ### 4. Access the Application
+
 The API Gateway is exposed via NodePort 30080.
 Access the application at: `http://54.162.211.229:30080`
 
@@ -265,7 +282,38 @@ kubectl exec dns-test -- nslookup kubernetes.default
 
 
 ### ======== TROUBLESHOOTING ======== 
+
 COMPLETELY RESET AND REBUILD THE MASTER
+
+```bash
+[ec2-user@K8s-Master-Server ~]$ kubectl get nodes
+E1123 05:10:16.146799   32386 memcache.go:265] "Unhandled Error" err="couldn't get current server API group list: Get \"http://localhost:8080/api?timeout=32s\": dial tcp 127.0.0.1:8080: connect: connection refused"
+E1123 05:10:16.148435   32386 memcache.go:265] "Unhandled Error" err="couldn't get current server API group list: Get \"http://localhost:8080/api?timeout=32s\": dial tcp 127.0.0.1:8080: connect: connection refused"
+E1123 05:10:16.149882   32386 memcache.go:265] "Unhandled Error" err="couldn't get current server API group list: Get \"http://localhost:8080/api?timeout=32s\": dial tcp 127.0.0.1:8080: connect: connection refused"
+E1123 05:10:16.151354   32386 memcache.go:265] "Unhandled Error" err="couldn't get current server API group list: Get \"http://localhost:8080/api?timeout=32s\": dial tcp 127.0.0.1:8080: connect: connection refused"
+E1123 05:10:16.152776   32386 memcache.go:265] "Unhandled Error" err="couldn't get current server API group list: Get \"http://localhost:8080/api?timeout=32s\": dial tcp 127.0.0.1:8080: connect: connection refused"
+The connection to the server localhost:8080 was refused - did you specify the right host or port?
+[ec2-user@K8s-Master-Server ~]$ kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/v3.27.2/manifests/tigera-operator.yaml
+kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/v3.27.2/manifests/custom-resources.yaml
+error: error validating "https://raw.githubusercontent.com/projectcalico/calico/v3.27.2/manifests/tigera-operator.yaml": error validating data: failed to download openapi: Get "http://localhost:8080/openapi/v2?timeout=32s": dial tcp 127.0.0.1:8080: connect: connection refused; if you choose to ignore these errors, turn validation off with --validate=false
+error: error validating "https://raw.githubusercontent.com/projectcalico/calico/v3.27.2/manifests/custom-resources.yaml": error validating data: failed to download openapi: Get "http://localhost:8080/openapi/v2?timeout=32s": dial tcp 127.0.0.1:8080: connect: connection refused; if you choose to ignore these errors, turn validation off with --validate=false
+# Fix this by running the following command:
+```bash
+# Set up kubeconfig for the ec2-user
+mkdir -p $HOME/.kube
+sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+sudo chown $(id -u):$(id -g) $HOME/.kube/config
+
+# Install Calico CNI
+kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/v3.27.2/manifests/tigera-operator.yaml
+kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/v3.27.2/manifests/custom-resources.yaml
+
+# Wait for Calico pods to be ready
+kubectl get pods -n calico-system -w
+
+```
+
+
 - Step 1: Full Reset the Master
 ```bash
 sudo kubeadm reset -f

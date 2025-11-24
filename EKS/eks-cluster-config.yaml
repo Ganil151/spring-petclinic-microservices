@@ -1,0 +1,48 @@
+apiVersion: eksctl.io/v1alpha5
+kind: ClusterConfig
+
+metadata:
+  name: petclinic-eks-cluster
+  region: us-east-1
+  version: "1.28"
+
+# Managed Node Groups
+managedNodeGroups:
+  - name: petclinic-nodes
+    instanceType: t3.large
+    desiredCapacity: 2
+    minSize: 1
+    maxSize: 4
+    volumeSize: 30
+    ssh:
+      allow: true
+      publicKeyName: master_keys
+    labels:
+      role: worker
+      environment: dev
+    tags:
+      Environment: dev
+      Project: spring-petclinic
+      ManagedBy: eksctl
+    iam:
+      withAddonPolicies:
+        autoScaler: true
+        cloudWatch: true
+        ebs: true
+        efs: true
+        albIngress: true
+
+# Enable CloudWatch logging
+cloudWatch:
+  clusterLogging:
+    enableTypes: ["api", "audit", "authenticator", "controllerManager", "scheduler"]
+    logRetentionInDays: 7
+
+# Add-ons
+addons:
+  - name: vpc-cni
+    version: latest
+  - name: coredns
+    version: latest
+  - name: kube-proxy
+    version: latest
