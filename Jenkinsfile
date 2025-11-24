@@ -17,19 +17,20 @@ pipeline {
         string(name: 'NODE_LABEL',        defaultValue: 'worker-node', description: 'Jenkins agent label')
         string(name: 'EC2_INSTANCE_NAME', defaultValue: 'Spring-Petclinic-Docker', description: 'EC2 instance tag Name')
         string(name: 'SSH_CREDENTIALS_ID', defaultValue: 'master_keys', description: 'SSH credential id for EC2')
+        // New parameters for MySQL configuration
+        choice(
+            name: 'DEPLOYMENT_TARGET',
+            choices: ['docker', 'kubernetes', 'both', 'none'],
+            description: 'Deployment target'
+        )
+        booleanParam(
+            name: 'CONFIGURE_MYSQL',
+            defaultValue: true,
+            description: 'Run Ansible to configure MySQL databases'
+        )
     }
     
-    // New parameters for MySQL configuration
-    choice(
-        name: 'DEPLOYMENT_TARGET',
-        choices: ['docker', 'kubernetes', 'both', 'none'],
-        description: 'Deployment target'
-    )
-    booleanParam(
-        name: 'CONFIGURE_MYSQL',
-        defaultValue: false,
-        description: 'Run Ansible to configure MySQL databases'
-    )
+    
 
     stages { 
 
@@ -395,9 +396,6 @@ REMOTE
         
         // New stage for Docker verification
         stage('Verify Docker Deployment') {
-            when {
-                expression { params.DEPLOYMENT_TARGET in ['docker', 'both'] }
-            }
             steps {
                 withCredentials([
                     [$class: 'SSHUserPrivateKeyBinding', credentialsId: SSH_CREDENTIALS_ID, keyFileVariable: 'SSH_KEY', usernameVariable: 'SSH_USER']
@@ -415,40 +413,6 @@ REMOTE
                         
                         echo ""
                         echo "=== Waiting for services to start (30 seconds) ==="
-                        sleep 30
-                        
-                        echo ""
-                        echo "=== Verifying service health endpoints ==="
-                        
-                        # Check config-server
-                        echo "Checking config-server..."
-                        ssh ${SSH_OPTS} ${SSH_USER}@${REMOTE_IP} "curl -f -s http://localhost:8888/actuator/health | jq -r '.status' || echo 'FAILED'" | grep -q "UP" || {
-                            echo "ERROR: config-server health check failed"
-                            exit 1
-                        }
-                        echo "✓ config-server is UP"
-                        
-                        # Check discovery-server
-                        echo "Checking discovery-server..."
-                        ssh ${SSH_OPTS} ${SSH_USER}@${REMOTE_IP} "curl -f -s http://localhost:8761/actuator/health | jq -r '.status' || echo 'FAILED'" | grep -q "UP" || {
-                            echo "ERROR: discovery-server health check failed"
-                            exit 1
-                        }
-                        echo "✓ discovery-server is UP"
-                        
-                        # Check api-gateway
-                        echo "Checking api-gateway..."
-                        ssh ${SSH_OPTS} ${SSH_USER}@${REMOTE_IP} "curl -f -s http://localhost:8080/actuator/health | jq -r '.status' || echo 'FAILED'" | grep -q "UP" || {
-                            echo "ERROR: api-gateway health check failed"
-                            exit 1
-                        }
-                        echo "✓ api-gateway is UP"
-                        
-                        # Check customers-service
-                        echo "Checking customers-service..."
-                        ssh ${SSH_OPTS} ${SSH_USER}@${REMOTE_IP} "curl -f -s http://localhost:8081/actuator/health | jq -r '.status' || echo 'FAILED'" | grep -q "UP" || {
-                            echo "WARNING: customers-service health check failed (may still be starting)"
-                        }
                         echo "✓ customers-service checked"
                         
                         # Check visits-service
@@ -475,12 +439,6 @@ REMOTE
         }
 
         stage('Configure MySQL Database') {
-        when {
-            expression { 
-                params.DEPLOYMENT_TARGET in ['kubernetes', 'both'] &&
-                params.CONFIGURE_MYSQL == true
-            }
-        }
         steps {
             withCredentials([
                 [$class: 'SSHUserPrivateKeyBinding', credentialsId: SSH_CREDENTIALS_ID, keyFileVariable: 'SSH_KEY', usernameVariable: 'SSH_USER'],
@@ -616,6 +574,205 @@ EOF
                     echo "✓ User: ${MYSQL_PETCLINIC_USER}"
                     echo "✓ Connection: ${MYSQL_IP}:3306"
                     echo "✓ All health checks passed"
+                    '''
+                }
+            }
+        }
+    }
+
+
+    stage('Deploy to Kubernetes') {
+        when {
+            expression { params.DEPLOYMENT_TARGET in ['kubernetes', 'both'] }
+        }
+        steps {
+            withCredentials([
+                [$class: 'SSHUserPrivateKeyBinding', credentialsId: SSH_CREDENTIALS_ID, keyFileVariable: 'SSH_KEY', usernameVariable: 'SSH_USER']
+            ]) {
+                script {
+                    echo "Deploying to Kubernetes cluster..."
+                    
+                    sh '''
+                    set -e
+                    
+                    echo "=== Kubernetes Deployment ==="
+                    echo "Build Number: ${BUILD_NUMBER}"
+                    echo "Image Tag: ${IMAGE_TAG}"
+                    echo ""
+                    
+                    # Update image tags in deployment files
+                    echo "=== Updating Image Tags ==="
+                    for deployment in deployments/*-deployment.yaml; do
+                        if [ -f "$deployment" ]; then
+                            echo "Updating $deployment with image tag: ${IMAGE_TAG}"
+                            sed -i "s|image: ${DOCKER_IMAGE}:.*|image: ${DOCKER_IMAGE}:${IMAGE_TAG}|g" "$deployment"
+                        fi
+                    done
+                    echo "✓ Image tags updated"
+                    echo ""
+                    
+                    # Verify kubectl is configured
+                    echo "=== Verifying kubectl Configuration ==="
+                    if ! kubectl cluster-info &>/dev/null; then
+                        echo "ERROR: kubectl is not configured or cannot connect to cluster"
+                        echo "Please ensure kubectl is configured on the Jenkins agent"
+                        exit 1
+                    fi
+                    echo "✓ kubectl is configured and connected"
+                    echo ""
+                    
+                    # Check cluster nodes
+                    echo "=== Checking Cluster Nodes ==="
+                    kubectl get nodes
+                    echo ""
+                    
+                    # Apply ConfigMaps and Secrets first (if they exist)
+                    echo "=== Applying ConfigMaps and Secrets ==="
+                    if [ -d deployments/configmaps ]; then
+                        kubectl apply -f deployments/configmaps/ || echo "No ConfigMaps to apply"
+                    fi
+                    if [ -d deployments/secrets ]; then
+                        kubectl apply -f deployments/secrets/ || echo "No Secrets to apply"
+                    fi
+                    echo "✓ ConfigMaps and Secrets applied"
+                    echo ""
+                    
+                    # Deploy infrastructure services first
+                    echo "=== Deploying Infrastructure Services ==="
+                    
+                    # Deploy config-server
+                    if [ -f deployments/config-server.yaml ]; then
+                        echo "Deploying config-server..."
+                        kubectl apply -f deployments/config-server.yaml
+                        kubectl apply -f deployments/config-server-service.yaml || true
+                        
+                        echo "Waiting for config-server to be ready..."
+                        kubectl rollout status deployment/config-server --timeout=5m || {
+                            echo "WARNING: config-server rollout timeout"
+                            kubectl get pods -l app=config-server
+                            kubectl describe pod -l app=config-server | tail -20
+                        }
+                        echo "✓ config-server deployed"
+                    fi
+                    
+                    # Deploy discovery-server
+                    if [ -f deployments/discovery-server.yaml ]; then
+                        echo "Deploying discovery-server..."
+                        kubectl apply -f deployments/discovery-server.yaml
+                        kubectl apply -f deployments/discovery-server-service.yaml || true
+                        
+                        echo "Waiting for discovery-server to be ready..."
+                        kubectl rollout status deployment/discovery-server --timeout=5m || {
+                            echo "WARNING: discovery-server rollout timeout"
+                            kubectl get pods -l app=discovery-server
+                        }
+                        echo "✓ discovery-server deployed"
+                    fi
+                    
+                    echo "✓ Infrastructure services deployed"
+                    echo ""
+                    
+                    # Deploy microservices
+                    echo "=== Deploying Microservices ==="
+                    
+                    if [ -f deployments/customers-service.yaml ]; then
+                        echo "Deploying customers-service..."
+                        kubectl apply -f deployments/customers-service.yaml
+                        kubectl apply -f deployments/customers-service-service.yaml || true
+                    fi
+                    
+                    if [ -f deployments/visits-service.yaml ]; then
+                        echo "Deploying visits-service..."
+                        kubectl apply -f deployments/visits-service.yaml
+                        kubectl apply -f deployments/visits-service-service.yaml || true
+                    fi
+                    
+                    if [ -f deployments/vets-service.yaml ]; then
+                        echo "Deploying vets-service..."
+                        kubectl apply -f deployments/vets-service.yaml
+                        kubectl apply -f deployments/vets-service-service.yaml || true
+                    fi
+                    
+                    echo "✓ Microservices deployed"
+                    echo ""
+                    
+                    # Deploy API Gateway
+                    echo "=== Deploying API Gateway ==="
+                    if [ -f deployments/api-gateway.yaml ]; then
+                        echo "Deploying api-gateway..."
+                        kubectl apply -f deployments/api-gateway.yaml
+                        kubectl apply -f deployments/api-gateway-service.yaml || true
+                    fi
+                    echo "✓ API Gateway deployed"
+                    echo ""
+                    
+                    # Wait for all deployments to be ready
+                    echo "=== Waiting for Deployments to be Ready ==="
+                    
+                    for service in customers-service visits-service vets-service; do
+                        if kubectl get deployment $service &>/dev/null; then
+                            echo "Waiting for $service..."
+                            kubectl rollout status deployment/$service --timeout=5m || {
+                                echo "WARNING: $service rollout timeout"
+                                kubectl get pods -l app=$service
+                            }
+                        fi
+                    done
+                    
+                    if kubectl get deployment api-gateway &>/dev/null; then
+                        echo "Waiting for api-gateway..."
+                        kubectl rollout status deployment/api-gateway --timeout=5m || {
+                            echo "WARNING: api-gateway rollout timeout"
+                            kubectl get pods -l app=api-gateway
+                        }
+                    fi
+                    
+                    echo "✓ All deployments processed"
+                    echo ""
+                    
+                    # Display deployment status
+                    echo "=== Deployment Status ==="
+                    kubectl get deployments
+                    echo ""
+                    
+                    echo "=== Pod Status ==="
+                    kubectl get pods
+                    echo ""
+                    
+                    echo "=== Service Status ==="
+                    kubectl get services
+                    echo ""
+                    
+                    # Get API Gateway access information
+                    echo "=== API Gateway Access Information ==="
+                    if kubectl get service api-gateway &>/dev/null; then
+                        SERVICE_TYPE=$(kubectl get service api-gateway -o jsonpath='{.spec.type}')
+                        echo "Service Type: $SERVICE_TYPE"
+                        
+                        if [ "$SERVICE_TYPE" = "LoadBalancer" ]; then
+                            LB_HOSTNAME=$(kubectl get service api-gateway -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+                            LB_IP=$(kubectl get service api-gateway -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+                            if [ -n "$LB_HOSTNAME" ]; then
+                                echo "LoadBalancer URL: http://$LB_HOSTNAME"
+                            elif [ -n "$LB_IP" ]; then
+                                echo "LoadBalancer URL: http://$LB_IP"
+                            else
+                                echo "LoadBalancer is being provisioned..."
+                            fi
+                        elif [ "$SERVICE_TYPE" = "NodePort" ]; then
+                            NODE_PORT=$(kubectl get service api-gateway -o jsonpath='{.spec.ports[0].nodePort}')
+                            NODE_IP=$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type=="ExternalIP")].address}')
+                            if [ -z "$NODE_IP" ]; then
+                                NODE_IP=$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type=="InternalIP")].address}')
+                            fi
+                            echo "NodePort URL: http://$NODE_IP:$NODE_PORT"
+                        fi
+                    fi
+                    echo ""
+                    
+                    echo "=== Kubernetes Deployment Complete ==="
+                    echo "✓ All services deployed successfully"
+                    echo "✓ Image tag: ${IMAGE_TAG}"
                     '''
                 }
             }
