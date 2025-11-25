@@ -10,7 +10,9 @@ pipeline {
         AWS_CREDENTIALS_ID   = "aws-credentials"
         SSH_CREDENTIALS_ID   = "${params.SSH_CREDENTIALS_ID}"
         DOCKERHUB_CRED_ID    = "dockerhub-credentials"
+        MYSQL_CRED_ID        = "mysql-credentials"
         IS_NEW_INSTANCE      = 'false' 
+        K8S_MASTER_IP        = "50.17.116.117"
     }
 
     parameters {
@@ -29,11 +31,8 @@ pipeline {
             description: 'Run Ansible to configure MySQL databases'
         )
     }
-    
-    
 
-    stages { 
-
+    stages {
         stage('Checkout') {
             steps {
                 retry(3) {
@@ -66,7 +65,7 @@ pipeline {
                 '''
             }
         }
-        
+
         stage('Modify docker-compose.yml') {
             steps {
                 sh '''
@@ -319,7 +318,6 @@ REMOTE
             }
         }
 
-
         stage('Deploy to Docker-Server') {
             steps {
                 withCredentials([
@@ -393,7 +391,7 @@ REMOTE
                 }
             }
         }
-        
+
         // New stage for Docker verification
         stage('Verify Docker Deployment') {
             steps {
@@ -439,7 +437,7 @@ REMOTE
         }
 
         stage('Configure MySQL Database') {
-        steps {
+            steps {
             withCredentials([
                 [$class: 'SSHUserPrivateKeyBinding', credentialsId: SSH_CREDENTIALS_ID, keyFileVariable: 'SSH_KEY', usernameVariable: 'SSH_USER'],
                 usernamePassword(credentialsId: 'mysql-root-credentials', usernameVariable: 'MYSQL_ROOT_USER', passwordVariable: 'MYSQL_ROOT_PASSWORD'),
@@ -470,8 +468,8 @@ petclinic_databases:
 
 petclinic_users:
 - name: ${MYSQL_PETCLINIC_USER}
-    password: "{{ mysql_petclinic_password }}"
-    priv: "*.*:ALL"
+password: "{{ mysql_petclinic_password }}"
+priv: "*.*:ALL"
 EOF
                     
                     echo "✓ Ansible variables updated"
@@ -498,8 +496,8 @@ EOF
                     
                     # Verify databases were created
                     echo "=== Verifying Database Creation ==="
-                    ansible mysql -i inventory.ini -m shell \
-                        -a "mysql -u ${MYSQL_ROOT_USER} -p${MYSQL_ROOT_PASSWORD} -e 'SHOW DATABASES;'" \
+                    ansible mysql -i inventory.ini -m shell \\
+                        -a "mysql -u ${MYSQL_ROOT_USER} -p${MYSQL_ROOT_PASSWORD} -e 'SHOW DATABASES;'" \\
                         | grep -E 'customers|visits|vets' || {
                         echo "ERROR: Required databases not found"
                         exit 1
@@ -509,8 +507,8 @@ EOF
                     
                     # Verify petclinic user was created
                     echo "=== Verifying Petclinic User ==="
-                    ansible mysql -i inventory.ini -m shell \
-                        -a "mysql -u ${MYSQL_ROOT_USER} -p${MYSQL_ROOT_PASSWORD} -e \"SELECT User, Host FROM mysql.user WHERE User='${MYSQL_PETCLINIC_USER}';\"" \
+                    ansible mysql -i inventory.ini -m shell \\
+                        -a "mysql -u ${MYSQL_ROOT_USER} -p${MYSQL_ROOT_PASSWORD} -e 'SELECT User FROM mysql.user WHERE User=\"${MYSQL_PETCLINIC_USER}\";'" \\
                         | grep "${MYSQL_PETCLINIC_USER}" || {
                         echo "ERROR: Petclinic user not found"
                         exit 1
@@ -520,7 +518,7 @@ EOF
                     
                     # Test petclinic user can connect
                     echo "=== Testing Petclinic User Connection ==="
-                    ansible mysql -i inventory.ini -m shell \
+                    ansible mysql -i inventory.ini -m shell \\
                         -a "mysql -u ${MYSQL_PETCLINIC_USER} -p${MYSQL_PETCLINIC_PASSWORD} -e 'SELECT 1;'" || {
                         echo "ERROR: Petclinic user cannot connect"
                         exit 1
@@ -532,7 +530,7 @@ EOF
                     echo "=== Verifying Database Access ==="
                     for db in customers visits vets; do
                         echo "Testing access to $db database..."
-                        ansible mysql -i inventory.ini -m shell \
+                        ansible mysql -i inventory.ini -m shell \\
                             -a "mysql -u ${MYSQL_PETCLINIC_USER} -p${MYSQL_PETCLINIC_PASSWORD} -e 'USE $db; SELECT 1;'" || {
                             echo "ERROR: Petclinic user cannot access $db database"
                             exit 1
@@ -545,8 +543,8 @@ EOF
                     echo "=== Checking Database Schema ==="
                     for db in customers visits vets; do
                         echo "Checking tables in $db database..."
-                        TABLE_COUNT=$(ansible mysql -i inventory.ini -m shell \
-                            -a "mysql -u ${MYSQL_PETCLINIC_USER} -p${MYSQL_PETCLINIC_PASSWORD} -e 'USE $db; SHOW TABLES;'" \
+                        TABLE_COUNT=$(ansible mysql -i inventory.ini -m shell \\
+                            -a "mysql -u ${MYSQL_PETCLINIC_USER} -p${MYSQL_PETCLINIC_PASSWORD} -e 'USE $db; SHOW TABLES;'" \\
                             | grep -c "owners\\|pets\\|visits\\|vets\\|specialties" || echo "0")
                         
                         if [ "$TABLE_COUNT" -gt 0 ]; then
@@ -559,8 +557,8 @@ EOF
                     
                     # Get MySQL server info
                     echo "=== MySQL Server Information ==="
-                    ansible mysql -i inventory.ini -m shell \
-                        -a "mysql -u ${MYSQL_ROOT_USER} -p${MYSQL_ROOT_PASSWORD} -e 'SELECT VERSION();'" \
+                    ansible mysql -i inventory.ini -m shell \\
+                        -a "mysql -u ${MYSQL_ROOT_USER} -p${MYSQL_ROOT_PASSWORD} -e 'SELECT VERSION();'" \\
                         | grep -v "CHANGED\\|mysql" || true
                     echo ""
                     
@@ -580,208 +578,470 @@ EOF
         }
     }
 
-
-    stage('Deploy to Kubernetes') {
-        when {
-            expression { params.DEPLOYMENT_TARGET in ['kubernetes', 'both'] }
-        }
+    stage('Configure kubectl') {
         steps {
             withCredentials([
                 [$class: 'SSHUserPrivateKeyBinding', credentialsId: SSH_CREDENTIALS_ID, keyFileVariable: 'SSH_KEY', usernameVariable: 'SSH_USER']
             ]) {
                 script {
-                    echo "Deploying to Kubernetes cluster..."
+                echo "Configuring kubectl on Jenkins agent..."
+                
+                sh '''
+                set -e
+                
+                echo "=== kubectl Configuration ==="
+                
+                # Check if kubectl is installed
+                if ! command -v kubectl &>/dev/null; then
+                    echo "Installing kubectl..."
+                    
+                    # Add Kubernetes repository if not exists
+                    if [ ! -f /etc/yum.repos.d/kubernetes.repo ]; then
+                        cat <<EOF | sudo tee /etc/yum.repos.d/kubernetes.repo
+[kubernetes]
+name=Kubernetes
+baseurl=https://pkgs.k8s.io/core:/stable:/v1.31/rpm/
+enabled=1
+gpgcheck=1
+gpgkey=https://pkgs.k8s.io/core:/stable:/v1.31/rpm/repodata/repomd.xml.key
+exclude=kubelet kubeadm kubectl cri-tools kubernetes-cni
+EOF
+                    fi
+                    
+                    # Install kubectl
+                    sudo dnf install -y kubectl --disableexcludes=kubernetes
+                    echo "✓ kubectl installed"
+                else
+                    echo "✓ kubectl already installed: $(kubectl version --client --short 2>/dev/null || kubectl version --client)"
+                fi
+                
+                # Get K8s Master IP from Terraform or inventory
+                if [ -f terraform/app/terraform.tfstate ]; then
+                    K8S_MASTER_IP=$(grep -A 5 '"k8s_master"' terraform/app/terraform.tfstate | grep '"public_ip"' | head -1 | awk -F'"' '{print $4}')
+                fi
+                
+                # Fallback: try to get from Ansible inventory
+                if [ -z "$K8S_MASTER_IP" ] && [ -f ansible/inventory.ini ]; then
+                    K8S_MASTER_IP=$(grep "k8s-master ansible_host" ansible/inventory.ini | awk '{print $2}' | cut -d'=' -f2)
+                fi
+                
+                if [ -z "$K8S_MASTER_IP" ]; then
+                    echo "ERROR: Could not determine K8s Master IP"
+                    echo "Please set K8S_MASTER_IP environment variable or update inventory"
+                    exit 1
+                fi
+                
+                echo "K8s Master IP: $K8S_MASTER_IP"
+                
+                # Create .kube directory
+                mkdir -p ~/.kube
+                
+                # Copy kubeconfig from K8s master
+                echo "Copying kubeconfig from master..."
+                scp -o StrictHostKeyChecking=no -o ConnectTimeout=10 \
+                    ec2-user@${K8S_MASTER_IP}:/home/ec2-user/.kube/config \
+                    ~/.kube/config || {
+                    echo "ERROR: Failed to copy kubeconfig from master"
+                    echo "Ensure K8s master is accessible and kubeconfig exists"
+                    exit 1
+                }
+                
+                # Set proper permissions
+                chmod 600 ~/.kube/config
+                
+                echo "✓ kubeconfig copied successfully"
+                echo ""
+                
+                # Verify kubectl works
+                echo "=== Verifying kubectl Configuration ==="
+                kubectl cluster-info
+                echo ""
+                
+                echo "=== Cluster Nodes ==="
+                kubectl get nodes
+                echo ""
+                
+                echo "✓ kubectl configured and connected to cluster"
+                '''
+
+                }                
+            }
+        }
+    }
+
+    stage('Verify Kubernetes Deployment') {
+        steps {
+            script {
+                echo "Verifying Kubernetes deployment..."
+                
+                sh '''
+                set -e
+                
+                echo "=== Kubernetes Deployment Verification ==="
+                echo ""
+                
+                # Verify kubectl is configured
+                echo "=== Checking kubectl Configuration ==="
+                if ! kubectl cluster-info &>/dev/null; then
+                    echo "ERROR: kubectl is not configured or cannot connect to cluster"
+                    exit 1
+                fi
+                echo "✓ kubectl is configured and connected"
+                echo ""
+                
+                # Check cluster nodes
+                echo "=== Cluster Nodes Status ==="
+                kubectl get nodes
+                echo ""
+                
+                # Verify all nodes are Ready
+                NOT_READY=$(kubectl get nodes --no-headers | grep -v " Ready" | wc -l)
+                if [ "$NOT_READY" -gt 0 ]; then
+                    echo "WARNING: $NOT_READY node(s) are not in Ready state"
+                    kubectl get nodes
+                else
+                    echo "✓ All nodes are Ready"
+                fi
+                echo ""
+                
+                # Check deployments status
+                echo "=== Deployment Status ==="
+                kubectl get deployments -o wide
+                echo ""
+                
+                # Check if all deployments are available
+                echo "=== Checking Deployment Availability ==="
+                DEPLOYMENTS=$(kubectl get deployments -o jsonpath='{.items[*].metadata.name}')
+                
+                for deployment in $DEPLOYMENTS; do
+                    READY=$(kubectl get deployment $deployment -o jsonpath='{.status.readyReplicas}')
+                    DESIRED=$(kubectl get deployment $deployment -o jsonpath='{.spec.replicas}')
+                    
+                    if [ "$READY" = "$DESIRED" ] && [ "$READY" != "" ]; then
+                        echo "✓ $deployment: $READY/$DESIRED replicas ready"
+                    else
+                        echo "⚠ $deployment: $READY/$DESIRED replicas ready (not fully available)"
+                    fi
+                done
+                echo ""
+                
+                # Check pods status
+                echo "=== Pod Status ==="
+                kubectl get pods -o wide
+                echo ""
+                
+                # Check for pods not in Running state
+                echo "=== Checking Pod Health ==="
+                NOT_RUNNING=$(kubectl get pods --no-headers | grep -v "Running" | grep -v "Completed" | wc -l)
+                if [ "$NOT_RUNNING" -gt 0 ]; then
+                    echo "WARNING: $NOT_RUNNING pod(s) are not in Running state"
+                    kubectl get pods | grep -v "Running" | grep -v "Completed" | grep -v "NAME" || true
+                    echo ""
+                    echo "=== Pod Details for Non-Running Pods ==="
+                    kubectl get pods --no-headers | grep -v "Running" | grep -v "Completed" | awk '{print $1}' | while read pod; do
+                        echo "--- Pod: $pod ---"
+                        kubectl describe pod $pod | tail -20
+                        echo ""
+                    done
+                else
+                    echo "✓ All pods are in Running or Completed state"
+                fi
+                echo ""
+                
+                # Check services
+                echo "=== Service Status ==="
+                kubectl get services -o wide
+                echo ""
+                
+                # Check for infrastructure services
+                echo "=== Verifying Infrastructure Services ==="
+                INFRA_SERVICES="config-server discovery-server"
+                for service in $INFRA_SERVICES; do
+                    if kubectl get deployment $service &>/dev/null; then
+                        READY=$(kubectl get deployment $service -o jsonpath='{.status.readyReplicas}')
+                        if [ "$READY" -gt 0 ]; then
+                            echo "✓ $service is running ($READY replicas)"
+                        else
+                            echo "⚠ $service is not ready"
+                        fi
+                    else
+                        echo "⚠ $service deployment not found"
+                    fi
+                done
+                echo ""
+                
+                # Check for microservices
+                echo "=== Verifying Microservices ==="
+                MICROSERVICES="customers-service visits-service vets-service api-gateway"
+                for service in $MICROSERVICES; do
+                    if kubectl get deployment $service &>/dev/null; then
+                        READY=$(kubectl get deployment $service -o jsonpath='{.status.readyReplicas}')
+                        if [ "$READY" -gt 0 ]; then
+                            echo "✓ $service is running ($READY replicas)"
+                        else
+                            echo "⚠ $service is not ready"
+                        fi
+                    else
+                        echo "⚠ $service deployment not found"
+                    fi
+                done
+                echo ""
+                
+                # Get API Gateway access information
+                echo "=== API Gateway Access Information ==="
+                if kubectl get service api-gateway &>/dev/null; then
+                    SERVICE_TYPE=$(kubectl get service api-gateway -o jsonpath='{.spec.type}')
+                    echo "Service Type: $SERVICE_TYPE"
+                    
+                    if [ "$SERVICE_TYPE" = "LoadBalancer" ]; then
+                        LB_HOSTNAME=$(kubectl get service api-gateway -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+                        LB_IP=$(kubectl get service api-gateway -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+                        if [ -n "$LB_HOSTNAME" ]; then
+                            echo "LoadBalancer URL: http://$LB_HOSTNAME"
+                        elif [ -n "$LB_IP" ]; then
+                            echo "LoadBalancer URL: http://$LB_IP"
+                        else
+                            echo "LoadBalancer is being provisioned..."
+                        fi
+                    elif [ "$SERVICE_TYPE" = "NodePort" ]; then
+                        NODE_PORT=$(kubectl get service api-gateway -o jsonpath='{.spec.ports[0].nodePort}')
+                        NODE_IP=$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type=="ExternalIP")].address}')
+                        if [ -z "$NODE_IP" ]; then
+                            NODE_IP=$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type=="InternalIP")].address}')
+                        fi
+                        echo "NodePort URL: http://$NODE_IP:$NODE_PORT"
+                        echo ""
+                        echo "You can access the application at: http://$NODE_IP:$NODE_PORT"
+                    fi
+                else
+                    echo "⚠ api-gateway service not found"
+                fi
+                echo ""
+                
+                # Check for any recent events (errors/warnings)
+                echo "=== Recent Cluster Events (Last 10) ==="
+                kubectl get events --sort-by='.lastTimestamp' | tail -10
+                echo ""
+                
+                # Summary
+                echo "=== Verification Summary ==="
+                TOTAL_PODS=$(kubectl get pods --no-headers | wc -l)
+                RUNNING_PODS=$(kubectl get pods --no-headers | grep "Running" | wc -l)
+                TOTAL_DEPLOYMENTS=$(kubectl get deployments --no-headers | wc -l)
+                
+                echo "Total Deployments: $TOTAL_DEPLOYMENTS"
+                echo "Total Pods: $TOTAL_PODS"
+                echo "Running Pods: $RUNNING_PODS"
+                echo ""
+                
+                if [ "$NOT_RUNNING" -eq 0 ]; then
+                    echo "✓ Kubernetes Deployment Verification Complete - All systems healthy"
+                else
+                    echo "⚠ Kubernetes Deployment Verification Complete - Some issues detected"
+                    echo "Please review the warnings above"
+                fi
+                '''
+            }
+        }
+    }
+
+    stage('Update Monitoring') {
+        steps {
+            withCredentials([
+                [$class: 'SSHUserPrivateKeyBinding', credentialsId: SSH_CREDENTIALS_ID, keyFileVariable: 'SSH_KEY', usernameVariable: 'SSH_USER']
+            ]) {
+                script {
+                    echo "Updating Prometheus monitoring configuration..."
                     
                     sh '''
                     set -e
                     
-                    echo "=== Kubernetes Deployment ==="
-                    echo "Build Number: ${BUILD_NUMBER}"
-                    echo "Image Tag: ${IMAGE_TAG}"
+                    echo "=== Updating Prometheus Monitoring ==="
                     echo ""
                     
-                    # Update image tags in deployment files
-                    echo "=== Updating Image Tags ==="
-                    for deployment in deployments/*-deployment.yaml; do
-                        if [ -f "$deployment" ]; then
-                            echo "Updating $deployment with image tag: ${IMAGE_TAG}"
-                            sed -i "s|image: ${DOCKER_IMAGE}:.*|image: ${DOCKER_IMAGE}:${IMAGE_TAG}|g" "$deployment"
+                    # Get K8s Master IP
+                    K8S_MASTER_IP="${K8S_MASTER_IP}"
+                    if [ -z "$K8S_MASTER_IP" ]; then
+                        if [ -f terraform/app/terraform.tfstate ]; then
+                            K8S_MASTER_IP=$(grep -A 5 '"k8s_master"' terraform/app/terraform.tfstate | grep '"public_ip"' | head -1 | awk -F'"' '{print $4}')
                         fi
-                    done
-                    echo "✓ Image tags updated"
-                    echo ""
-                    
-                    # Verify kubectl is configured
-                    echo "=== Verifying kubectl Configuration ==="
-                    if ! kubectl cluster-info &>/dev/null; then
-                        echo "ERROR: kubectl is not configured or cannot connect to cluster"
-                        echo "Please ensure kubectl is configured on the Jenkins agent"
-                        exit 1
-                    fi
-                    echo "✓ kubectl is configured and connected"
-                    echo ""
-                    
-                    # Check cluster nodes
-                    echo "=== Checking Cluster Nodes ==="
-                    kubectl get nodes
-                    echo ""
-                    
-                    # Apply ConfigMaps and Secrets first (if they exist)
-                    echo "=== Applying ConfigMaps and Secrets ==="
-                    if [ -d deployments/configmaps ]; then
-                        kubectl apply -f deployments/configmaps/ || echo "No ConfigMaps to apply"
-                    fi
-                    if [ -d deployments/secrets ]; then
-                        kubectl apply -f deployments/secrets/ || echo "No Secrets to apply"
-                    fi
-                    echo "✓ ConfigMaps and Secrets applied"
-                    echo ""
-                    
-                    # Deploy infrastructure services first
-                    echo "=== Deploying Infrastructure Services ==="
-                    
-                    # Deploy config-server
-                    if [ -f deployments/config-server.yaml ]; then
-                        echo "Deploying config-server..."
-                        kubectl apply -f deployments/config-server.yaml
-                        kubectl apply -f deployments/config-server-service.yaml || true
                         
-                        echo "Waiting for config-server to be ready..."
-                        kubectl rollout status deployment/config-server --timeout=5m || {
-                            echo "WARNING: config-server rollout timeout"
-                            kubectl get pods -l app=config-server
-                            kubectl describe pod -l app=config-server | tail -20
-                        }
-                        echo "✓ config-server deployed"
+                        if [ -z "$K8S_MASTER_IP" ] && [ -f ansible/inventory.ini ]; then
+                            K8S_MASTER_IP=$(grep "k8s-master ansible_host" ansible/inventory.ini | awk '{print $2}' | cut -d'=' -f2)
+                        fi
                     fi
-                    
-                    # Deploy discovery-server
-                    if [ -f deployments/discovery-server.yaml ]; then
-                        echo "Deploying discovery-server..."
-                        kubectl apply -f deployments/discovery-server.yaml
-                        kubectl apply -f deployments/discovery-server-service.yaml || true
-                        
-                        echo "Waiting for discovery-server to be ready..."
-                        kubectl rollout status deployment/discovery-server --timeout=5m || {
-                            echo "WARNING: discovery-server rollout timeout"
-                            kubectl get pods -l app=discovery-server
-                        }
-                        echo "✓ discovery-server deployed"
-                    fi
-                    
-                    echo "✓ Infrastructure services deployed"
-                    echo ""
-                    
-                    # Deploy microservices
-                    echo "=== Deploying Microservices ==="
-                    
-                    if [ -f deployments/customers-service.yaml ]; then
-                        echo "Deploying customers-service..."
-                        kubectl apply -f deployments/customers-service.yaml
-                        kubectl apply -f deployments/customers-service-service.yaml || true
-                    fi
-                    
-                    if [ -f deployments/visits-service.yaml ]; then
-                        echo "Deploying visits-service..."
-                        kubectl apply -f deployments/visits-service.yaml
-                        kubectl apply -f deployments/visits-service-service.yaml || true
-                    fi
-                    
-                    if [ -f deployments/vets-service.yaml ]; then
-                        echo "Deploying vets-service..."
-                        kubectl apply -f deployments/vets-service.yaml
-                        kubectl apply -f deployments/vets-service-service.yaml || true
-                    fi
-                    
-                    echo "✓ Microservices deployed"
-                    echo ""
-                    
-                    # Deploy API Gateway
-                    echo "=== Deploying API Gateway ==="
-                    if [ -f deployments/api-gateway.yaml ]; then
-                        echo "Deploying api-gateway..."
-                        kubectl apply -f deployments/api-gateway.yaml
-                        kubectl apply -f deployments/api-gateway-service.yaml || true
-                    fi
-                    echo "✓ API Gateway deployed"
-                    echo ""
-                    
-                    # Wait for all deployments to be ready
-                    echo "=== Waiting for Deployments to be Ready ==="
-                    
-                    for service in customers-service visits-service vets-service; do
-                        if kubectl get deployment $service &>/dev/null; then
-                            echo "Waiting for $service..."
-                            kubectl rollout status deployment/$service --timeout=5m || {
-                                echo "WARNING: $service rollout timeout"
-                                kubectl get pods -l app=$service
-                            }
+scrape_configs:
+# Kubernetes API Server
+- job_name: 'kubernetes-apiservers'
+    kubernetes_sd_configs:
+    - role: endpoints
+    scheme: https
+    tls_config:
+    ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+    bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+    relabel_configs:
+    - source_labels: [__meta_kubernetes_namespace, __meta_kubernetes_service_name, __meta_kubernetes_endpoint_port_name]
+        action: keep
+        regex: default;kubernetes;https
+
+# Kubernetes Nodes
+- job_name: 'kubernetes-nodes'
+    kubernetes_sd_configs:
+    - role: node
+    scheme: https
+    tls_config:
+    ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+    bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+    relabel_configs:
+    - action: labelmap
+        regex: __meta_kubernetes_node_label_(.+)
+
+# Kubernetes Pods
+- job_name: 'kubernetes-pods'
+    kubernetes_sd_configs:
+    - role: pod
+    relabel_configs:
+    - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+        action: keep
+        regex: true
+    - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
+        action: replace
+        target_label: __metrics_path__
+        regex: (.+)
+    - source_labels: [__address__, __meta_kubernetes_pod_annotation_prometheus_io_port]
+        action: replace
+        regex: ([^:]+)(?::d+)?;(d+)
+        replacement: $1:$2
+        target_label: __address__
+    - action: labelmap
+        regex: __meta_kubernetes_pod_label_(.+)
+    - source_labels: [__meta_kubernetes_namespace]
+        action: replace
+        target_label: kubernetes_namespace
+    - source_labels: [__meta_kubernetes_pod_name]
+        action: replace
+        target_label: kubernetes_pod_name
+
+# Spring Boot Actuator endpoints (for microservices)
+- job_name: 'spring-petclinic-services'
+    static_configs:
+    - targets:
+EOF
+
+                    # Add discovered services to Prometheus config
+                    echo "$SERVICES" | while IFS=: read -r service_name port; do
+                        if [ -n "$service_name" ] && [ -n "$port" ]; then
+                            echo "          - '${K8S_MASTER_IP}:${port}'" >> /tmp/prometheus-k8s-targets.yml
                         fi
                     done
                     
-                    if kubectl get deployment api-gateway &>/dev/null; then
-                        echo "Waiting for api-gateway..."
-                        kubectl rollout status deployment/api-gateway --timeout=5m || {
-                            echo "WARNING: api-gateway rollout timeout"
-                            kubectl get pods -l app=api-gateway
-                        }
-                    fi
-                    
-                    echo "✓ All deployments processed"
+                    cat >> /tmp/prometheus-k8s-targets.yml <<'EOF'
+            labels:
+            environment: 'kubernetes'
+            cluster: 'petclinic-k8s'
+        metrics_path: '/actuator/prometheus'
+        scrape_interval: 15s
+    EOF
+
+                    echo "✓ Prometheus configuration generated"
                     echo ""
                     
-                    # Display deployment status
-                    echo "=== Deployment Status ==="
-                    kubectl get deployments
+                    # Display the generated configuration
+                    echo "=== Generated Prometheus Configuration ==="
+                    cat /tmp/prometheus-k8s-targets.yml
                     echo ""
                     
-                    echo "=== Pod Status ==="
-                    kubectl get pods
-                    echo ""
+                    # Check if Prometheus is running on Docker server
+                    echo "=== Checking Prometheus Status ==="
+                    DOCKER_SERVER_IP=$(cat public_ip.txt 2>/dev/null || echo "")
                     
-                    echo "=== Service Status ==="
-                    kubectl get services
-                    echo ""
-                    
-                    # Get API Gateway access information
-                    echo "=== API Gateway Access Information ==="
-                    if kubectl get service api-gateway &>/dev/null; then
-                        SERVICE_TYPE=$(kubectl get service api-gateway -o jsonpath='{.spec.type}')
-                        echo "Service Type: $SERVICE_TYPE"
+                    if [ -n "$DOCKER_SERVER_IP" ]; then
+                        echo "Docker Server IP: $DOCKER_SERVER_IP"
+                        SSH_OPTS="-o StrictHostKeyChecking=no -o ConnectTimeout=10 -i ${SSH_KEY}"
                         
-                        if [ "$SERVICE_TYPE" = "LoadBalancer" ]; then
-                            LB_HOSTNAME=$(kubectl get service api-gateway -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
-                            LB_IP=$(kubectl get service api-gateway -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
-                            if [ -n "$LB_HOSTNAME" ]; then
-                                echo "LoadBalancer URL: http://$LB_HOSTNAME"
-                            elif [ -n "$LB_IP" ]; then
-                                echo "LoadBalancer URL: http://$LB_IP"
+                        # Check if Prometheus container is running
+                        PROMETHEUS_RUNNING=$(ssh ${SSH_OPTS} ${SSH_USER}@${DOCKER_SERVER_IP} \
+                            "docker ps --filter name=prometheus --format '{{.Names}}'" 2>/dev/null || echo "")
+                        
+                        if [ -n "$PROMETHEUS_RUNNING" ]; then
+                            echo "✓ Prometheus container found: $PROMETHEUS_RUNNING"
+                            echo ""
+                            
+                            # Copy the new configuration to Docker server
+                            echo "=== Updating Prometheus Configuration on Docker Server ==="
+                            scp ${SSH_OPTS} /tmp/prometheus-k8s-targets.yml \
+                                ${SSH_USER}@${DOCKER_SERVER_IP}:/tmp/prometheus-k8s-targets.yml
+                            
+                            # Backup existing config and update
+                            ssh ${SSH_OPTS} ${SSH_USER}@${DOCKER_SERVER_IP} bash -s <<'REMOTE'
+                            set -e
+                            
+                            PROMETHEUS_CONFIG_DIR="/home/ec2-user/petclinic_deploy/prometheus"
+                            
+                            if [ -d "$PROMETHEUS_CONFIG_DIR" ]; then
+                                # Backup existing configuration
+                                if [ -f "$PROMETHEUS_CONFIG_DIR/prometheus.yml" ]; then
+                                    cp "$PROMETHEUS_CONFIG_DIR/prometheus.yml" \
+                                    "$PROMETHEUS_CONFIG_DIR/prometheus.yml.backup.$(date +%Y%m%d_%H%M%S)"
+                                    echo "✓ Backed up existing Prometheus configuration"
+                                fi
+                                
+                                # Append K8s targets to existing config
+                                echo "" >> "$PROMETHEUS_CONFIG_DIR/prometheus.yml"
+                                echo "# Kubernetes targets - auto-generated" >> "$PROMETHEUS_CONFIG_DIR/prometheus.yml"
+                                cat /tmp/prometheus-k8s-targets.yml >> "$PROMETHEUS_CONFIG_DIR/prometheus.yml"
+                                
+                                echo "✓ Updated Prometheus configuration"
+                                
+                                # Reload Prometheus configuration
+                                echo "Reloading Prometheus..."
+                                docker exec prometheus kill -HUP 1 2>/dev/null || \
+                                    docker restart prometheus
+                                
+                                echo "✓ Prometheus reloaded successfully"
                             else
-                                echo "LoadBalancer is being provisioned..."
+                                echo "WARNING: Prometheus config directory not found at $PROMETHEUS_CONFIG_DIR"
                             fi
-                        elif [ "$SERVICE_TYPE" = "NodePort" ]; then
-                            NODE_PORT=$(kubectl get service api-gateway -o jsonpath='{.spec.ports[0].nodePort}')
-                            NODE_IP=$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type=="ExternalIP")].address}')
-                            if [ -z "$NODE_IP" ]; then
-                                NODE_IP=$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type=="InternalIP")].address}')
-                            fi
-                            echo "NodePort URL: http://$NODE_IP:$NODE_PORT"
+    REMOTE
+                            
+                            echo "✓ Prometheus monitoring updated on Docker server"
+                        else
+                            echo "ℹ Prometheus container not found on Docker server"
+                            echo "  Skipping Prometheus update (optional step)"
                         fi
+                    else
+                        echo "ℹ Docker server IP not available"
+                        echo "  Skipping Prometheus update (optional step)"
                     fi
                     echo ""
                     
-                    echo "=== Kubernetes Deployment Complete ==="
-                    echo "✓ All services deployed successfully"
-                    echo "✓ Image tag: ${IMAGE_TAG}"
+                    # Summary
+                    echo "=== Monitoring Update Summary ==="
+                    echo "✓ Kubernetes service endpoints discovered"
+                    echo "✓ Prometheus configuration generated"
+                    
+                    if [ -n "$PROMETHEUS_RUNNING" ]; then
+                        echo "✓ Prometheus configuration updated and reloaded"
+                        echo ""
+                        echo "Prometheus URL: http://${DOCKER_SERVER_IP}:9090"
+                        echo "Grafana URL: http://${DOCKER_SERVER_IP}:3000"
+                    else
+                        echo "ℹ Prometheus update skipped (container not running)"
+                    fi
+                    echo ""
+                    
+                    echo "=== Monitoring Update Complete ==="
                     '''
                 }
             }
         }
     }
-        
-    } // <--- End of stages block
 
-    post {
+    
+
+    }
+
+     post {
         success {
             echo "Pipeline finished: SUCCESS. App image: ${DOCKER_IMAGE}:${IMAGE_TAG}"
         }
@@ -797,4 +1057,5 @@ EOF
             }
         }
     }
+
 }

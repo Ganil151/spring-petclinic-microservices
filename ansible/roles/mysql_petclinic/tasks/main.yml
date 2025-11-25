@@ -1,4 +1,37 @@
 ---
+# MySQL Petclinic Database Setup Tasks
+
+- name: Install PyMySQL Python package
+  pip:
+    name: PyMySQL
+    state: present
+    executable: pip3
+
+- name: Ensure MySQL databases exist
+  community.mysql.mysql_db:
+    name: "{{ item }}"
+    state: present
+    login_user: root
+    login_password: "{{ mysql_root_password }}"
+  loop: "{{ petclinic_databases }}"
+
+- name: Ensure petclinic users exist
+  community.mysql.mysql_user:
+    name: "{{ item.name }}"
+    password: "{{ item.password }}"
+    priv: "{{ item.priv }}"
+    host: "%"
+    state: present
+    login_user: root
+    login_password: "{{ mysql_root_password }}"
+  loop: "{{ petclinic_users }}"
+
+- name: Ensure /tmp/petclinic directory exists
+  file:
+    path: /tmp/petclinic
+    state: directory
+    mode: '0755'
+
 - name: Copy SQL Schema files to remote host for execution
   copy:
     src: "{{ role_path }}/files/{{ item }}-schema.sql"
@@ -13,9 +46,10 @@
 
 - name: Load database schema
   shell: |
-    mysql -u root -p"{{ mysql_root_password }}" {{ mysql_database_name }} < /tmp/petclinic/{{ item }}-schema.sql
+    mysql -u root -p"{{ mysql_root_password }}" {{ item }} < /tmp/petclinic/{{ item }}-schema.sql
   loop:
     - customers
     - visits
     - vets
   changed_when: false
+  ignore_errors: true

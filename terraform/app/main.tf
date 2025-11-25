@@ -28,6 +28,7 @@ module "key" {
   key_name = var.key_name
 }
 
+
 # Master Instance
 module "jenkins_instance" {
   source                      = "../MODULES/EC2"
@@ -102,7 +103,7 @@ module "k8s_master_instance" {
   instance_type               = "t3.large"
   subnet_id                   = element(module.vpc.public_subnet_ids, 0)
   user_data                   = file("${path.module}/scripts/k8s_master.sh")
-  user_data_replace_on_change = var.user_data_replace_on_change
+  user_data_replace_on_change = false
   security_group_ids          = [module.master_sg.master_sg]
   environment                 = var.environment
   root_volume_size            = var.k8s_master_root_volume_size
