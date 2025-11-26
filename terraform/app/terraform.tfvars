@@ -1,10 +1,10 @@
 # Project Names
 project_name_1 = "Spring-Petclinic-Master"
-project_name_2 = "Spring-Petclinic-Worker"
+project_name_2 = "Spring-Petclinic-Agent"
 project_name_3 = "Spring-Petclinic-Moniter"
 project_name_4 = "Spring-Petclinic-MySqlDB"
 project_name_5 = "K8s-Master-Server"
-project_name_6 = "K8s-Worker-Server"
+project_name_6 = "K8s-Agent-Server"
 project_name_7 = "Webhook-Receiver-Server"
 
 # Environment
@@ -58,14 +58,26 @@ security_group_ids          = [""]
 
 # Root Block Device Configuration
 # Volume sizes optimized for each instance type
-jenkins_root_volume_size    = 30 # Jenkins Master - 30 GB for builds and artifacts
-worker_root_volume_size     = 30 # Jenkins Worker - 30 GB for Docker images
-monitor_root_volume_size    = 20 # Monitoring - 20 GB for Prometheus/Grafana data
-mysql_root_volume_size      = 20 # MySQL - 20 GB (data should be on separate volume)
-k8s_master_root_volume_size = 50 # K8s Master - 50 GB for etcd and system components
-k8s_worker_root_volume_size = 50 # K8s Worker - 50 GB for container images and pods
-webhook_root_volume_size    = 20 # Webhook Receiver - 20 GB
+jenkins_root_volume_size = 40 # Jenkins Master - 30 GB for builds and artifacts
+worker_root_volume_size  = 50 # Jenkins Worker - 30 GB for Docker images
+monitor_root_volume_size = 20 # Monitoring - 20 GB for Prometheus/Grafana data
+mysql_root_volume_size   = 20 # MySQL - 20 GB (data should be on separate volume)
+# k8s_master_root_volume_size = 50 # K8s Master - 50 GB for etcd and system components
+# k8s_worker_root_volume_size = 50 # K8s Worker - 50 GB for container images and pods
+# webhook_root_volume_size    = 20 # Webhook Receiver - 20 GB
 
 # Volume type (gp3 is faster and cheaper than gp2)
 root_volume_type = "gp3"
+
+# EKS Configuration
+enable_eks          = true # Set to true to deploy EKS cluster
+eks_cluster_name    = "spring-petclinic-eks"
+eks_cluster_version = "1.30"
+eks_node_group_name = "petclinic-nodes"
+eks_desired_size    = 3
+eks_max_size        = 4
+eks_min_size        = 1
+eks_instance_types  = ["t3.xlarge"]
+eks_disk_size       = 50
+
 

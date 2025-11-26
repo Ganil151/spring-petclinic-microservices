@@ -176,3 +176,65 @@ variable "root_volume_type" {
   type        = string
   default     = "gp3"
 }
+
+# EKS Configuration
+variable "enable_eks" {
+  description = "Enable EKS cluster deployment"
+  type        = bool
+  default     = false
+}
+
+variable "eks_cluster_name" {
+  description = "Name of the EKS cluster"
+  type        = string
+  default     = "spring-petclinic-eks"
+}
+
+variable "eks_cluster_version" {
+  description = "Kubernetes version for EKS cluster"
+  type        = string
+  default     = "1.30"
+}
+
+variable "eks_node_group_name" {
+  description = "Name of the EKS node group"
+  type        = string
+  default     = "petclinic-nodes"
+}
+
+variable "eks_desired_size" {
+  description = "Desired number of EKS worker nodes"
+  type        = number
+  default     = 2
+}
+
+variable "eks_max_size" {
+  description = "Maximum number of EKS worker nodes"
+  type        = number
+  default     = 3
+}
+
+variable "eks_min_size" {
+  description = "Minimum number of EKS worker nodes"
+  type        = number
+  default     = 1
+}
+
+variable "eks_instance_types" {
+  description = "Instance types for EKS node group"
+  type        = list(string)
+  default     = ["t3.xlarge"]
+}
+
+variable "eks_disk_size" {
+  description = "Disk size for EKS worker nodes in GiB"
+  type        = number
+  default     = 50
+}
+
+variable "admin_iam_arn" {
+  description = "ARN of the IAM user with admin access"
+  type        = string
+}
+
+

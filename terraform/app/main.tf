@@ -94,59 +94,116 @@ module "mysql_instance" {
   root_volume_type            = var.root_volume_type
 }
 
-# K8s Master
-module "k8s_master_instance" {
-  source                      = "../MODULES/EC2"
-  ami                         = var.ami
-  key_name                    = var.key_name
-  project_name_1              = var.project_name_5
-  instance_type               = "t3.large"
-  subnet_id                   = element(module.vpc.public_subnet_ids, 0)
-  user_data                   = file("${path.module}/scripts/k8s_master.sh")
-  user_data_replace_on_change = false
-  security_group_ids          = [module.master_sg.master_sg]
-  environment                 = var.environment
-  root_volume_size            = var.k8s_master_root_volume_size
-  root_volume_type            = var.root_volume_type
+# EKS Cluster (Optional - controlled by enable_eks variable)
+module "eks_cluster" {
+  count  = var.enable_eks ? 1 : 0
+  source = "../MODULES/eks"
+
+  cluster_name    = var.eks_cluster_name
+  cluster_version = var.eks_cluster_version
+
+  # Use public subnets from existing VPC
+  subnet_ids = module.vpc.public_subnet_ids
+
+  # Node Group Configuration
+  node_group_name = var.eks_node_group_name
+  desired_size    = var.eks_desired_size
+  max_size        = var.eks_max_size
+  min_size        = var.eks_min_size
+  instance_types  = var.eks_instance_types
+  disk_size       = var.eks_disk_size
+
+  # Node Labels
+  node_labels = {
+    Environment = var.environment
+    Application = "spring-petclinic"
+  }
+
+  # Tags
+  tags = {
+    Name        = var.eks_cluster_name
+    Environment = var.environment
+    Terraform   = "true"
+    Project     = "spring-petclinic"
+  }
 }
 
-# K8s Worker
-module "K8s_worker_instance" {
-  source                      = "../MODULES/EC2"
-  ami                         = var.ami
-  key_name                    = var.key_name
-  project_name_1              = var.project_name_6
-  instance_type               = "t3.xlarge"
-  subnet_id                   = element(module.vpc.public_subnet_ids, 0)
-  user_data                   = file("${path.module}/scripts/k8s_worker.sh")
-  user_data_replace_on_change = var.user_data_replace_on_change
-  security_group_ids          = [module.master_sg.master_sg]
-  environment                 = var.environment
-  root_volume_size            = var.k8s_worker_root_volume_size
-  root_volume_type            = var.root_volume_type
+resource "kubernetes_config_map" "aws_auth" {
+  count = var.enable_eks ? 1 : 0
+  metadata {
+    name      = "aws-auth"
+    namespace = "kube-system"
+  }
+
+  data = {
+    mapRoles = yamlencode([
+      {
+        rolearn  = module.eks_cluster[0].node_iam_role_arn
+        username = "system:node:{{EC2PrivateDNSName}}"
+        groups   = ["system:bootstrappers", "system:nodes"]
+      }
+    ])
+    mapUsers = yamlencode([
+      {
+        userarn  = var.admin_iam_arn
+        username = "admin"
+        groups   = ["system:masters"]
+      }
+    ])
+  }
+  
+  depends_on = [module.eks_cluster]
 }
 
-# Webhook Receiver
-module "webhook_receiver_instance" {
-  source                      = "../MODULES/EC2"
-  ami                         = var.ami
-  key_name                    = var.key_name
-  project_name_1              = var.project_name_7
-  instance_type               = var.instance_type
-  subnet_id                   = element(module.vpc.public_subnet_ids, 0)
-  user_data                   = file("${path.module}/scripts/webhook_receiver.sh")
-  user_data_replace_on_change = false
-  security_group_ids          = [module.master_sg.master_sg]
-  environment                 = var.environment
-  root_volume_size            = var.webhook_root_volume_size
-  root_volume_type            = var.root_volume_type
+# EKS Outputs (only when EKS is enabled)
+output "eks_cluster_endpoint" {
+  description = "Endpoint for EKS control plane"
+  value       = var.enable_eks ? module.eks_cluster[0].cluster_endpoint : null
 }
 
+output "eks_cluster_name" {
+  description = "EKS cluster name"
+  value       = var.enable_eks ? module.eks_cluster[0].cluster_id : null
+}
 
+output "eks_configure_kubectl" {
+  description = "Command to configure kubectl for EKS"
+  value       = var.enable_eks ? module.eks_cluster[0].configure_kubectl : "EKS not enabled"
+}
 
+output "eks_node_group_status" {
+  description = "Status of the EKS node group"
+  value       = var.enable_eks ? module.eks_cluster[0].node_group_status : null
+}
 
+# # K8s Master
+# module "k8s_master_instance" {
+#   source                      = "../MODULES/EC2"
+#   ami                         = var.ami
+#   key_name                    = var.key_name
+#   project_name_1              = var.project_name_5
+#   instance_type               = "t3.large"
+#   subnet_id                   = element(module.vpc.public_subnet_ids, 0)
+#   user_data                   = file("${path.module}/scripts/k8s_master.sh")
+#   user_data_replace_on_change = var.user_data_replace_on_change
+#   security_group_ids          = [module.master_sg.master_sg]
+#   environment                 = var.environment
+#   root_volume_size            = var.k8s_master_root_volume_size
+#   root_volume_type            = var.root_volume_type
+# }
 
-
-
-
-
+# # K8s Worker
+# module "K8s_agent_instance" {
+#   source                      = "../MODULES/EC2"
+#   ami                         = var.ami
+#   key_name                    = var.key_name
+#   project_name_1              = var.project_name_6
+#   instance_type               = "t3.xlarge"
+#   subnet_id                   = element(module.vpc.public_subnet_ids, 0)
+#   user_data                   = file("${path.module}/scripts/k8s_worker.sh")
+#   user_data_replace_on_change = var.user_data_replace_on_change
+#   security_group_ids          = [module.master_sg.master_sg]
+#   environment                 = var.environment
+#   root_volume_size            = var.k8s_worker_root_volume_size
+#   root_volume_type            = var.root_volume_type
+# }
