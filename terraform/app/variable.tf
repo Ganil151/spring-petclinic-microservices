@@ -232,6 +232,21 @@ variable "eks_disk_size" {
   default     = 50
 }
 
+# Multiple Node Groups Configuration
+variable "eks_node_groups" {
+  description = "Map of EKS node group configurations"
+  type = map(object({
+    desired_size   = number
+    max_size       = number
+    min_size       = number
+    instance_types = list(string)
+    capacity_type  = optional(string, "ON_DEMAND")
+    disk_size      = optional(number, 50)
+    labels         = optional(map(string), {})
+  }))
+  default = {}
+}
+
 variable "admin_iam_arn" {
   description = "ARN of the IAM user with admin access"
   type        = string

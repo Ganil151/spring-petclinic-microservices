@@ -26,29 +26,37 @@ resource "aws_eks_cluster" "main" {
   ]
 }
 
-# EKS Node Group
-resource "aws_eks_node_group" "main" {
+# EKS Node Groups (Multiple)
+resource "aws_eks_node_group" "node_groups" {
+  for_each = var.node_groups
+
   cluster_name    = aws_eks_cluster.main.name
-  node_group_name = var.node_group_name
+  node_group_name = each.key
   node_role_arn   = aws_iam_role.eks_nodes.arn
   subnet_ids      = var.subnet_ids
 
   scaling_config {
-    desired_size = var.desired_size
-    max_size     = var.max_size
-    min_size     = var.min_size
+    desired_size = each.value.desired_size
+    max_size     = each.value.max_size
+    min_size     = each.value.min_size
   }
 
-  instance_types = var.instance_types
-  capacity_type  = var.capacity_type
-  disk_size      = var.disk_size
+  instance_types = each.value.instance_types
+  capacity_type  = each.value.capacity_type
+  disk_size      = each.value.disk_size
 
-  labels = var.node_labels
+  labels = merge(
+    each.value.labels,
+    {
+      "node-group" = each.key
+    }
+  )
 
   tags = merge(
     var.tags,
     {
-      Name = "${var.cluster_name}-node-group"
+      Name      = "${var.cluster_name}-${each.key}"
+      NodeGroup = each.key
     }
   )
 

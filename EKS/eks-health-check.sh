@@ -300,7 +300,37 @@ for service in "${PETCLINIC_SERVICES[@]}"; do
 done
 echo ""
 
-# 26. Check AWS EKS cluster (if eksctl available)
+# 26. Check Config Server specifically
+print_info "26. Checking Config Server health..."
+CONFIG_POD=$(kubectl get pods -l app=config-server --no-headers 2>/dev/null | grep Running | head -1 | awk '{print $1}')
+
+if [ -n "$CONFIG_POD" ]; then
+    print_success "Config Server pod found: $CONFIG_POD"
+    
+    print_info "Testing Config Server connectivity..."
+    # Try to curl localhost from within the pod
+    if kubectl exec "$CONFIG_POD" -- curl -s http://localhost:8888/actuator/health | grep -q "UP"; then
+        print_success "Config Server is UP (verified via internal health check)"
+    else
+        print_warning "Config Server pod is running but health check failed or returned non-UP status"
+        print_info "Check logs with: kubectl logs $CONFIG_POD"
+    fi
+    
+    # Check if other services can reach it (simulated)
+    print_info "Checking Service discovery..."
+    if kubectl get svc config-server &>/dev/null; then
+        CLUSTER_IP=$(kubectl get svc config-server -o jsonpath='{.spec.clusterIP}')
+        print_success "Config Server Service exists (ClusterIP: $CLUSTER_IP)"
+    else
+        print_error "Config Server Service is missing!"
+    fi
+else
+    print_error "No running Config Server pod found!"
+    print_info "Check deployments: kubectl get deployment config-server"
+fi
+echo ""
+
+# 27. Check AWS EKS cluster (if eksctl available)
 if command -v eksctl &>/dev/null && command -v aws &>/dev/null; then
     print_info "26. Checking AWS EKS cluster info..."
     CLUSTER_NAME=$(kubectl config current-context 2>/dev/null | awk -F'/' '{print $2}' || echo "unknown")

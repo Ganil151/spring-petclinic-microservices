@@ -1,24 +1,24 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: admin-server
+  name: visits-service
   labels:
-    app: admin-server
+    app: visits-service
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: admin-server
+      app: visits-service
   template:
     metadata:
       labels:
-        app: admin-server
+        app: visits-service
     spec:
       containers:
-      - name: admin-server
-        image: springcommunity/spring-petclinic-admin-server
+      - name: visits-service
+        image: springcommunity/spring-petclinic-visits-service
         ports:
-        - containerPort: 9090
+        - containerPort: 8082
         env:
         - name: SPRING_CONFIG_IMPORT
           value: "configserver:http://config-server:8888/"
@@ -27,7 +27,7 @@ spec:
         livenessProbe:
           httpGet:
             path: /actuator/health/liveness
-            port: 9090
+            port: 8082
           initialDelaySeconds: 60
           periodSeconds: 10
           timeoutSeconds: 5
@@ -35,7 +35,7 @@ spec:
         readinessProbe:
           httpGet:
             path: /actuator/health/readiness
-            port: 9090
+            port: 8082
           initialDelaySeconds: 60
           periodSeconds: 10
           timeoutSeconds: 5
@@ -44,11 +44,11 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: admin-server
+  name: visits-service
 spec:
   selector:
-    app: admin-server
+    app: visits-service
   ports:
     - protocol: TCP
-      port: 9090
-      targetPort: 9090
+      port: 8082
+      targetPort: 8082

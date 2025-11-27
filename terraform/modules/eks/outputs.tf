@@ -25,20 +25,25 @@ output "cluster_certificate_authority_data" {
   sensitive   = true
 }
 
-# Node Group Outputs
-output "node_group_id" {
-  description = "EKS node group ID"
-  value       = aws_eks_node_group.main.id
+# Node Group Outputs (Multiple)
+output "node_group_ids" {
+  description = "Map of EKS node group IDs"
+  value       = { for k, v in aws_eks_node_group.node_groups : k => v.id }
 }
 
-output "node_group_arn" {
-  description = "Amazon Resource Name (ARN) of the EKS Node Group"
-  value       = aws_eks_node_group.main.arn
+output "node_group_arns" {
+  description = "Map of Amazon Resource Names (ARNs) of the EKS Node Groups"
+  value       = { for k, v in aws_eks_node_group.node_groups : k => v.arn }
 }
 
 output "node_group_status" {
-  description = "Status of the EKS node group"
-  value       = aws_eks_node_group.main.status
+  description = "Map of statuses of the EKS node groups"
+  value       = { for k, v in aws_eks_node_group.node_groups : k => v.status }
+}
+
+output "node_group_names" {
+  description = "List of EKS node group names"
+  value       = keys(aws_eks_node_group.node_groups)
 }
 
 # IAM Role Outputs

@@ -72,12 +72,37 @@ root_volume_type = "gp3"
 # EKS Configuration
 enable_eks          = true # Set to true to deploy EKS cluster
 eks_cluster_name    = "spring-petclinic-eks"
-eks_cluster_version = "1.30"
-eks_node_group_name = "petclinic-nodes"
-eks_desired_size    = 3
-eks_max_size        = 4
-eks_min_size        = 1
-eks_instance_types  = ["t3.xlarge"]
-eks_disk_size       = 50
+eks_cluster_version = "1.31"
+
+# Multiple Node Groups Configuration
+# Define separate worker groups with distinct names
+eks_node_groups = {
+  "petclinic-worker-primary" = {
+    desired_size   = 1
+    max_size       = 2
+    min_size       = 1
+    instance_types = ["t3.large"]
+    capacity_type  = "ON_DEMAND"
+    disk_size      = 50
+    labels = {
+      role        = "primary"
+      environment = "dev"
+      application = "spring-petclinic"
+    }
+  }
+  "petclinic-worker-secondary" = {
+    desired_size   = 2
+    max_size       = 3
+    min_size       = 1
+    instance_types = ["t3.xlarge"]
+    capacity_type  = "ON_DEMAND"
+    disk_size      = 50
+    labels = {
+      role        = "secondary"
+      environment = "dev"
+      application = "spring-petclinic"
+    }
+  }
+}
 
 

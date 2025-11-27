@@ -105,19 +105,8 @@ module "eks_cluster" {
   # Use public subnets from existing VPC
   subnet_ids = module.vpc.public_subnet_ids
 
-  # Node Group Configuration
-  node_group_name = var.eks_node_group_name
-  desired_size    = var.eks_desired_size
-  max_size        = var.eks_max_size
-  min_size        = var.eks_min_size
-  instance_types  = var.eks_instance_types
-  disk_size       = var.eks_disk_size
-
-  # Node Labels
-  node_labels = {
-    Environment = var.environment
-    Application = "spring-petclinic"
-  }
+  # Node Groups Configuration (Multiple)
+  node_groups = var.eks_node_groups
 
   # Tags
   tags = {
@@ -151,7 +140,7 @@ resource "kubernetes_config_map" "aws_auth" {
       }
     ])
   }
-  
+
   depends_on = [module.eks_cluster]
 }
 
