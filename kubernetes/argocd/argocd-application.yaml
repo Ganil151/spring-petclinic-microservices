@@ -1,0 +1,82 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: spring-petclinic
+  namespace: argocd
+  # Finalizer to ensure proper cleanup
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  # The project the application belongs to
+  project: default
+
+  # Source repository configuration
+  source:
+    # IMPORTANT: Update this with your Git repository URL
+    repoURL: https://github.com/Ganil151/spring-petclinic-microservices.git
+    targetRevision: main  # or master, depending on your default branch
+    path: kubernetes/deployments/deployment  # Path to your Kubernetes manifests
+
+  # Destination cluster and namespace
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: default
+
+  # Sync policy
+  syncPolicy:
+    # Automated sync configuration
+    automated:
+      # Automatically sync when Git changes are detected
+      prune: true       # Remove resources that are no longer in Git
+      selfHeal: true    # Revert manual changes to Git state
+      allowEmpty: false # Don't sync if repo is empty
+    
+    # Sync options
+    syncOptions:
+      - CreateNamespace=true  # Auto-create namespace if it doesn't exist
+      - PruneLast=true        # Prune resources as last step of sync
+      - PrunePropagationPolicy=foreground  # Wait for resources to be deleted
+    
+    # Retry policy for failed syncs
+    retry:
+      limit: 5  # Number of retry attempts
+      backoff:
+        duration: 5s      # Initial retry interval
+        factor: 2         # Multiply interval by this factor each retry
+        maxDuration: 3m   # Maximum retry interval
+
+  # Health assessment configuration
+  ignoreDifferences:
+    - group: apps
+      kind: Deployment
+      jsonPointers:
+        - /spec/replicas  # Ignore replica count differences (useful if using HPA)
+
+---
+# Optional: AppProject for organizing multiple applications
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: petclinic
+  namespace: argocd
+spec:
+  description: Spring Petclinic Microservices Project
+  
+  # Source repositories that applications may pull from
+  sourceRepos:
+    - '*'  # Allow all repositories (restrict this in production)
+  
+  # Destinations where applications can be deployed
+  destinations:
+    - namespace: '*'
+      server: https://kubernetes.default.svc
+  
+  # Cluster resources that can be managed
+  clusterResourceWhitelist:
+    - group: '*'
+      kind: '*'
+  
+  # Namespace resources that can be managed
+  namespaceResourceWhitelist:
+    - group: '*'
+      kind: '*'

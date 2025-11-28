@@ -180,6 +180,9 @@ spec:
         app: customers-service
         tier: business
     spec:
+      # Assign to Backend Node (k8s-as-server)
+      nodeSelector:
+        node-role.kubernetes.io/K8s-secondary-agent: ""
       containers:
       - name: customers-service
         image: springcommunity/spring-petclinic-customers-service
@@ -254,6 +257,9 @@ spec:
         app: vets-service
         tier: business
     spec:
+      # Assign to Backend Node (k8s-as-server)
+      nodeSelector:
+        node-role.kubernetes.io/K8s-secondary-agent: ""
       containers:
       - name: vets-service
         image: springcommunity/spring-petclinic-vets-service
@@ -328,6 +334,9 @@ spec:
         app: visits-service
         tier: business
     spec:
+      # Assign to Backend Node (k8s-as-server)
+      nodeSelector:
+        node-role.kubernetes.io/K8s-secondary-agent: ""
       containers:
       - name: visits-service
         image: springcommunity/spring-petclinic-visits-service
@@ -402,6 +411,9 @@ spec:
         app: api-gateway
         tier: gateway
     spec:
+      # Assign to Frontend Node (k8s-ap-server)
+      nodeSelector:
+        node-role.kubernetes.io/K8s-primary-agent: ""
       containers:
       - name: api-gateway
         image: springcommunity/spring-petclinic-api-gateway
@@ -477,6 +489,9 @@ spec:
         app: admin-server
         tier: monitoring
     spec:
+      # Assign to Frontend Node (k8s-ap-server)
+      nodeSelector:
+        node-role.kubernetes.io/K8s-primary-agent: ""
       containers:
       - name: admin-server
         image: springcommunity/spring-petclinic-admin-server

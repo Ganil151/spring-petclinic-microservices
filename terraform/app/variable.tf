@@ -156,19 +156,19 @@ variable "mysql_root_volume_size" {
 variable "k8s_master_root_volume_size" {
   description = "Root volume size for K8s Master instance in GB"
   type        = number
-  default     = 40
+  default     = 50
 }
 
-variable "k8s_worker_root_volume_size" {
-  description = "Root volume size for K8s Worker instance in GB"
+variable "k8s_worker_primary_root_volume_size" {
+  description = "Root volume size for K8s Worker Primary instance in GB"
   type        = number
-  default     = 40
+  default     = 50
 }
 
-variable "webhook_root_volume_size" {
-  description = "Root volume size for Webhook Receiver instance in GB"
+variable "k8s_worker_secondary_root_volume_size" {
+  description = "Root volume size for K8s Worker Secondary instance in GB"
   type        = number
-  default     = 20
+  default     = 50
 }
 
 variable "root_volume_type" {
@@ -177,75 +177,75 @@ variable "root_volume_type" {
   default     = "gp3"
 }
 
-# EKS Configuration
-variable "enable_eks" {
-  description = "Enable EKS cluster deployment"
-  type        = bool
-  default     = false
-}
+# # EKS Configuration
+# variable "enable_eks" {
+#   description = "Enable EKS cluster deployment"
+#   type        = bool
+#   default     = false
+# }
 
-variable "eks_cluster_name" {
-  description = "Name of the EKS cluster"
-  type        = string
-  default     = "spring-petclinic-eks"
-}
+# variable "eks_cluster_name" {
+#   description = "Name of the EKS cluster"
+#   type        = string
+#   default     = "spring-petclinic-eks"
+# }
 
-variable "eks_cluster_version" {
-  description = "Kubernetes version for EKS cluster"
-  type        = string
-  default     = "1.30"
-}
+# variable "eks_cluster_version" {
+#   description = "Kubernetes version for EKS cluster"
+#   type        = string
+#   default     = "1.30"
+# }
 
-variable "eks_node_group_name" {
-  description = "Name of the EKS node group"
-  type        = string
-  default     = "petclinic-nodes"
-}
+# variable "eks_node_group_name" {
+#   description = "Name of the EKS node group"
+#   type        = string
+#   default     = "petclinic-nodes"
+# }
 
-variable "eks_desired_size" {
-  description = "Desired number of EKS worker nodes"
-  type        = number
-  default     = 2
-}
+# variable "eks_desired_size" {
+#   description = "Desired number of EKS worker nodes"
+#   type        = number
+#   default     = 2
+# }
 
-variable "eks_max_size" {
-  description = "Maximum number of EKS worker nodes"
-  type        = number
-  default     = 3
-}
+# variable "eks_max_size" {
+#   description = "Maximum number of EKS worker nodes"
+#   type        = number
+#   default     = 3
+# }
 
-variable "eks_min_size" {
-  description = "Minimum number of EKS worker nodes"
-  type        = number
-  default     = 1
-}
+# variable "eks_min_size" {
+#   description = "Minimum number of EKS worker nodes"
+#   type        = number
+#   default     = 1
+# }
 
-variable "eks_instance_types" {
-  description = "Instance types for EKS node group"
-  type        = list(string)
-  default     = ["t3.xlarge"]
-}
+# variable "eks_instance_types" {
+#   description = "Instance types for EKS node group"
+#   type        = list(string)
+#   default     = ["t3.xlarge"]
+# }
 
-variable "eks_disk_size" {
-  description = "Disk size for EKS worker nodes in GiB"
-  type        = number
-  default     = 50
-}
+# variable "eks_disk_size" {
+#   description = "Disk size for EKS worker nodes in GiB"
+#   type        = number
+#   default     = 50
+# }
 
-# Multiple Node Groups Configuration
-variable "eks_node_groups" {
-  description = "Map of EKS node group configurations"
-  type = map(object({
-    desired_size   = number
-    max_size       = number
-    min_size       = number
-    instance_types = list(string)
-    capacity_type  = optional(string, "ON_DEMAND")
-    disk_size      = optional(number, 50)
-    labels         = optional(map(string), {})
-  }))
-  default = {}
-}
+# # Multiple Node Groups Configuration
+# variable "eks_node_groups" {
+#   description = "Map of EKS node group configurations"
+#   type = map(object({
+#     desired_size   = number
+#     max_size       = number
+#     min_size       = number
+#     instance_types = list(string)
+#     capacity_type  = optional(string, "ON_DEMAND")
+#     disk_size      = optional(number, 50)
+#     labels         = optional(map(string), {})
+#   }))
+#   default = {}
+# }
 
 variable "admin_iam_arn" {
   description = "ARN of the IAM user with admin access"

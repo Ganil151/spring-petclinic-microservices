@@ -202,7 +202,7 @@ http://<NODE-IP>:30080
 | `terraform/app/terraform.tfvars` | Variable values for deployment |
 | `terraform/app/variable.tf` | Variable definitions |
 | `terraform/MODULES/eks/` | EKS cluster module |
-
++
 ### Key Configuration Options
 
 #### EKS Cluster Settings
