@@ -4,8 +4,8 @@ set -e
 
 # Change Host Name
 NEW_HOSTNAME="Monitor-Server"
-echo "Changing Host Name..${NEW_HOSTNAME}"
-sudo hostnamectl set-hostname ${NEW_HOSTNAME}
+echo "Changing Host Name to: ${NEW_HOSTNAME}"
+sudo hostnamectl set-hostname "${NEW_HOSTNAME}"
 
 # Install dependencies and update system
 echo "Installing dependencies and updating system...😎"
@@ -15,11 +15,14 @@ sudo yum update -y
 echo "Installing Java..."
 sudo yum install -y java-21-amazon-corretto-devel git wget
 
-# Configure Java
-echo "Configure Java"
+# Configure Java environment
 JAVA_HOME="/usr/lib/jvm/java-21-amazon-corretto"
-echo "export JAVA_HOME=$JAVA_HOME" | sudo tee -a ~/.bashrc
-echo "export PATH=$PATH:$HOME/bin:$JAVA_HOME" | sudo tee -a ~/.bashrc
+echo "Configuring Java environment variables..."
+{
+    echo "export JAVA_HOME=${JAVA_HOME}"
+    echo "export PATH=\$PATH:\$HOME/bin:\$JAVA_HOME/bin"
+} | sudo tee -a /etc/profile.d/monitor_env.sh
+sudo chmod +x /etc/profile.d/monitor_env.sh
 
 # Install Docker
 echo "Installing Docker..."
@@ -41,7 +44,7 @@ PLUGINS_DIR="$DOCKER_CONFIG/cli-plugins"
 
 # Create the plugins directory if it doesn't exist
 echo "=== Creating Docker CLI plugins directory ==="
-mkdir -p $PLUGINS_DIR
+mkdir -p "$PLUGINS_DIR"
 
 # Download the Docker Compose binary for Linux (x86_64)
 COMPOSE_VERSION="v2.40.1" # You can update this to the latest version if needed
@@ -62,18 +65,18 @@ else
     exit 1
 fi
 
-echo '=== Verify Docker & Compose ==='
-docker --version || { echo 'Docker not working'; exit 1; }
-docker compose version || { echo 'Docker Compose V2 not working or not found in expected location'; exit 1; }
-
 # Add the current user to the docker group
 echo "Adding the current user to the docker group..."
-sudo usermod -a -G docker ec2-user
+sudo usermod -a -G docker $(whoami)
 
 # Configure Docker to start on boot
 echo "Configuring Docker to start on boot..."
 sudo systemctl enable docker
 sudo systemctl start docker
+
+echo '=== Verify Docker & Compose ==='
+sudo docker --version || { echo 'Docker not working'; exit 1; }
+sudo docker compose version || { echo 'Docker Compose V2 not working or not found in expected location'; exit 1; }
 
 # --- NEW SECTION: Install Prometheus ---
 echo "=== Installing Prometheus ==="
@@ -82,12 +85,22 @@ PROMETHEUS_GROUP="prometheus"
 PROMETHEUS_VERSION="2.55.0" # Check for the latest version on Prometheus releases page
 PROMETHEUS_URL="https://github.com/prometheus/prometheus/releases/download/v${PROMETHEUS_VERSION}/prometheus-${PROMETHEUS_VERSION}.linux-amd64.tar.gz"
 
-# 1. Create Prometheus user and group
-sudo useradd --no-create-home --shell /bin/false $PROMETHEUS_USER
+# 1. Create Prometheus user and group (if not exists)
+if ! id "$PROMETHEUS_USER" &>/dev/null; then
+    echo "Creating Prometheus user..."
+    sudo useradd --no-create-home --shell /bin/false $PROMETHEUS_USER
+else
+    echo "Prometheus user already exists."
+fi
 
 # 2. Download and extract Prometheus
 cd /tmp
-wget $PROMETHEUS_URL
+if [ ! -f "prometheus-${PROMETHEUS_VERSION}.linux-amd64.tar.gz" ]; then
+    echo "Downloading Prometheus..."
+    wget $PROMETHEUS_URL
+else
+    echo "Prometheus archive already downloaded."
+fi
 tar -xzf prometheus-${PROMETHEUS_VERSION}.linux-amd64.tar.gz
 cd prometheus-${PROMETHEUS_VERSION}.linux-amd64
 
@@ -130,11 +143,21 @@ ExecStart=/usr/local/bin/prometheus \
 WantedBy=multi-user.target
 EOF
 
-# 7. Start and enable Prometheus
+# 7. Clean up temporary files
+cd /tmp
+rm -rf prometheus-${PROMETHEUS_VERSION}.linux-amd64 prometheus-${PROMETHEUS_VERSION}.linux-amd64.tar.gz
+
+# 8. Start and enable Prometheus
 sudo systemctl daemon-reload
 sudo systemctl enable prometheus
 sudo systemctl start prometheus
-echo "Prometheus installed and started. Access it at http://<your-server-ip>:9090"
+
+# Verify Prometheus is running
+if sudo systemctl is-active --quiet prometheus; then
+    echo "✓ Prometheus installed and started successfully. Access it at http://<your-server-ip>:9090"
+else
+    echo "✗ WARNING: Prometheus service failed to start. Check logs with: sudo journalctl -u prometheus"
+fi
 
 # --- NEW SECTION: Install Grafana ---
 echo "=== Installing Grafana ==="
@@ -158,7 +181,13 @@ sudo yum install -y grafana
 sudo systemctl daemon-reload
 sudo systemctl enable grafana-server
 sudo systemctl start grafana-server
-echo "Grafana installed and started. Access it at http://<your-server-ip>:3000 (default login: admin/admin)"
+
+# Verify Grafana is running
+if sudo systemctl is-active --quiet grafana-server; then
+    echo "✓ Grafana installed and started successfully. Access it at http://<your-server-ip>:3000 (default login: admin/admin)"
+else
+    echo "✗ WARNING: Grafana service failed to start. Check logs with: sudo journalctl -u grafana-server"
+fi
 
 # Increase /tmp file size persistently and remount
 echo "Increasing /tmp file size to 1.5GB persistently..."
@@ -168,10 +197,9 @@ fi
 
 echo "Remounting /tmp with the new size..."
 if sudo mount -o remount /tmp; then
-    echo "/tmp remounted successfully."
+    echo "/tmp remounted successfully with 1.5GB size."
 else
-    echo "WARNING: Failed to remount /tmp immediately. A reboot is required for the change to take effect."
-    exit 0
+    echo "WARNING: Failed to remount /tmp immediately. A system reboot is required for the change to take full effect."
 fi
 
 echo "Docker, Docker Compose, Prometheus, and Grafana installation and configuration complete."

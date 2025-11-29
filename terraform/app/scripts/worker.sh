@@ -4,28 +4,16 @@ set -e
 
 # Change Host Name
 NEW_HOSTNAME="Worker-Server"
-echo "Changing Host Name ${NEW_HOSTNAME} ..."
-sudo hostnamectl set-hostname $NEW_HOSTNAME
+echo "Changing Host Name to: ${NEW_HOSTNAME}"
+sudo hostnamectl set-hostname "${NEW_HOSTNAME}"
 
 # Install dependencies and update system
 echo "Installing dependencies and updating system..."
 sudo yum update -y
 
-# Install Java
-echo "Installing Java..."
-sudo yum install -y java-21-amazon-corretto-devel git
-
-# Configure Java
-echo "Configure Java"
-JAVA_HOME="/usr/lib/jvm/java-21-amazon-corretto"
-echo "export JAVA_HOME=$JAVA_HOME" | sudo tee -a ~/.bashrc
-echo "export PATH=$PATH:$HOME/bin:$JAVA_HOME" | sudo tee -a ~/.bashrc
-
-# Install Maven (Already in the dependencies list, but we'll re-verify)
-if ! command -v mvn &> /dev/null; then
-    echo "Maven is not installed. Installing Maven..."
-    sudo yum install -y maven
-fi
+# Install Java and Maven
+echo "Installing Java and Maven..."
+sudo yum install -y java-21-amazon-corretto-devel git maven
 
 # Install Ansible
 echo "Installing Ansible..."
@@ -58,10 +46,10 @@ echo "Configuring environment variables (JAVA_HOME, M2_HOME) for current user...
     if [ -n "$M2_HOME" ]; then
         echo "export PATH=\$PATH:\$M2_HOME/bin"
     fi
-} | sudo tee -a /etc/profile.d/jenkins_env.sh # Use a profile.d script for system-wide shell configuration
+} | sudo tee -a /etc/profile.d/worker_env.sh # Use a profile.d script for system-wide shell configuration
 
 # Make the profile script executable
-sudo chmod +x /etc/profile.d/jenkins_env.sh
+sudo chmod +x /etc/profile.d/worker_env.sh
 
 
 # Install Docker
@@ -70,22 +58,15 @@ sudo yum install -y docker git
 
 # Install Docker Compose
 echo '=== Installing Docker Compose V2 if missing ==='
-if ! docker compose version &> /dev/null; then
+if ! sudo docker compose version &> /dev/null; then
     echo 'Installing Docker Compose V2...'
     sudo mkdir -p /usr/libexec/docker/cli-plugins/
     sudo curl -SL https://github.com/docker/compose/releases/latest/download/docker-compose-linux-$(uname -m) -o /usr/libexec/docker/cli-plugins/docker-compose
     sudo chmod +x /usr/libexec/docker/cli-plugins/docker-compose
-    docker compose version
-
-    # Optional: Add the directory to PATH if not recognized by default
-    # This might be redundant as Docker usually looks in ~/.docker/cli-plugins/
-    export PATH=\$PATH:/home/ec2-user/.docker/cli-plugins
-    echo 'export PATH=\$PATH:/home/ec2-user/.docker/cli-plugins' >> ~/.bashrc
+    echo 'Docker Compose V2 installed successfully.'
+else
+    echo 'Docker Compose V2 is already installed.'
 fi
-
-echo '=== Verify Docker & Compose ==='
-docker --version || { echo 'Docker not working'; exit 1; }
-docker compose version || { echo 'Docker Compose V2 not working or not found in expected location'; exit 1; }
 
 # Add the current user to the docker group
 echo "Adding the current user to the docker group..."
@@ -96,6 +77,11 @@ echo "Configuring Docker to start on boot..."
 sudo systemctl enable docker
 sudo systemctl start docker
 
+echo '=== Verify Docker & Compose ==='
+sudo docker --version || { echo 'Docker not working'; exit 1; }
+sudo docker compose version || { echo 'Docker Compose V2 not working or not found in expected location'; exit 1; }
+
+echo "Running final system update..."
 sudo yum update -y
 
 
@@ -107,10 +93,9 @@ fi
 
 echo "Remounting /tmp with the new size..."
 if sudo mount -o remount /tmp; then
-    echo "/tmp remounted successfully."
+    echo "/tmp remounted successfully with 1.5GB size."
 else
-    echo "WARNING: Failed to remount /tmp immediately. A reboot is required for the change to take effect."
-    exit 0 
+    echo "WARNING: Failed to remount /tmp immediately. A system reboot is required for the change to take full effect."
 fi
 
 echo "Docker installation and configuration complete."

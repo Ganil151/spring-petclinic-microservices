@@ -30,7 +30,7 @@ fi
 
 echo ""
 echo "You have chosen to label nodes with the role: $ROLE_NAME"
-echo "This will create the label: node-role.kubernetes.io/$ROLE_NAME=$ROLE_NAME"
+echo "This will create the label: node-role.kubernetes.io/$ROLE_NAME (with empty value)"
 read -p "Are you sure you want to continue? (y/N): " -n 1 -r
 echo
 if [[ ! $REPLY =~ ^[Yy]$ ]]; then
@@ -107,8 +107,8 @@ echo ""
 
 # Label the selected nodes
 for node in $NODES_TO_LABEL; do
-    echo "Labeling $node with node-role.kubernetes.io/$ROLE_NAME=$ROLE_NAME..."
-    kubectl label node "$node" "node-role.kubernetes.io/$ROLE_NAME=$ROLE_NAME" --overwrite
+    echo "Labeling $node with node-role.kubernetes.io/$ROLE_NAME=\"\"..."
+    kubectl label node "$node" "node-role.kubernetes.io/$ROLE_NAME=" --overwrite
     echo "✓ $node labeled"
 done
 
@@ -120,7 +120,7 @@ echo ""
 echo "=== Example Usage of Labels ==="
 echo "You can now use the label '$ROLE_NAME' for scheduling:"
 echo "  nodeSelector:"
-echo "    node-role.kubernetes.io/$ROLE_NAME: $ROLE_NAME"
+echo "    node-role.kubernetes.io/$ROLE_NAME: \"\""
 echo ""
 echo "Or using node affinity:"
 echo "  affinity:"
@@ -129,6 +129,4 @@ echo "      requiredDuringSchedulingIgnoredDuringExecution:"
 echo "        nodeSelectorTerms:"
 echo "        - matchExpressions:"
 echo "          - key: node-role.kubernetes.io/$ROLE_NAME"
-echo "            operator: In"
-echo "            values:"
-echo "            - $ROLE_NAME"
+echo "            operator: Exists"

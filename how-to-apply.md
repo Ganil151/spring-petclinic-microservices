@@ -1,626 +1,894 @@
+# Spring Petclinic Microservices - Complete Deployment Guide
 
+## Table of Contents
+1. [Prerequisites](#prerequisites)
+2. [Infrastructure Setup with Terraform](#infrastructure-setup-with-terraform)
+3. [Server Configuration](#server-configuration)
+4. [Kubernetes Cluster Setup](#kubernetes-cluster-setup)
+5. [Jenkins Configuration](#jenkins-configuration)
+6. [Application Deployment](#application-deployment)
+7. [Monitoring Setup](#monitoring-setup)
+8. [Troubleshooting](#troubleshooting)
 
-🔁 Update Git credentials:
+---
+
+## Prerequisites
+
+### Required Accounts & Access
+- [x] AWS Account with appropriate permissions
+- [x] GitHub Account
+- [x] Docker Hub Account
+- [x] SSH Key Pair for EC2 instances
+
+### Local Tools Installation
+- [x] Terraform >= 1.0
+- [x] AWS CLI v2
+- [x] Git
+- [x] SSH Client
+
+### Configure AWS CLI
 ```bash
-git remote set-url origin https://<your\_username>:<your\_token>@github.com/KastroVKiran/microservices-ingress-kastro.git
+aws configure
+# Enter your AWS Access Key ID
+# Enter your AWS Secret Access Key
+# Default region: us-east-1
+# Default output format: json
 ```
 
-✅ Push the code
+---
+
+## 1. Infrastructure Setup with Terraform
+
+### 1.1 Clone the Repository
 ```bash
-git push -u origin master
+git clone https://github.com/<your-username>/spring-petclinic-microservices.git
+cd spring-petclinic-microservices
 ```
-1.2. Launch 1 VM (Ubuntu, 24.04, t2.large, 28 GB, Name: Ingress-Server)
 
-Open below ports for the Security Group attached to the above VM
-Type                  Protocol   Port range
-SMTP                  TCP           25
-(Used for sending emails between mail servers)
+### 1.2 Configure Terraform Variables
+Edit `terraform/app/terraform.tfvars`:
+```hcl
+# Network Configuration
+aws-region          = "us-east-1"
+vpc-cidr-block      = "10.7.0.0/16"
+subnet-cidr-block   = "10.7.0.0/24"
 
-Custom TCP        TCP		3000-10000
-(Used by various applications, such as Node.js (3000), Grafana (3000), Jenkins (8080), and custom web applications.
+# EC2 Configuration
+instance-type       = "t2.medium"
+key-name            = "your-key-pair-name"  # Change this to your SSH key
+instance-ami        = "ami-01816d07b1128cd2d"  # Amazon Linux 2023
 
-HTTP                   TCP           80
-Allows unencrypted web traffic. Used by web servers (e.g., Apache, Nginx) to serve websites over HTTP.
+# Server Configuration
+master-server-name     = "Master-Server"
+worker-server-name     = "Worker-Server"
+mysql-server-name      = "Mysql-Server"
+monitoring-server-name = "Monitor-Server"
 
-HTTPS                 TCP           443
-Allows secure web traffic using SSL/TLS.
+# Kubernetes Configuration
+k8s-master-server-name    = "K8s-Master-Server"
+k8s-agent-1-server-name   = "K8s-Worker-Server"
+k8s-agent-2-server-name   = "K8s-Agent-2-Server"
+```
 
-SSH                      TCP           22
-Secure Shell (SSH) for remote server access.
-
-Custom TCP         TCP           6443
-Kubernetes API server port. Used for communication between kubectl, worker nodes, and the Kubernetes control plane.
-
-SMTPS                 TCP           465
-Secure Mail Transfer Protocol over SSL/TLS. Used for sending emails securely via SMTP with encryption.
-
-Custom TCP         TCP           30000-32767
-Kubernetes NodePort service range.
-
-===================
-Step 2: Tools Installation
-===================
-2.1.1 Connect to the Ingress Server
-vi Jenkins.sh ----> Paste the below content ---->
+### 1.3 Initialize Terraform
 ```bash
-#!/bin/bash
-# Update system
-sudo apt update -y
-# Install dependencies
-sudo apt install -y fontconfig openjdk-17-jre-headless wget gnupg2
-# Download and add the Jenkins GPG key
-wget -O- https://pkg.jenkins.io/debian-stable/jenkins.io-2023.key | \\
-    gpg --dearmor | sudo tee /usr/share/keyrings/jenkins-keyring.gpg > /dev/null
-# Add Jenkins repository
-echo "deb \[signed-by=/usr/share/keyrings/jenkins-keyring.gpg] https://pkg.jenkins.io/debian-stable binary/" | \\
-    sudo tee /etc/apt/sources.list.d/jenkins.list > /dev/null
-# Update package lists
-sudo apt update -y
-# Install Jenkins
-sudo apt install jenkins -y
-# Start Jenkins
-sudo systemctl start jenkins
-sudo systemctl enable jenkins
-# Print status
+cd terraform/app
+terraform init
+```
+
+### 1.4 Review Infrastructure Plan
+```bash
+terraform plan
+```
+
+Review the output to ensure all resources will be created correctly:
+- ✓ 7 EC2 Instances
+- ✓ VPC and Subnet
+- ✓ Security Groups with appropriate rules
+- ✓ Internet Gateway and Route Tables
+
+### 1.5 Apply Terraform Configuration
+```bash
+terraform apply
+
+# Review the plan
+# Type 'yes' to confirm
+```
+
+**Wait Time:** Approximately 10-15 minutes for all servers to initialize
+
+### 1.6 Verify Infrastructure
+```bash
+# List all created instances
+terraform show
+
+# Get instance IPs
+terraform output
+
+# Or use AWS CLI
+aws ec2 describe-instances --filters "Name=tag:Name,Values=*Server*" \
+  --query 'Reservations[*].Instances[*].[Tags[?Key==`Name`].Value|[0],PublicIpAddress,State.Name]' \
+  --output table
+```
+
+---
+
+## 2. Server Configuration
+
+### 2.1 Wait for User Data Scripts to Complete
+
+All servers run initialization scripts automatically via user_data. Monitor progress:
+
+```bash
+# SSH into each server and check cloud-init status
+ssh -i ~/.ssh/your-key.pem ec2-user@<server-ip>
+
+# Check cloud-init status
+sudo cloud-init status
+
+# View initialization logs
+sudo tail -f /var/log/cloud-init-output.log
+
+# Check if services are running (example for master server)
+sudo systemctl status jenkins  # On Master Server
+sudo systemctl status docker   # On Worker Server
+sudo systemctl status mysqld   # On MySQL Server
+```
+
+**Expected Initialization Times:**
+- Master Server (Jenkins): ~5-8 minutes
+- Worker Server: ~4-6 minutes
+- MySQL Server: ~3-5 minutes
+- Monitoring Server: ~6-10 minutes
+- K8s Master: ~8-12 minutes
+- K8s Agents: ~5-7 minutes each
+
+### 2.2 Master Server (Jenkins) Verification
+
+```bash
+# SSH to Master Server
+ssh -i ~/.ssh/your-key.pem ec2-user@<master-server-ip>
+
+# Verify Jenkins is running
 sudo systemctl status jenkins
+
+# Get Jenkins initial admin password
+sudo cat /var/lib/jenkins/secrets/initialAdminPassword
+
+# Get Jenkins SSH public key (for GitHub deploy keys)
+sudo cat /var/lib/jenkins/.ssh/id_rsa.pub
 ```
-----> esc ----> :wq ----> sudo chmod +x jenkins.sh ----> ./jenkins.sh
 
-Open Port 8080 in Jenkins server
-Access Jenkins and setup Jenkins
+**Jenkins URL:** `http://<master-server-ip>:8080`
 
+### 2.3 MySQL Server Verification
 
-2.1.2 Install Docker
-vi docker.sh ----> Paste the below content ---->
 ```bash
-#!/bin/bash
-# Update package manager repositories
-sudo apt-get update
-# Install necessary dependencies
-sudo apt-get install -y ca-certificates curl
-# Create directory for Docker GPG key
-sudo install -m 0755 -d /etc/apt/keyrings
-# Download Docker's GPG key
-sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
-# Ensure proper permissions for the key
-sudo chmod a+r /etc/apt/keyrings/docker.asc
-# Add Docker repository to Apt sources
-echo "deb \[arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu \\
-$(. /etc/os-release \&\& echo "$VERSION\_CODENAME") stable" | \\
-sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-# Update package manager repositories
-sudo apt-get update
-sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+# SSH to MySQL Server
+ssh -i ~/.ssh/your-key.pem ec2-user@<mysql-server-ip>
+
+# Verify MySQL is running
+sudo systemctl status mysqld
+
+# MySQL root password (from script output)
+# Default: Mysql$9999!
+
+# Test MySQL connection
+mysql -u root -p'Mysql$9999!'
 ```
-----> esc ----> :wq ----> sudo chmod +x docker.sh ----> ./docker.sh
+
+### 2.4 Monitoring Server Verification
+
 ```bash
-docker --version
-```
-==================================
-Step 3: Access Jenkins Dashboard
-==================================
-Setup the Jenkins
+# SSH to Monitoring Server
+ssh -i ~/.ssh/your-key.pem ec2-user@<monitoring-server-ip>
 
-3.1. Plugins installation
-Install below plugins;
-Docker, Docker Commons, Docker Pipeline, Docker API, 
-docker-build-step, AWS Credentials, Pipeline stage view, 
-Kubernetes, Kubernetes CLI, Kubernetes Client API, 
-Kubernetes Credentials, Config File Provider, 
-Prometheus metrics
+# Verify Prometheus
+sudo systemctl status prometheus
 
-3.2. Creation of Credentials
-Configure Dockerhub Credentials as "dockerhub-creds"
-Configure AWS Credentials (Access and Secret Access Keys) as "aws-creds"
-
-3.3. Tools Configuration
-
-=====================================
-Step 4: Creation of EKS Cluster
-=====================================
-4.1. Creation of IAM user (To create EKS Cluster, its not recommended to create using Root Account)
-
-4.2. Attach policies to the user
-AmazonEC2FullAccess, AmazonEKS\_CNI\_Policy, AmazonEKSClusterPolicy, AmazonEKSWorkerNodePolicy, AWSCloudFormationFullAccess, IAMFullAccess
-
-Attach the below inline policy also for the same user
-```yaml
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Sid": "VisualEditor0",
-      "Effect": "Allow",
-      "Action": "eks:*",
-      "Resource": "*"
-    }
-  ]
-}
+# Verify Grafana
+sudo systemctl status grafana-server
 ```
 
-4.3. Create Access Keys for the user created
+**Access URLs:**
+- Prometheus: `http://<monitoring-server-ip>:9090`
+- Grafana: `http://<monitoring-server-ip>:3000` (admin/admin)
 
-With this we have created the IAM User with appropriate permissions to create the EKS Cluster
+---
 
-4.4. Install AWS CLI (to interact with AWS Account)
+## 3. Kubernetes Cluster Setup
+
+### 3.1 K8s Master Node Setup
+
 ```bash
-#!/bin/bash
+# SSH to K8s Master
+ssh -i ~/.ssh/your-key.pem ec2-user@<k8s-master-ip>
 
-set -e
+# Wait for initialization to complete (check cloud-init logs)
+sudo tail -f /var/log/cloud-init-output.log
 
-# Update the system
-sudo apt update && sudo apt upgrade -y
+# Verify cluster is initialized
+kubectl get nodes
 
-# Install unzip (if not already installed)
-sudo apt install -y unzip
-
-# Download the AWS CLI v2 installer
-echo "Downloading AWS CLI v2..."
-curl -L "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-
-# Verify the integrity of the downloaded file
-if [[ ! -f "awscliv2.zip" ]]; then
-  echo "Error: awscliv2.zip was not downloaded correctly."
-  exit 1
-fi
-
-# Unzip the installer
-echo "Unzipping AWS CLI v2..."
-unzip awscliv2.zip
-
-# Install AWS CLI v2
-echo "Installing AWS CLI v2..."
-sudo ./aws/install
-
-# Verify the installation
-echo "Verifying AWS CLI v2 installation..."
-aws --version
+# Get join command for worker nodes
+sudo cat /root/k8s_join_command.sh
 ```
 
-4.5. Install KubeCTL (to interact with K8S)
+### 3.2 Join Worker Nodes to Cluster
+
+#### Agent 1 (Primary Worker)
 ```bash
-curl -o kubectl https://amazon-eks.s3.us-west-2.amazonaws.com/1.19.6/2021-01-05/bin/linux/amd64/kubectl
-chmod +x ./kubectl
-sudo mv ./kubectl /usr/local/bin
-kubectl version --short --client
+# SSH to Agent 1
+ssh -i ~/.ssh/your-key.pem ec2-user@<k8s-agent-1-ip>
+
+# Get join command from master
+JOIN_COMMAND=$(ssh ec2-user@<k8s-master-ip> 'sudo kubeadm token create --print-join-command')
+
+# Execute join command
+sudo $JOIN_COMMAND
+
+# Wait for join to complete (~2-3 minutes)
 ```
 
-4.6. Install EKS CTL (used to create EKS Cluster)
+#### Agent 2 (Secondary Worker)
 ```bash
-#!/bin/bash
+# SSH to Agent 2
+ssh -i ~/.ssh/your-key.pem ec2-user@<k8s-agent-2-ip>
 
-set -e
+# Get join command from master
+JOIN_COMMAND=$(ssh ec2-user@<k8s-master-ip> 'sudo kubeadm token create --print-join-command')
 
-# Download and extract eksctl
-ARCH="amd64"
-OS=$(uname -s | tr '[:upper:]' '[:lower:]') # Convert OS name to lowercase
+# Execute join command
+sudo $JOIN_COMMAND
 
-# Construct the correct URL
-EKSCTL_URL="https://github.com/weaveworks/eksctl/releases/latest/download/eksctl_${OS}_${ARCH}.tar.gz"
-
-# Download and extract the tar.gz file
-echo "Downloading eksctl from $EKSCTL_URL..."
-curl --silent --location "$EKSCTL_URL" | tar xz -C /tmp
-
-# Move eksctl to /usr/local/bin
-echo "Moving eksctl to /usr/local/bin..."
-sudo mv /tmp/eksctl /usr/local/bin
-
-# Verify installation
-echo "Verifying eksctl installation..."
-eksctl version
+# Wait for join to complete (~2-3 minutes)
 ```
 
-4.7. Create EKS Cluster
+### 3.3 Apply Node Labels (On Master Node)
+
 ```bash
-eksctl create cluster --name kastro-cluster --region us-east-1 --node-type m7i-flex.large --zones us-east-1a,us-east-1b
+# SSH to K8s Master
+ssh -i ~/.ssh/your-key.pem ec2-user@<k8s-master-ip>
+
+# Label Agent 1 (Primary Worker)
+kubectl label node K8s-Worker-Server node-role.kubernetes.io/worker=worker
+kubectl label node K8s-Worker-Server node.kubernetes.io/role=K8s-primary-agent
+
+# Label Agent 2 (Secondary Worker)
+kubectl label node K8s-Agent-2-Server node-role.kubernetes.io/worker=worker
+kubectl label node K8s-Agent-2-Server node.kubernetes.io/role=K8s-secondary-agent
+
+# Verify labels
+kubectl get nodes --show-labels
 ```
 
-4.8. Modifying the permissions
-```bash
-sudo usermod -aG docker jenkins
-sudo systemctl restart docker
-sudo systemctl restart jenkins
+Expected output:
+```
+NAME                   STATUS   ROLES           AGE   VERSION
+K8s-Master-Server      Ready    control-plane   10m   v1.31.0
+K8s-Worker-Server      Ready    worker          8m    v1.31.0
+K8s-Agent-2-Server     Ready    worker          8m    v1.31.0
 ```
 
-4.9. Installation of Ingress Controller
+### 3.4 Verify Calico CNI Installation
+
 ```bash
-kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.10.1/deploy/static/provider/aws/deploy.yaml
+# Check Calico pods
+kubectl get pods -n calico-system
 
-#Wait for sometime for the pods to create
-kubectl get pods -n ingress-nginx
+# All pods should be in Running state
+# Wait 2-3 minutes if some are still initializing
+```
 
-#To get the external ip of ingress
+---
+
+## 4. Jenkins Configuration
+
+### 4.1 Access Jenkins Dashboard
+
+1. Open browser: `http://<master-server-ip>:8080`
+2. Enter initial admin password (from step 2.2)
+3. Install suggested plugins
+4. Create admin user
+5. Configure Jenkins URL
+
+### 4.2 Install Required Plugins
+
+Navigate to: **Manage Jenkins → Plugins → Available Plugins**
+
+Install the following plugins:
+- [x] Docker
+- [x] Docker Commons
+- [x] Docker Pipeline
+- [x] Docker API
+- [x] docker-build-step
+- [x] Kubernetes
+- [x] Kubernetes CLI
+- [x] Kubernetes Client API
+- [x] Kubernetes Credentials
+- [x] Config File Provider
+- [x] Pipeline Stage View
+- [x] Prometheus Metrics
+- [x] Git Parameter
+
+### 4.3 Configure Credentials
+
+Navigate to: **Manage Jenkins → Credentials → System → Global credentials**
+
+#### Add Docker Hub Credentials
+- **Kind:** Username with password
+- **ID:** `dockerhub-creds`
+- **Username:** Your Docker Hub username
+- **Password:** Your Docker Hub password/token
+
+#### Add GitHub Credentials (if private repo)
+- **Kind:** Username with password
+- **ID:** `github-creds`
+- **Username:** Your GitHub username
+- **Password:** Your GitHub Personal Access Token
+
+#### Add Kubernetes Credentials
+
+On K8s Master, copy the kubeconfig:
+```bash
+# On K8s Master
+cat ~/.kube/config
+```
+
+In Jenkins:
+- **Kind:** Secret file
+- **ID:** `k8s-kubeconfig`
+- **File:** Upload or paste kubeconfig content
+
+### 4.4 Configure Tools
+
+Navigate to: **Manage Jenkins → Tools**
+
+#### Maven Configuration
+- **Name:** Maven-3.9
+- **Install automatically:** ✓
+- **Version:** 3.9.x
+
+#### JDK Configuration
+- **Name:** Java-21
+- **JAVA_HOME:** `/usr/lib/jvm/java-21-amazon-corretto`
+
+### 4.5 Add Jenkins SSH Key to GitHub
+
+```bash
+# On Master Server, get Jenkins public key
+sudo cat /var/lib/jenkins/.ssh/id_rsa.pub
+```
+
+1. Go to GitHub → Your Repository → Settings → Deploy keys
+2. Click "Add deploy key"
+3. Paste the public key
+4. Enable "Allow write access" if needed
+5. Save
+
+---
+
+## 5. Application Deployment
+
+### 5.1 Prepare Kubernetes Namespaces
+
+```bash
+# On K8s Master
+kubectl create namespace spring-petclinic
+kubectl create namespace monitoring
+```
+
+### 5.2 Deploy MySQL Database
+
+```bash
+# Create MySQL secret
+kubectl create secret generic mysql-secret \
+  --from-literal=mysql-root-password='Mysql$9999!' \
+  --from-literal=mysql-password='petclinic' \
+  -n spring-petclinic
+
+# Deploy MySQL
+kubectl apply -f kubernetes/mysql-deployment.yaml -n spring-petclinic
+
+# Verify MySQL is running
+kubectl get pods -n spring-petclinic
+```
+
+### 5.3 Deploy Config Server (First)
+
+The Config Server must be deployed first as other services depend on it.
+
+```bash
+# Deploy Config Server
+kubectl apply -f kubernetes/config-server-deployment.yaml -n spring-petclinic
+
+# Wait for Config Server to be ready
+kubectl wait --for=condition=available --timeout=300s \
+  deployment/config-server -n spring-petclinic
+
+# Verify it's running
+kubectl get pods -n spring-petclinic -l app=config-server
+```
+
+### 5.4 Deploy Discovery Server (Second)
+
+```bash
+# Deploy Discovery Server
+kubectl apply -f kubernetes/discovery-server-deployment.yaml -n spring-petclinic
+
+# Wait for Discovery Server to be ready
+kubectl wait --for=condition=available --timeout=300s \
+  deployment/discovery-server -n spring-petclinic
+```
+
+### 5.5 Deploy Microservices
+
+Deploy in this order:
+
+```bash
+# 1. Customers Service
+kubectl apply -f kubernetes/customers-service-deployment.yaml -n spring-petclinic
+
+# 2. Vets Service
+kubectl apply -f kubernetes/vets-service-deployment.yaml -n spring-petclinic
+
+# 3. Visits Service
+kubectl apply -f kubernetes/visits-service-deployment.yaml -n spring-petclinic
+
+# 4. API Gateway
+kubectl apply -f kubernetes/api-gateway-deployment.yaml -n spring-petclinic
+
+# 5. Admin Server
+kubectl apply -f kubernetes/admin-server-deployment.yaml -n spring-petclinic
+
+# Wait for all deployments
+kubectl wait --for=condition=available --timeout=600s \
+  --all deployments -n spring-petclinic
+```
+
+### 5.6 Verify All Services
+
+```bash
+# Check all pods
+kubectl get pods -n spring-petclinic
+
+# Check all services
+kubectl get svc -n spring-petclinic
+
+# Check pod logs if any issues
+kubectl logs -f <pod-name> -n spring-petclinic
+```
+
+### 5.7 Deploy Ingress Controller
+
+```bash
+# Deploy NGINX Ingress Controller
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.10.1/deploy/static/provider/baremetal/deploy.yaml
+
+# Wait for ingress controller to be ready
+kubectl wait --for=condition=available --timeout=300s \
+  deployment/ingress-nginx-controller -n ingress-nginx
+
+# Get NodePort for access
 kubectl get svc ingress-nginx-controller -n ingress-nginx
 ```
 
-4.10. To delete the cluster (Optional)
+### 5.8 Deploy Application Ingress
+
 ```bash
-eksctl delete cluster --name kastro-cluster --region us-east-1
+# Deploy ingress rules
+kubectl apply -f kubernetes/ingress.yaml -n spring-petclinic
+
+# Verify ingress
+kubectl get ingress -n spring-petclinic
 ```
 
-================================
-Step 5: Creation of Jenkins Job
-================================
-The pipeline script can be found in the Jenkinsfile in GitHub repo
+### 5.9 Access the Application
 
-=========================
-Step 6: Monitoring
-=========================
-Launch Ubuntu VM, 22.04, t2.medium,
-Name the VM as Monitoring Server
-
-### 6.1. Connect to the Monitoring Server VM (Execute in Monitoring Server VM)
-Create a dedicated Linux user sometimes called a 'system' account for Prometheus
+Get the NodePort from ingress controller:
 ```bash
-sudo apt update
-
-sudo useradd \
-    --system \
-    --no-create-home \
-    --shell /bin/false prometheus
-```
-With the above command, we have created a 'Prometheus' user
-
-Explanation of above command
-–system – Will create a system account.
-–no-create-home – We don’t need a home directory for Prometheus or any other system accounts in our case.
-–shell /bin/false – It prevents logging in as a Prometheus user.
-Prometheus – Will create a Prometheus user and a group with the same name.
-
-6.2. Download the Prometheus
-```bash
-sudo wget https://github.com/prometheus/prometheus/releases/download/v2.47.1/prometheus-2.47.1.linux-amd64.tar.gz
-tar -xvf prometheus-2.47.1.linux-amd64.tar.gz
-sudo mkdir -p /data /etc/prometheus
-cd prometheus-2.47.1.linux-amd64/
+kubectl get svc ingress-nginx-controller -n ingress-nginx
 ```
 
-Move the Prometheus binary and a promtool to the /usr/local/bin/. promtool is used to check configuration files and Prometheus rules.
+Access the application:
+- **URL:** `http://<k8s-master-ip>:<nodeport>`
+- Or configure DNS/LoadBalancer pointing to the K8s cluster
+
+---
+
+## 6. Jenkins Pipeline Configuration
+
+### 6.1 Create Jenkins Pipeline Job
+
+1. **Jenkins Dashboard** → **New Item**
+2. **Name:** `petclinic-microservices-pipeline`
+3. **Type:** Pipeline
+4. Click **OK**
+
+### 6.2 Configure Pipeline
+
+#### General Settings
+- [x] **GitHub project:** `https://github.com/<your-username>/spring-petclinic-microservices`
+
+#### Build Triggers
+- [x] **GitHub hook trigger for GITScm polling**
+- [x] **Poll SCM:** `H/5 * * * *` (every 5 minutes as backup)
+
+#### Pipeline Definition
+- **Definition:** Pipeline script from SCM
+- **SCM:** Git
+- **Repository URL:** `https://github.com/<your-username>/spring-petclinic-microservices.git`
+- **Credentials:** Select your GitHub credentials
+- **Branch:** `*/master` or `*/main`
+- **Script Path:** `Jenkinsfile`
+
+### 6.3 Jenkinsfile Overview
+
+The Jenkinsfile should include these stages:
+
+1. **Git Checkout:** Clone the repository
+2. **Build:** Compile with Maven
+3. **Test:** Run unit tests
+4. **Docker Build:** Build Docker images
+5. **Docker Push:** Push to Docker Hub
+6. **Deploy to K8s:** Apply Kubernetes manifests
+7. **Verify Deployment:** Check pod status
+
+### 6.4 Configure GitHub Webhook
+
+1. Go to GitHub Repository → **Settings** → **Webhooks**
+2. Click **Add webhook**
+3. **Payload URL:** `http://<master-server-ip>:8080/github-webhook/`
+4. **Content type:** `application/json`
+5. **Events:** Just the push event
+6. **Active:** ✓
+7. Save
+
+### 6.5 Run First Build
+
+1. Go to Jenkins job
+2. Click **Build Now**
+3. Monitor the build progress in **Console Output**
+
+---
+
+## 7. Monitoring Setup
+
+### 7.1 Configure Prometheus
+
 ```bash
-sudo mv prometheus promtool /usr/local/bin/
+# SSH to Monitoring Server
+ssh -i ~/.ssh/your-key.pem ec2-user@<monitoring-server-ip>
+
+# Edit Prometheus config
+sudo vi /etc/prometheus/prometheus.yml
 ```
 
-Move console libraries to the Prometheus configuration directory
-```bash
-sudo mv consoles/ console_libraries/ /etc/prometheus/
-```
+Add these scrape configs:
 
-Move the example of the main Prometheus configuration file
-```bash
-sudo mv prometheus.yml /etc/prometheus/prometheus.yml
-```
-
-Set the correct ownership for the /etc/prometheus/ and data directory
-```bash
-sudo chown -R prometheus:prometheus /etc/prometheus/ /data/
-```
-
-Delete the archive and a Prometheus tar.gz file 
-```bash
-cd
-You are in ~ path
-rm -rf prometheus-2.47.1.linux-amd64.tar.gz
-```
-```bash
-prometheus --version
-You will see as "version 2.47.1"
-
-prometheus --help
-```
-We’re going to use Systemd, which is a system and service manager for Linux operating systems. For that, we need to create a Systemd unit configuration file.
-```bash
-sudo vi /etc/systemd/system/prometheus.service ---> Paste the below content ---->
-
-[Unit]
-Description=Prometheus
-Wants=network-online.target
-After=network-online.target
-StartLimitIntervalSec=500
-StartLimitBurst=5
-[Service]
-User=prometheus
-Group=prometheus
-Type=simple
-Restart=on-failure
-RestartSec=5s
-ExecStart=/usr/local/bin/prometheus \
-  --config.file=/etc/prometheus/prometheus.yml \
-  --storage.tsdb.path=/data \
-  --web.console.templates=/etc/prometheus/consoles \
-  --web.console.libraries=/etc/prometheus/console_libraries \
-  --web.listen-address=0.0.0.0:9090 \
-  --web.enable-lifecycle
-[Install]
-WantedBy=multi-user.target
-```
-
- ----> esc ----> :wq ----> 
-
-To automatically start the Prometheus after reboot run the below command
-```bash
-sudo systemctl enable prometheus
-```
-Start the Prometheus
-```bash
-sudo systemctl start prometheus
-```
-Check the status of Prometheus
-```bash
-sudo systemctl status prometheus
-```
-Open Port No. 9090 for Monitoring Server VM and Access Prometheus
-<public-ip:9090>
-
-If it doesn't work, in the web link of browser, remove 's' in 'https'. Keep only 'http' and now you will be able to see.
-You can see the Prometheus console.
-Click on 'Status' dropdown ---> Click on 'Targets' ---> You can see 'Prometheus (1/1 up)' ----> It scrapes itself every 15 seconds by default.
-
-#### 10. Install Node Exporter (Execute in Monitoring Server VM)
-You are in ~ path now
-
-Create a system user for Node Exporter and download Node Exporter:
-```bash
-sudo useradd --system --no-create-home --shell /bin/false node_exporter
-wget https://github.com/prometheus/node_exporter/releases/download/v1.6.1/node_exporter-1.6.1.linux-amd64.tar.gz
-```
-Extract Node Exporter files, move the binary, and clean up:
-```bash
-tar -xvf node_exporter-1.6.1.linux-amd64.tar.gz
-sudo mv node_exporter-1.6.1.linux-amd64/node_exporter /usr/local/bin/
-rm -rf node_exporter*
-
-node_exporter --version
-```
-Create a systemd unit configuration file for Node Exporter:
-```bash
-# sudo vi /etc/systemd/system/node_exporter.service
-
-Add the following content to the node_exporter.service file:
-[Unit]
-Description=Node Exporter
-Wants=network-online.target
-After=network-online.target
-
-StartLimitIntervalSec=500
-StartLimitBurst=5
-
-[Service]
-User=node_exporter
-Group=node_exporter
-Type=simple
-Restart=on-failure
-RestartSec=5s
-ExecStart=/usr/local/bin/node_exporter --collector.logind
-
-[Install]
-WantedBy=multi-user.target
-```
-Note: Replace --collector.logind with any additional flags as needed.
-
-Enable and start Node Exporter:
-```bash
-sudo systemctl enable node_exporter
-sudo systemctl start node_exporter
-```
-Verify the Node Exporter's status:
-```bash
-sudo systemctl status node_exporter
-```
-
-You can see "active (running)" in green colour
-Press control+c to come out of the file
-
-6.3. Configure Prometheus Plugin Integration
-
-As of now we created Prometheus service, but we need to add a job in order to fetch the details by node exporter. So for that we need to create 2 jobs, one with 'node exporter' and the other with 'jenkins' as shown below;
-
-Integrate Jenkins with Prometheus to monitor the CI/CD pipeline.
-
-Prometheus Configuration:
-
-To configure Prometheus to scrape metrics from Node Exporter and Jenkins, you need to modify the prometheus.yml file. 
-The path of prometheus.yml is; cd /etc/prometheus/ ----> ls -l ----> You can see the 
-"prometheus.yml" file ----> sudo vi prometheus.yml ----> You will see the content and also there is a default job called "Prometheus" Paste the below content at the end of the file;
-
-  - job_name: 'node_exporter'
-    static_configs:
-      - targets: ['<MonitoringVMip>:9100']
-
-  - job_name: 'jenkins'
-    metrics_path: '/prometheus'
-    static_configs:
-      - targets: ['<your-jenkins-ip>:<your-jenkins-port>']
-
-OR PASTE THE BELOW CONTENT DIRECTLY
+```yaml
 scrape_configs:
-  # The job name is added as a label `job=<job_name>` to any timeseries scraped from this config.
-  - job_name: "prometheus"
-
-    # metrics_path defaults to '/metrics'
-    # scheme defaults to 'http'.
+  - job_name: 'prometheus'
     static_configs:
       - targets: ['localhost:9090']
 
   - job_name: 'node_exporter'
     static_configs:
-      - targets: ['<MonitoringVMip>:9100']
+      - targets: ['<monitoring-server-ip>:9100']
 
   - job_name: 'jenkins'
     metrics_path: '/prometheus'
     static_configs:
-      - targets: ['<your-jenkins-ip>:<your-jenkins-port>']
+      - targets: ['<master-server-ip>:8080']
 
-
-In the above, replace <your-jenkins-ip> and <your-jenkins-port> with the appropriate IPs ----> esc ----> :wq
-Also replace the public ip of monitorting VM. Dont change 9100. Even though the Monitoring server is running on 9090, dont change 9100 in the above script
-
-Check the validity of the configuration file:
-```bash
-promtool check config /etc/prometheus/prometheus.yml
+  - job_name: 'kubernetes-nodes'
+    kubernetes_sd_configs:
+      - role: node
+        api_server: 'https://<k8s-master-ip>:6443'
+        tls_config:
+          insecure_skip_verify: true
 ```
-You should see "SUCCESS" when you run the above command, it means every configuration made so far is good.
 
-Reload the Prometheus configuration without restarting:
+Reload Prometheus:
 ```bash
 curl -X POST http://localhost:9090/-/reload
 ```
-Edit the Prometheus Service File:
-Open the Prometheus systemd service file:
+
+### 7.2 Configure Grafana Dashboards
+
+1. **Access Grafana:** `http://<monitoring-server-ip>:3000`
+2. **Login:** admin/admin (change password)
+
+#### Add Prometheus Data Source
+1. **Configuration** → **Data Sources** → **Add data source**
+2. Select **Prometheus**
+3. **URL:** `http://localhost:9090`
+4. Click **Save & Test**
+
+#### Import Dashboards
+
+**Node Exporter Dashboard:**
+1. **Dashboards** → **Import**
+2. **Dashboard ID:** `1860`
+3. **Load** → Select **Prometheus** data source
+4. **Import**
+
+**Jenkins Dashboard:**
+1. **Dashboards** → **Import**
+2. **Dashboard ID:** `9964`
+3. **Load** → Select **Prometheus** data source
+4. **Import**
+
+**Kubernetes Cluster Dashboard:**
+1. **Dashboards** → **Import**
+2. **Dashboard ID:** `3119`
+3. **Load** → Select **Prometheus** data source
+4. **Import**
+
+---
+
+## 8. Troubleshooting
+
+### 8.1 Infrastructure Issues
+
+#### Terraform Apply Fails
 ```bash
-sudo nano /etc/systemd/system/prometheus.service
+# Check AWS credentials
+aws sts get-caller-identity
+
+# Validate Terraform configuration
+terraform validate
+
+# Check specific error in logs
+terraform apply 2>&1 | tee terraform-error.log
 ```
 
-Add the --web.enable-lifecycle Flag:
-Update the ExecStart line to include the --web.enable-lifecycle flag:
+#### EC2 Instances Not Accessible
 ```bash
-ExecStart=/usr/local/bin/prometheus \
-    --config.file /etc/prometheus/prometheus.yml \
-    --storage.tsdb.path /data \
-    --web.console.templates=/etc/prometheus/consoles \
-    --web.console.libraries=/etc/prometheus/console_libraries \
-    --web.enable-lifecycle
-```
-Reload Systemd and Restart Prometheus:
-After saving the changes, reload systemd and restart Prometheus:
-```bash
-sudo systemctl daemon-reload
-sudo systemctl restart prometheus
+# Verify security group rules
+aws ec2 describe-security-groups --group-ids <sg-id>
+
+# Check instance status
+aws ec2 describe-instance-status --instance-ids <instance-id>
+
+# Verify SSH key permissions
+chmod 400 ~/.ssh/your-key.pem
 ```
 
-Test the Reload Endpoint Again:
-Once the Lifecycle API is enabled, you can test the reload endpoint again:
+### 8.2 Kubernetes Issues
+
+#### Nodes Not Ready
 ```bash
-curl -X POST http://localhost:9090/-/reload
-```
-If successful, there will be no output, and Prometheus will reload the configuration.
+# Check node status
+kubectl get nodes
+kubectl describe node <node-name>
 
-Access Prometheus in browser (if already opened, just reload the page):
-```bash
-http://<your-prometheus-ip>:9090/targets
-```
+# Check kubelet logs
+sudo journalctl -u kubelet -f
 
-For Node Exporter you will see (0/1) in red colour. To resolve this, open Port number 9100 for Monitoring VM 
-
-You should now see "Jenkins (1/1 up)" "node exporter (1/1 up)" and "prometheus (1/1 up)" in the prometheus browser.
-Click on "showmore" next to "jenkins." You will see a link. Open the link in new tab, to see the metrics that are getting scraped
-
--------------------------------------------------------------------
-7. Install Grafana (Execute in Monitoring Server VM)
--------------------------------------------------------------------
-You are currently in /etc/Prometheus path.
-
-Install Grafana on Monitoring Server;
-
-#### Step 1: Install Dependencies:
-First, ensure that all necessary dependencies are installed:
-```bash
-sudo apt-get update
-sudo apt-get install -y apt-transport-https software-properties-common
+# Restart kubelet
+sudo systemctl restart kubelet
 ```
 
-#### Step 2: Add the GPG Key:
-cd ---> You are now in ~ path
-Add the GPG key for Grafana:
+#### Pods CrashLooping
 ```bash
-wget -q -O - https://packages.grafana.com/gpg.key | sudo apt-key add -
-```
-You should see OK when executed the above command.
+# Check pod logs
+kubectl logs <pod-name> -n spring-petclinic
 
-#### Step 3: Add Grafana Repository:
-Add the repository for Grafana stable releases:
-```bash
-echo "deb https://packages.grafana.com/oss/deb stable main" | sudo tee -a /etc/apt/sources.list.d/grafana.list
+# Describe pod for events
+kubectl describe pod <pod-name> -n spring-petclinic
+
+# Check resource limits
+kubectl top pods -n spring-petclinic
 ```
 
-#### Step 4: Update and Install Grafana:
-Update the package list and install Grafana:
+#### Config Server Connection Issues
 ```bash
-sudo apt-get update
-sudo apt-get -y install grafana
+# Verify Config Server is running
+kubectl get pods -n spring-petclinic -l app=config-server
+
+# Check Config Server logs
+kubectl logs -f deployment/config-server -n spring-petclinic
+
+# Test Config Server endpoint
+kubectl exec -it <any-pod> -n spring-petclinic -- curl http://config-server:8888/health
 ```
 
-#### Step 5: Enable and Start Grafana Service:
-To automatically start Grafana after a reboot, enable the service:
+### 8.3 Jenkins Issues
+
+#### Build Failures
 ```bash
-sudo systemctl enable grafana-server
+# Check Jenkins logs
+sudo journalctl -u jenkins -f
+
+# On Jenkins server, check disk space
+df -h
+
+# Check Maven installation
+mvn --version
+
+# Verify Docker access
+sudo usermod -aG docker jenkins
+sudo systemctl restart jenkins
 ```
 
-Start Grafana:
+#### Kubernetes Deployment from Jenkins Fails
 ```bash
-sudo systemctl start grafana-server
+# Verify kubeconfig is accessible
+# In Jenkins pipeline
+kubectl get nodes
+
+# Check Jenkins has correct credentials
+# Verify network connectivity from Jenkins to K8s API
+telnet <k8s-master-ip> 6443
 ```
 
-#### Step 6: Check Grafana Status:
-Verify the status of the Grafana service to ensure it's running correctly:
+### 8.4 MySQL Issues
+
+#### Connection Refused
 ```bash
-sudo systemctl status grafana-server
-```
-You should see "Active (running)" in green colour
-Press control+c to come out
+# Check MySQL service
+sudo systemctl status mysqld
 
-#### Step 7: Access Grafana Web Interface:
-The default port for Grafana is 3000
-http://<monitoring-server-ip>:3000
+# Verify MySQL is listening
+sudo netstat -tlnp | grep 3306
 
-Default id and password is "admin"
-You can Set new password or you can click on "skip now".
-Click on "skip now" (If you want you can create the password)
+# Check MySQL logs
+sudo tail -f /var/log/mysqld.log
 
-You will see the Grafana dashboard
-
-Adding Data Source in Grafana
-The first thing that we have to do in Grafana is to add the data source
-Lets add the data source;
-
-You can either click on "connections" in the left pane or click on "data sources" in the window to add the data source
-Click on "Data sources" ----> Select "Prometheus" ----> Enable "default" toogle bar ----> Connection: Paste the Prometheus url ----> Remove / at the end of url ----> Scroll down and click on "Save and test" ----> If everything is fine, you will see "green" colour tick mark.
-
-Adding Dashboards in Grafana 
-Click on "Dashboards" (left pane) ----> Here we have to add the Grafana dashboard. but as we dont know, we have to get the template of Grafana dashboard. To get the template ----> Goto browser and search for "Grafana node exporter dashboard" (URL: https://grafana.com/grafana/dashboards/1860-node-exporter-full/) ----> In the left pane, click on "Copy to clipboard" ----> Goto grafana ----> In the top right side, click on + ----> Import dashboard ----> Paste the id copied ----> Click on "Load" ----> Scroll down to see "Prometheus"  ----> Click on the dropdown ----> Select "Prometheus" ----> Clikc on "Import" ----> You can now see the dashboard ----> Click on "Save" icon in the top bar right side ----> Click on Save
-
-Lets add another dashboard for Jenkins;
-Goto browser and search for "Grafana jenkins dashboard" (URL: https://grafana.com/grafana/dashboards/9964-jenkins-performance-and-health-overview/) ----> In the left pane, click on "Copy to clipboard" ----> Goto grafana ----> In the top right side, click on + ----> Import dashboard ----> Paste the id copied ----> Click on "Load" ----> Scroll down to see "Prometheus"  ----> Click on the dropdown ----> Select "Prometheus" ----> Click on "Import" ----> You can now see the Jenkins dashboard ----> Click on "Save" icon in the top bar right side ----> Click on Save
-
-Click on Dashboards in the left pane, you can see both the dashboards you have just added.
-
--------------------------------------------------------------------
-8. ARGO CD DEPLOYMENT
--------------------------------------------------------------------
-------------------------------------------------
-Lets setup ArgoCD using HELM;
-------------------------------------------------
-Install HELM
-```bash
-curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
-chmod 700 get_helm.sh
-./get_helm.sh
-helm version
+# Test connection
+mysql -u root -p'Mysql$9999!' -h localhost
 ```
 
-Install ARGOCD using HELM
+#### Permission Denied
 ```bash
-helm repo add argo https://argoproj.github.io/argo-helm
-helm repo update
+# Reset MySQL password if needed
+sudo systemctl stop mysqld
+sudo mysqld_safe --skip-grant-tables &
+mysql -u root
 ```
 
-In production, it is always suggested to create a custom namespace ----> kubectl create namespace argocd ----> Lets install argocd in the namespace 'argocd' ----> helm install argocd argo/argo-cd --namespace argocd ----> kubectl get all -n argocd ----> You will see multiple things which are running ----> Under 'services' you can see 'argo-cd server' and the type as ClusterIP. But to access outside of the cluster, we need Load Balancer. So lets edit this ClusterIP to LoadBalancer ----> For this i will use patch ----> 
+### 8.5 Network Issues
 
-EXPOSE ARGOCD SERVER:
+#### Pods Can't Communicate
 ```bash
-kubectl patch svc argocd-server -n argocd -p '{"spec": {"type": "LoadBalancer"}}' 
-----> kubectl get all -n argocd 
-----> Now you can see the service called 'argo-cd server' changed to Load Balancer instead of ClusterIP ----> Copy the load balancer url ----> This is one way of getting the loadbalancer url. Another way is to install "jq" (J Query) ----> 
+# Check Calico pods
+kubectl get pods -n calico-system
 
-yum install jq -y
+# Verify network policies
+kubectl get networkpolicies -A
 
-kubectl get svc argocd-server -n argocd -o json | jq --raw-output '.status.loadBalancer.ingress[0].hostname'
+# Test pod-to-pod communication
+kubectl run test-pod --image=busybox -it --rm -- sh
+# Inside pod
+nslookup config-server
+wget -O- http://config-server:8888/health
 ```
-- The above command will provide load balancer URL to access ARGO CD
 
-- Access the argocd using teh above load balancer url ----> Username: admin, 
+### 8.6 Common Error Solutions
 
-TO GET ARGO CD PASSWORD:
-------------------------------------------
-kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d
-----> Copy the password and provide in argo cd console ----> You will see the argo cd console ----> Follow as explained in the videod
+| Error | Solution |
+|-------|----------|
+| Port already in use | `sudo lsof -i :<port>` then kill process |
+| Permission denied (Docker) | `sudo usermod -aG docker $USER` then logout/login |
+| No space left on device | Clean up: `docker system prune -a` |
+| Connection refused to K8s API | Check firewall: `sudo iptables -L` |
+| Pod pending forever | Check node resources: `kubectl describe node` |
+
+---
+
+## 9. Cleanup
+
+### 9.1 Destroy Kubernetes Resources
+```bash
+# Delete all resources in namespace
+kubectl delete namespace spring-petclinic --cascade=true
+
+# Delete ingress controller
+kubectl delete namespace ingress-nginx
+```
+
+### 9.2 Destroy Infrastructure
+```bash
+# Navigate to Terraform directory
+cd terraform/app
+
+# Preview what will be destroyed
+terraform plan -destroy
+
+# Destroy all resources
+terraform destroy
+
+# Type 'yes' to confirm
+```
+
+**Warning:** This will permanently delete all EC2 instances, VPC, and associated resources!
+
+---
+
+## 10. Best Practices
+
+### Security
+- [x] Change all default passwords immediately
+- [x] Use IAM roles instead of access keys where possible
+- [x] Enable MFA for AWS root account
+- [x] Regularly rotate credentials
+- [x] Use secrets management (AWS Secrets Manager or Kubernetes Secrets)
+- [x] Enable SSL/TLS for all public endpoints
+
+### Cost Optimization
+- [x] Stop instances when not in use
+- [x] Use appropriate instance types
+- [x] Monitor AWS costs with AWS Cost Explorer
+- [x] Clean up unused resources regularly
+- [x] Consider spot instances for non-production
+
+### Monitoring
+- [x] Set up alerts in Prometheus/Grafana
+- [x] Monitor disk space on all servers
+- [x] Track application metrics
+- [x] Set up log aggregation (ELK or CloudWatch)
+
+### Backup
+- [x] Regular backups of MySQL database
+- [x] Backup Jenkins configuration
+- [x] Version control all configuration files
+- [x] Document infrastructure changes
+
+---
+
+## 11. Quick Reference
+
+### Important URLs
+| Service | URL | Default Credentials |
+|---------|-----|---------------------|
+| Jenkins | `http://<master-ip>:8080` | See `/var/lib/jenkins/secrets/initialAdminPassword` |
+| Prometheus | `http://<monitoring-ip>:9090` | None |
+| Grafana | `http://<monitoring-ip>:3000` | admin / admin |
+| Application | `http://<k8s-ip>:<nodeport>` | None |
+
+### SSH Commands
+```bash
+# Master Server
+ssh -i ~/.ssh/your-key.pem ec2-user@<master-ip>
+
+# K8s Master
+ssh -i ~/.ssh/your-key.pem ec2-user@<k8s-master-ip>
+
+# Monitoring Server
+ssh -i ~/.ssh/your-key.pem ec2-user@<monitoring-ip>
+```
+
+### Useful Kubectl Commands
+```bash
+# Get all resources
+kubectl get all -A
+
+# Check cluster health
+kubectl cluster-info
+kubectl get componentstatuses
+
+# View logs
+kubectl logs -f <pod-name> -n <namespace>
+
+# Execute into pod
+kubectl exec -it <pod-name> -n <namespace> -- /bin/sh
+
+# Port forward
+kubectl port-forward <pod-name> 8080:8080 -n <namespace>
+```
+
+---
+
+## Support
+
+For issues or questions:
+1. Check the [Troubleshooting](#troubleshooting) section
+2. Review application logs
+3. Check GitHub Issues
+4. Contact the development team
+
+---
+
+**Last Updated:** 2025-11-29
+**Version:** 1.0

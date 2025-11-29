@@ -96,8 +96,14 @@ echo "Generating SSH key for Jenkins in ${SSH_DIR}..."
 
 # Use -p to create parent directories if they don't exist
 sudo -u jenkins mkdir -p "${SSH_DIR}"
-# Generate SSH keypair
-sudo -u jenkins ssh-keygen -t rsa -b 4096 -N "" -f "${SSH_DIR}/id_rsa" -C "jenkins@${NEW_HOSTNAME}"
+
+# Generate SSH keypair (only if it doesn't exist)
+if [ ! -f "${SSH_DIR}/id_rsa" ]; then
+    echo "Generating new SSH keypair..."
+    sudo -u jenkins ssh-keygen -t rsa -b 4096 -N "" -f "${SSH_DIR}/id_rsa" -C "jenkins@${NEW_HOSTNAME}"
+else
+    echo "SSH key already exists at ${SSH_DIR}/id_rsa. Skipping key generation."
+fi
 
 # Fix permissions
 sudo chown -R jenkins:jenkins "${SSH_DIR}"
@@ -125,6 +131,23 @@ fi
 
 # --- 7. Final Output ---
 echo "--- Script execution complete. ---"
-echo "Jenkins is starting. Initial Admin Password:"
-sudo cat /var/lib/jenkins/secrets/initialAdminPassword
+
+# Wait for Jenkins to fully initialize (max 60 seconds)
+echo "Waiting for Jenkins to initialize..."
+COUNTER=0
+MAX_WAIT=60
+while [ ! -f /var/lib/jenkins/secrets/initialAdminPassword ] && [ $COUNTER -lt $MAX_WAIT ]; do
+    sleep 2
+    COUNTER=$((COUNTER + 2))
+    echo "Waiting for Jenkins initialization... ($COUNTER/$MAX_WAIT seconds)"
+done
+
+if [ -f /var/lib/jenkins/secrets/initialAdminPassword ]; then
+    echo "Jenkins Initial Admin Password:"
+    sudo cat /var/lib/jenkins/secrets/initialAdminPassword
+else
+    echo "WARNING: Jenkins initial admin password file not found. Jenkins may still be initializing."
+    echo "You can retrieve the password later with: sudo cat /var/lib/jenkins/secrets/initialAdminPassword"
+fi
+
 echo "NOTE: Remember to add the contents of ${SSH_DIR}/id_rsa.pub to your GitHub deploy keys."
