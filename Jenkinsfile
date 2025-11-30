@@ -383,6 +383,9 @@ REMOTE
 ---
 mysql_root_password: "${MYSQL_ROOT_PASSWORD}"
 mysql_petclinic_password: "${MYSQL_PETCLINIC_PASSWORD}"
+mysql_database_name: "petclinic"
+mysql_user_name: "${MYSQL_PETCLINIC_USER}"
+mysql_user_password: "${MYSQL_PETCLINIC_PASSWORD}"
 
 petclinic_databases:
 - customers
@@ -407,13 +410,26 @@ EOF
                             echo "✓ Ansible connectivity verified"
                             echo ""
 
+                            # Define extra vars to ensure mysql_install.yml and reset_mysql.yml have what they need
+                            # We wrap values in single quotes to handle special characters
+                            EXTRA_VARS="-e mysql_root_password='${MYSQL_ROOT_PASSWORD}' -e mysql_petclinic_password='${MYSQL_PETCLINIC_PASSWORD}' -e mysql_database_name='petclinic' -e mysql_user_name='${MYSQL_PETCLINIC_USER}' -e mysql_user_password='${MYSQL_PETCLINIC_PASSWORD}'"
+
                             # Run Ansible playbook
                             echo "=== Running Ansible Playbook ==="
-                            ansible-playbook -i inventory.ini mysql_setup.yml -v || {
-                                echo "ERROR: Ansible playbook failed"
-                                exit 1
-                            }
-                            echo "✓ Ansible playbook completed successfully"
+                            set +e
+                            ansible-playbook -i inventory.ini mysql_setup.yml -v $EXTRA_VARS
+                            PLAYBOOK_RC=$?
+                            set -e
+
+                            if [ $PLAYBOOK_RC -ne 0 ]; then
+                                echo "WARNING: mysql_setup.yml failed (RC=$PLAYBOOK_RC). Attempting to reset MySQL..."
+                                ansible-playbook -i inventory.ini reset_mysql.yml -v $EXTRA_VARS
+                                
+                                echo "Retrying mysql_setup.yml after reset..."
+                                ansible-playbook -i inventory.ini mysql_setup.yml -v $EXTRA_VARS
+                            else
+                                echo "✓ Ansible playbook completed successfully"
+                            fi
                             echo ""
 
                             # Verify databases were created
@@ -421,7 +437,7 @@ EOF
                             # Check for databases using mysql command via ansible
                             # We use -N (skip headers) and -B (batch) for clean output
                             
-                            DB_CHECK=$(ansible mysql -i inventory.ini -m shell -a "mysql -uroot -p'${MYSQL_ROOT_PASSWORD}' -e 'SHOW DATABASES;' -N -B" || true)
+                            DB_CHECK=$(ansible mysql -i inventory.ini -m shell -a "mysql -u root -p'${MYSQL_ROOT_PASSWORD}' -e 'SHOW DATABASES;' -N -B" || true)
                             
                             echo "Database Check Output:"
                             echo "$DB_CHECK"

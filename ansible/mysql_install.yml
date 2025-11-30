@@ -66,13 +66,13 @@
       failed_when: false
 
     - name: Check if root password is already set correctly
-      shell: mysql -uroot -p"{{ mysql_root_password }}" -e "SELECT 1;" 2>/dev/null
+      shell: mysql -u root -p"{{ mysql_root_password }}" -e "SELECT 1;" 2>/dev/null
       register: password_check
       changed_when: false
       failed_when: false
 
     - name: Check if temporary password works (if target password failed)
-      shell: mysql --connect-expired-password -uroot -p"{{ temp_pass.stdout }}" -e "SELECT 1;" 2>/dev/null
+      shell: mysql --connect-expired-password -u root -p"{{ temp_pass.stdout }}" -e "SELECT 1;" 2>/dev/null
       register: temp_pass_check
       when: 
         - password_check.rc != 0
@@ -90,7 +90,7 @@
 
     - name: Set MySQL root password using temporary password
       shell: |
-        mysql --connect-expired-password -uroot -p"{{ temp_pass.stdout }}" \
+        mysql --connect-expired-password -u root -p"{{ temp_pass.stdout }}" \
         -e "ALTER USER 'root'@'localhost' IDENTIFIED BY '{{ mysql_root_password }}';"
       when: 
         - password_check.rc != 0

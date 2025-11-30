@@ -3,11 +3,8 @@
   hosts: mysql
   become: true
 
-  vars:
-    mysql_root_password: "PetclinicRoot123!"
-    mysql_database_name: "petclinic"
-    mysql_user_name: "petclinic_user"
-    mysql_user_password: "PetClinicUser@12345!"
+  # vars section removed to allow overrides from group_vars/inventory
+
 
   tasks:
     - name: Stop MySQL service
@@ -83,16 +80,7 @@
       shell: mysql -e "SELECT 1;"
       changed_when: false
 
-    - name: Create PetClinic Database
-      shell: mysql -e "CREATE DATABASE IF NOT EXISTS {{ mysql_database_name }};"
-      changed_when: false
 
-    - name: Create PetClinic MySQL user
-      shell: |
-        mysql -e "CREATE USER IF NOT EXISTS '{{ mysql_user_name }}'@'%' IDENTIFIED BY '{{ mysql_user_password }}';"
-        mysql -e "GRANT ALL PRIVILEGES ON {{ mysql_database_name }}.* TO '{{ mysql_user_name }}'@'%';"
-        mysql -e "FLUSH PRIVILEGES;"
-      changed_when: false
 
     - name: Configure MySQL bind-address
       lineinfile:
