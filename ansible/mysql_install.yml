@@ -4,13 +4,9 @@
   become: true
   
   vars:
-    # NOTE: It is better practice to use Ansible Vault for passwords in production
-    mysql_root_password: "PetclinicRoot123!"
-    mysql_database_name: "petclinic"
-    mysql_user_name: "petclinic_user"
-    mysql_user_password: "PetClinicUser@12345!"
     mysql_repo_url: "https://dev.mysql.com/get/mysql80-community-release-el9-1.noarch.rpm"
     mysql_repo_path: "/tmp/mysql80-community-release.rpm"
+
 
   tasks:
 
