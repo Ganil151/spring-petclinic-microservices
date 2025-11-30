@@ -86,14 +86,14 @@ sudo yum update -y
 
 
 # Increase /tmp file size persistently and remount
-echo "Increasing /tmp file size to 1.5GB persistently..."
+echo "Increasing /tmp file size to 2.0GB persistently..."
 if ! grep -q "/tmp tmpfs" /etc/fstab; then
-    echo "tmpfs /tmp tmpfs defaults,size=1500M 0 0" | sudo tee -a /etc/fstab
+    echo "tmpfs /tmp tmpfs defaults,size=2048M 0 0" | sudo tee -a /etc/fstab
 fi
 
 echo "Remounting /tmp with the new size..."
 if sudo mount -o remount /tmp; then
-    echo "/tmp remounted successfully with 1.5GB size."
+    echo "/tmp remounted successfully with 2.0GB size."
 else
     echo "WARNING: Failed to remount /tmp immediately. A system reboot is required for the change to take full effect."
 fi

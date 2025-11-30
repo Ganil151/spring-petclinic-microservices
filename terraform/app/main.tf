@@ -38,7 +38,7 @@ module "jenkins_instance" {
   instance_type               = var.instance_type
   subnet_id                   = element(module.vpc.public_subnet_ids, 0)
   user_data                   = file("${path.module}/scripts/master.sh")
-  user_data_replace_on_change = false
+  user_data_replace_on_change = var.user_data_replace_on_change
   security_group_ids          = [module.master_sg.master_sg]
   environment                 = var.environment
   root_volume_size            = var.jenkins_root_volume_size
@@ -55,7 +55,7 @@ module "worker_instance" {
   instance_type               = var.instance_type
   subnet_id                   = element(module.vpc.public_subnet_ids, 0)
   user_data                   = file("${path.module}/scripts/worker.sh")
-  user_data_replace_on_change = false
+  user_data_replace_on_change = var.user_data_replace_on_change
   security_group_ids          = [module.master_sg.master_sg]
   environment                 = var.environment
   root_volume_size            = var.worker_root_volume_size
@@ -71,7 +71,7 @@ module "monitor_instance" {
   instance_type               = "t2.small"
   subnet_id                   = element(module.vpc.public_subnet_ids, 0)
   user_data                   = file("${path.module}/scripts/monitoring.sh")
-  user_data_replace_on_change = false
+  user_data_replace_on_change = var.user_data_replace_on_change
   security_group_ids          = [module.master_sg.master_sg]
   environment                 = var.environment
   root_volume_size            = var.monitor_root_volume_size
@@ -87,7 +87,7 @@ module "mysql_instance" {
   instance_type               = "t2.small"
   subnet_id                   = element(module.vpc.public_subnet_ids, 0)
   user_data                   = file("${path.module}/scripts/mysql.sh")
-  user_data_replace_on_change = false
+  user_data_replace_on_change = var.user_data_replace_on_change
   security_group_ids          = [module.master_sg.master_sg]
   environment                 = var.environment
   root_volume_size            = var.mysql_root_volume_size
@@ -118,7 +118,7 @@ module "K8s_agent_primary_instance" {
   project_name_1              = var.project_name_6
   instance_type               = "t3.large"
   subnet_id                   = element(module.vpc.public_subnet_ids, 0)
-  user_data                   = file("${path.module}/scripts/k8s_worker.sh")
+  user_data                   = file("${path.module}/scripts/k8s_agent_1_server.sh")
   user_data_replace_on_change = var.user_data_replace_on_change
   security_group_ids          = [module.master_sg.master_sg]
   environment                 = var.environment
@@ -131,10 +131,10 @@ module "K8s_agent_secondary_instance" {
   source                      = "../MODULES/EC2"
   ami                         = var.ami
   key_name                    = var.key_name
-  project_name_1              = var.project_name_6
+  project_name_1              = var.project_name_7
   instance_type               = "t3.large"
   subnet_id                   = element(module.vpc.public_subnet_ids, 0)
-  user_data                   = file("${path.module}/scripts/k8s_worker.sh")
+  user_data                   = file("${path.module}/scripts/k8s_agent_2_server.sh")
   user_data_replace_on_change = var.user_data_replace_on_change
   security_group_ids          = [module.master_sg.master_sg]
   environment                 = var.environment
