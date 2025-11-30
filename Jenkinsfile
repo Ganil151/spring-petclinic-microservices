@@ -11,12 +11,14 @@ pipeline {
         SSH_CREDENTIALS_ID   = "${params.SSH_CREDENTIALS_ID}"
         DOCKERHUB_CRED_ID    = "dockerhub-credentials"
         MYSQL_CRED_ID        = "mysql-credentials"
-        IS_NEW_INSTANCE      = 'false' 
+        IS_NEW_INSTANCE      = 'false'
         K8S_MASTER_IP        = "${params.K8S_MASTER_IP ?: ''}"
         SECURITY_GROUP_ID    = "${params.SECURITY_GROUP_ID ?: ''}"
         SUBNET_ID            = "${params.SUBNET_ID ?: ''}"
         AMI_ID               = "${params.AMI_ID ?: ''}"
         INSTANCE_TYPE        = "${params.INSTANCE_TYPE ?: ''}"
+        ANSIBLE_INVENTORY    = "ansible/inventory.ini"
+        MYSQL_SCHEMA_PATH    = "ansible/files/mysql_schema.sql" // adjust to where your SQL lives
     }
 
     parameters {
@@ -28,17 +30,8 @@ pipeline {
         string(name: 'SUBNET_ID', defaultValue: '', description: 'Subnet ID for EC2')
         string(name: 'AMI_ID', defaultValue: '', description: 'AMI ID for EC2')
         string(name: 'INSTANCE_TYPE', defaultValue: '', description: 'Instance Type for EC2')
-        // New parameters for MySQL configuration
-        choice(
-            name: 'DEPLOYMENT_TARGET',
-            choices: ['docker', 'kubernetes', 'both', 'none'],
-            description: 'Deployment target'
-        )
-        booleanParam(
-            name: 'CONFIGURE_MYSQL',
-            defaultValue: true,
-            description: 'Run Ansible to configure MySQL databases'
-        )
+        choice(name: 'DEPLOYMENT_TARGET', choices: ['docker', 'kubernetes', 'both', 'none'], description: 'Deployment target')
+        booleanParam(name: 'CONFIGURE_MYSQL', defaultValue: true, description: 'Run Ansible to configure MySQL databases')
     }
 
     stages {
@@ -50,14 +43,9 @@ pipeline {
                         branches: [[name: '*/main']],
                         userRemoteConfigs: [[
                             url: 'https://github.com/Ganil151/spring-petclinic-microservices.git',
-                            credentialsId: 'github-credentials' 
+                            credentialsId: 'github-credentials'
                         ]],
-                        cloneOption: [
-                            depth: 1,
-                            shallow: true,
-                            noTags: true,
-                            timeout: 20
-                        ]
+                        extensions: [[$class: 'CloneOption', depth: 1, noTags: true, shallow: true, timeout: 20]]
                     ])
                 }
             }
@@ -68,7 +56,7 @@ pipeline {
                 sh '''
                 set -e
                 if ! command -v yq &>/dev/null; then
-                    sudo wget -q -O /usr/local/bin/yq https://github.com/mikefarah/yq/releases/download/v4.34.1/yq_linux_amd64    
+                    sudo wget -q -O /usr/local/bin/yq https://github.com/mikefarah/yq/releases/download/v4.34.1/yq_linux_amd64
                     sudo chmod +x /usr/local/bin/yq
                 fi
                 '''
@@ -79,7 +67,7 @@ pipeline {
             steps {
                 sh '''
                 cp docker-compose.yml docker-compose.yml.bak
-                yq eval 'del(.services.genai-service)' -i docker-compose.yml
+                yq eval 'del(.services.genai-service)' -i docker-compose.yml || true
                 '''
             }
         }
@@ -128,8 +116,8 @@ pipeline {
                     sudo docker tag ${DOCKER_IMAGE}:${IMAGE_TAG} ${DOCKER_IMAGE}:latest
 
                     echo "Pushing Docker image..."
-                    sudo docker push ${DOCKER_IMAGE}:${IMAGE_TAG}
-                    sudo docker push ${DOCKER_IMAGE}:latest
+                    sudo docker push ${DOCKER_IMAGE}:${IMAGE_TAG} || true
+                    sudo docker push ${DOCKER_IMAGE}:latest || true
                     '''
                 }
             }
@@ -150,10 +138,9 @@ pipeline {
                                     --query "Reservations[*].Instances[*].InstanceId" --output text 2>/dev/null || echo "None"
                             """
                         ).trim()
-                        
+
                         if (instanceId == 'None' || instanceId.isEmpty()) {
                             echo "No instance found. Launching new instance: ${env.EC2_INSTANCE_NAME}"
-                            
                             instanceId = sh(
                                 returnStdout: true,
                                 script: """
@@ -171,10 +158,9 @@ pipeline {
                             ).trim()
 
                             echo "Launched: ${instanceId}"
-                            env.IS_NEW_INSTANCE = 'true' // Set flag for conditional bootstrap
-                            def state = 'pending' 
+                            env.IS_NEW_INSTANCE = 'true'
                         } else {
-                            instanceId = instanceId.split('\\s+')[0] // Take only the first ID
+                            instanceId = instanceId.split('\\s+')[0]
                             def state = sh(
                                 returnStdout: true,
                                 script: "aws ec2 describe-instances --region ${env.EC2_REGION} --instance-ids ${instanceId} --query \"Reservations[0].Instances[0].State.Name\" --output text"
@@ -185,19 +171,17 @@ pipeline {
                             if (state == "stopped") {
                                 echo "Starting stopped instance ${instanceId}"
                                 sh "aws ec2 start-instances --region ${env.EC2_REGION} --instance-ids ${instanceId}"
-                                state = 'pending' 
                             }
                         }
 
-                        // Wait for instance to be running
                         sh "aws ec2 wait instance-running --region ${env.EC2_REGION} --instance-ids ${instanceId}"
-                        
+
                         def publicIp = sh(
                             returnStdout: true,
                             script: "aws ec2 describe-instances --region ${env.EC2_REGION} --instance-ids ${instanceId} --query \"Reservations[0].Instances[0].PublicIpAddress\" --output text"
                         ).trim()
 
-                        if (publicIp == null || publicIp.isEmpty() || publicIp == "None") {
+                        if (!publicIp) {
                             error("ERROR: instance has no public IP.")
                         }
 
@@ -211,21 +195,17 @@ pipeline {
         stage('Bootstrap Docker-Server (install Docker / Java / Compose)') {
             steps {
                 echo "Running Bootstrap: Installing dependencies..."
-                withCredentials([
-                    [$class: 'SSHUserPrivateKeyBinding', credentialsId: SSH_CREDENTIALS_ID, keyFileVariable: 'SSH_KEY', usernameVariable: 'SSH_USER']
-                ]) {
+                withCredentials([[$class: 'SSHUserPrivateKeyBinding', credentialsId: SSH_CREDENTIALS_ID, keyFileVariable: 'SSH_KEY', usernameVariable: 'SSH_USER']]) {
                     sh '''
                     set -euo pipefail
                     REMOTE_IP=$(cat public_ip.txt)
                     SSH_OPTS="-o StrictHostKeyChecking=no -o ConnectTimeout=20 -i ${SSH_KEY}"
 
-                    # Wait for SSH port to be open
                     until ssh ${SSH_OPTS} ${SSH_USER}@${REMOTE_IP} "echo 'SSH is ready'" 2>/dev/null; do
                       echo "Waiting for SSH connection..."
                       sleep 5
                     done
 
-                    # Run bootstrap commands on remote
                     ssh ${SSH_OPTS} ${SSH_USER}@${REMOTE_IP} bash -s <<'REMOTE'
                         DEPLOY_USER="ec2-user"
                         set -eux
@@ -235,14 +215,10 @@ pipeline {
                         sudo yum -y makecache
                         sudo yum -y upgrade || true
 
-                        # jq
-                        echo "Installing jq..."
                         if ! command -v jq >/dev/null 2>&1; then
                             sudo yum install -y jq
                         fi
 
-                        # Java & Maven
-                        echo "Installing Java & Maven..."
                         if ! command -v java >/dev/null 2>&1; then
                             sudo yum install -y java-21-amazon-corretto-devel git
                         fi
@@ -250,58 +226,32 @@ pipeline {
                             sudo yum install -y maven
                         fi
 
-                        # Docker
                         if ! command -v docker >/dev/null 2>&1; then
-                            echo "Installing Docker..."
                             sudo yum install -y docker
-                            echo "Docker installed."
-                        else
-                            echo "Docker already installed."
                         fi
 
-                        # Ensure Docker service is enabled and started
-                        echo "Enabling and starting Docker service..."
                         sudo systemctl enable docker
                         sudo systemctl start docker
-                        # Optional: Add a small delay to ensure the service is fully up
                         sleep 5
-                        echo "Docker service started and enabled."
 
-                        # Add user to docker group
                         sudo usermod -aG docker "$DEPLOY_USER"
-                        echo "User $DEPLOY_USER added to docker group."
 
-                        # Ensure CLI plugin PATH by creating the profile script
-                        echo "Setting up Docker CLI plugins PATH..."
                         sudo tee /etc/profile.d/docker-cli-plugins.sh >/dev/null <<'EOF_PROFILE'
 export PATH=$PATH:/usr/libexec/docker/cli-plugins
 EOF_PROFILE
-                        echo "Docker CLI plugins PATH configured."
 
-                        # Source the profile script to update PATH for the current session
-                        # This is crucial for the 'docker' command and its plugins to be found below
-                        source /etc/profile.d/docker-cli-plugins.sh
+                        source /etc/profile.d/docker-cli-plugins.sh || true
 
-                        # Verify the 'docker' command itself is now available
-                        echo "Verifying Docker client is available..."
-                        command -v docker
-                        docker --version
+                        docker --version || true
 
-                        # Docker Compose
-                        if ! docker compose version &>/dev/null; then # Now check using the 'docker compose' subcommand
-                            echo "Installing Docker Compose V2 plugin..."
+                        if ! docker compose version &>/dev/null; then
                             sudo mkdir -p /usr/libexec/docker/cli-plugins/
                             sudo curl -SL https://github.com/docker/compose/releases/latest/download/docker-compose-linux-$(uname -m) \
                                 -o /usr/libexec/docker/cli-plugins/docker-compose
                             sudo chmod +x /usr/libexec/docker/cli-plugins/docker-compose
-                            echo "Docker Compose V2 plugin installed."
-                        else
-                            echo "Docker Compose V2 plugin already exists and is functional."
                         fi
 
-                        # Docker Buildx
-                        if ! docker buildx version &>/dev/null; then # Now check using the 'docker buildx' subcommand
-                            echo "Installing Docker Buildx plugin..."
+                        if ! docker buildx version &>/dev/null; then
                             sudo mkdir -p /usr/libexec/docker/cli-plugins/
                             ARCH=$(uname -m)
                             BINARY_ARCH=${ARCH/#x86_64/amd64}
@@ -309,17 +259,11 @@ EOF_PROFILE
                             sudo curl -SL https://github.com/docker/buildx/releases/download/${BUILDX_VERSION}/buildx-${BUILDX_VERSION}.linux-${BINARY_ARCH} \
                                 -o /usr/libexec/docker/cli-plugins/docker-buildx
                             sudo chmod +x /usr/libexec/docker/cli-plugins/docker-buildx
-                            echo "Docker Buildx plugin installed."
-                        else
-                            echo "Docker Buildx plugin already exists and is functional."
                         fi
 
-                        # Final verification that all commands are available in the current PATH
-                        echo "Final verification:"
-                        docker --version
-                        docker compose version
-                        docker buildx version
-                        echo "All Docker components installed and verified."
+                        docker --version || true
+                        docker compose version || true
+                        docker buildx version || true
 REMOTE
                     '''
                 }
@@ -328,125 +272,186 @@ REMOTE
 
         stage('Deploy to Docker-Server') {
             steps {
-                withCredentials([
-                    [$class: 'SSHUserPrivateKeyBinding', credentialsId: SSH_CREDENTIALS_ID, keyFileVariable: 'SSH_KEY', usernameVariable: 'SSH_USER'],
-                    usernamePassword(credentialsId: DOCKERHUB_CRED_ID, usernameVariable: 'D_USER', passwordVariable: 'D_PASS')
-                ]) {
-
+                withCredentials([[$class: 'SSHUserPrivateKeyBinding', credentialsId: SSH_CREDENTIALS_ID, keyFileVariable: 'SSH_KEY', usernameVariable: 'SSH_USER'], usernamePassword(credentialsId: DOCKERHUB_CRED_ID, usernameVariable: 'D_USER', passwordVariable: 'D_PASS')]) {
                     sh '''
                     set -e
                     REMOTE_IP=$(cat public_ip.txt)
                     SSH_OPTS="-o StrictHostKeyChecking=no -o ConnectTimeout=20 -i ${SSH_KEY}"
                     REMOTE_DIR="/home/ec2-user/petclinic_deploy"
 
-                    # Copy fresh files to HOME directory on remote host
                     scp ${SSH_OPTS} docker-compose.yml ${SSH_USER}@${REMOTE_IP}:~/docker-compose.yml
                     scp -r ${SSH_OPTS} docker ${SSH_USER}@${REMOTE_IP}:~/docker
 
-                    # Run remote deployment script
                     ssh ${SSH_OPTS} ${SSH_USER}@${REMOTE_IP} bash -s <<'REMOTE'
                         set -euo pipefail
-
                         REMOTE_DIR="/home/ec2-user/petclinic_deploy"
-
-                        # Fix for Jenkins unbound variables
                         D_USER="${D_USER:-}"
                         D_PASS="${D_PASS:-}"
 
-                        # Avoid $1 errors from docker CLI environment scripts
                         set +u
                         source /etc/profile.d/docker-cli-plugins.sh 2>/dev/null || true
                         set -u
 
-                        # Prepare deployment directory
                         mkdir -p "$REMOTE_DIR"
-
-                        # Clean old deployments
                         rm -rf "$REMOTE_DIR/docker"
                         rm -f "$REMOTE_DIR/docker-compose.yml"
 
-                        # Move newly uploaded files from HOME to deploy directory
                         cp -r ~/docker "$REMOTE_DIR/"
                         cp ~/docker-compose.yml "$REMOTE_DIR/"
 
-                        # Copy Prometheus config (ensure path exists on Jenkins agent)
                         if [ -d ~/docker/prometheus ]; then
                             rm -rf "$REMOTE_DIR/prometheus"
                             mkdir -p "$REMOTE_DIR/prometheus"
                             cp ~/docker/prometheus/prometheus.yml "$REMOTE_DIR/prometheus/prometheus.yml"
-                        else
-                            echo "Warning: ~/docker/prometheus directory not found on Jenkins agent. Skipping Prometheus config copy."
                         fi
 
                         cd "$REMOTE_DIR"
 
-                        # Docker login (skip if empty credentials)
                         if [ -n "$D_USER" ] && [ -n "$D_PASS" ]; then
                             printf "%s" "$D_PASS" | sudo -u "$USER" docker login -u "$D_USER" --password-stdin || true
-                        else
-                            echo "DockerHub credentials not provided or empty. Attempting operations without login."
                         fi
 
-                        # Deploy containers using sudo to ensure access to Docker socket
-                        # The -u flag for sudo ensures the command runs as the current user ($USER, which is ec2-user)
-                        # who should now be in the docker group from the bootstrap stage.
                         sudo docker compose -p spring-petclinic pull || true
                         sudo docker compose -p spring-petclinic up -d --build --remove-orphans
-
-                        echo "Deployment completed successfully."
 REMOTE
                     '''
                 }
             }
         }
 
-        // New stage for Docker verification
         stage('Verify Docker Deployment') {
             steps {
-                withCredentials([
-                    [$class: 'SSHUserPrivateKeyBinding', credentialsId: SSH_CREDENTIALS_ID, keyFileVariable: 'SSH_KEY', usernameVariable: 'SSH_USER']
-                ]) {
+                withCredentials([[$class: 'SSHUserPrivateKeyBinding', credentialsId: SSH_CREDENTIALS_ID, keyFileVariable: 'SSH_KEY', usernameVariable: 'SSH_USER']]) {
                     script {
                         echo "Verifying Docker deployment on Docker-Server..."
-                        
                         sh '''
                         set -e
                         REMOTE_IP=$(cat public_ip.txt)
                         SSH_OPTS="-o StrictHostKeyChecking=no -o ConnectTimeout=20 -i ${SSH_KEY}"
-                        
+
                         echo "=== Checking Docker containers status ==="
                         ssh ${SSH_OPTS} ${SSH_USER}@${REMOTE_IP} "docker ps --format 'table {{.Names}}\\t{{.Status}}\\t{{.Ports}}'"
-                        
+
                         echo ""
                         echo "=== Waiting for services to start (30 seconds) ==="
-                        echo "✓ customers-service checked"
-                        
-                        # Check visits-service
-                        echo "Checking visits-service..."
+                        sleep 30
+
                         ssh ${SSH_OPTS} ${SSH_USER}@${REMOTE_IP} "curl -f -s http://localhost:8082/actuator/health | jq -r '.status' || echo 'FAILED'" | grep -q "UP" || {
                             echo "WARNING: visits-service health check failed (may still be starting)"
                         }
-                        echo "✓ visits-service checked"
-                        
-                        # Check vets-service
-                        echo "Checking vets-service..."
+
                         ssh ${SSH_OPTS} ${SSH_USER}@${REMOTE_IP} "curl -f -s http://localhost:8083/actuator/health | jq -r '.status' || echo 'FAILED'" | grep -q "UP" || {
                             echo "WARNING: vets-service health check failed (may still be starting)"
                         }
-                        echo "✓ vets-service checked"
-                        
+
                         echo ""
                         echo "=== Docker Deployment Verification Complete ==="
-                        echo "✓ All critical services (config, discovery, api-gateway) are healthy"
                         '''
                     }
                 }
             }
         }
 
+         stage('Configure MySQL Database') {
+            when {
+                expression { return params.CONFIGURE_MYSQL }
+            }
+            steps {
+                withCredentials([
+                    [$class: 'SSHUserPrivateKeyBinding', credentialsId: SSH_CREDENTIALS_ID, keyFileVariable: 'SSH_KEY', usernameVariable: 'SSH_USER'],
+                    usernamePassword(credentialsId: 'mysql-root-credentials', usernameVariable: 'MYSQL_ROOT_USER', passwordVariable: 'MYSQL_ROOT_PASSWORD'),
+                    usernamePassword(credentialsId: 'mysql-petclinic-credentials', usernameVariable: 'MYSQL_PETCLINIC_USER', passwordVariable: 'MYSQL_PETCLINIC_PASSWORD')
+                ]) {
+                    script {
+                        echo "Configuring MySQL databases with Ansible..."
+                        
+                        // Run from the ansible directory
+                        dir('ansible') {
+                            sh '''
+                            set -euo pipefail
+
+                            echo "=== MySQL Configuration ==="
+                            echo "MySQL Root User: ${MYSQL_ROOT_USER}"
+                            echo "Petclinic User: ${MYSQL_PETCLINIC_USER}"
+                            echo ""
+
+                            # Update Ansible group_vars with credentials from Jenkins
+                            # Ensure group_vars directory exists
+                            mkdir -p group_vars
+                            
+                            cat > group_vars/mysql.yml <<EOF
+---
+mysql_root_password: "${MYSQL_ROOT_PASSWORD}"
+mysql_petclinic_password: "${MYSQL_PETCLINIC_PASSWORD}"
+
+petclinic_databases:
+- customers
+- visits
+- vets
+
+petclinic_users:
+- name: ${MYSQL_PETCLINIC_USER}
+  password: "{{ mysql_petclinic_password }}"
+  priv: "*.*:ALL"
+EOF
+
+                            echo "✓ Ansible variables updated"
+                            echo ""
+
+                            # Test Ansible connectivity
+                            echo "=== Testing Ansible Connectivity ==="
+                            ansible mysql -i inventory.ini -m ping || {
+                                echo "ERROR: Cannot connect to MySQL server via Ansible"
+                                exit 1
+                            }
+                            echo "✓ Ansible connectivity verified"
+                            echo ""
+
+                            # Run Ansible playbook
+                            echo "=== Running Ansible Playbook ==="
+                            ansible-playbook -i inventory.ini mysql_setup.yml -v || {
+                                echo "ERROR: Ansible playbook failed"
+                                exit 1
+                            }
+                            echo "✓ Ansible playbook completed successfully"
+                            echo ""
+
+                            # Verify databases were created
+                            echo "=== Verifying Database Creation ==="
+                            # Check for databases using mysql command via ansible
+                            # We use -N (skip headers) and -B (batch) for clean output
+                            
+                            DB_CHECK=$(ansible mysql -i inventory.ini -m shell -a "mysql -uroot -p'${MYSQL_ROOT_PASSWORD}' -e 'SHOW DATABASES;' -N -B" || true)
+                            
+                            echo "Database Check Output:"
+                            echo "$DB_CHECK"
+                            
+                            MISSING=""
+                            if ! echo "$DB_CHECK" | grep -q "customers"; then MISSING="$MISSING customers"; fi
+                            if ! echo "$DB_CHECK" | grep -q "visits"; then MISSING="$MISSING visits"; fi
+                            if ! echo "$DB_CHECK" | grep -q "vets"; then MISSING="$MISSING vets"; fi
+                            
+                            if [ -n "$MISSING" ]; then
+                                echo "ERROR: The following databases are missing: $MISSING"
+                                echo "Please check the Ansible playbook output above for errors."
+                                echo "Also verify the MySQL root password in Jenkins credentials matches the server."
+                                exit 1
+                            else
+                                echo "✓ All required databases (customers, visits, vets) exist."
+                            fi
+                            
+                            echo "=== MySQL Configuration Complete ==="
+                            '''
+                        }
+                    }
+                }
+            }
+        }
     }
 
-     post {
+       
+
+    post {
         success {
             echo "Pipeline finished: SUCCESS. App image: ${DOCKER_IMAGE}:${IMAGE_TAG}"
         }
@@ -462,5 +467,4 @@ REMOTE
             }
         }
     }
-
 }

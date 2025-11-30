@@ -25,11 +25,10 @@
 
     # PyMySQL is not needed when using shell commands instead of community.mysql modules
 
-    - name: Remove conflicting system MySQL packages (if any)
+    - name: Remove conflicting MariaDB packages (if any)
       yum:
         name:
           - mariadb*
-          - mysql*
         state: absent
       ignore_errors: yes
 
@@ -65,27 +64,43 @@
         state: started
 
     - name: Get temporary MySQL root password
-      shell: grep 'temporary password' /var/log/mysqld.log | awk '{print $NF}'
+      shell: grep 'temporary password' /var/log/mysqld.log | awk '{print $NF}' | tail -n 1
       register: temp_pass
       changed_when: false
       failed_when: false
 
-    - name: Check if root password is already set
+    - name: Check if root password is already set correctly
       shell: mysql -uroot -p"{{ mysql_root_password }}" -e "SELECT 1;" 2>/dev/null
       register: password_check
       changed_when: false
       failed_when: false
+
+    - name: Check if temporary password works (if target password failed)
+      shell: mysql --connect-expired-password -uroot -p"{{ temp_pass.stdout }}" -e "SELECT 1;" 2>/dev/null
+      register: temp_pass_check
+      when: 
+        - password_check.rc != 0
+        - temp_pass.stdout is defined
+        - temp_pass.stdout | length > 0
+      changed_when: false
+      failed_when: false
+
+    - name: Fail if we cannot authenticate with either password
+      fail:
+        msg: "CRITICAL: Cannot connect to MySQL with target password OR temporary password. Manual intervention required to reset root password."
+      when: 
+        - password_check.rc != 0
+        - (temp_pass_check.skipped is defined and temp_pass_check.skipped) or (temp_pass_check.rc is defined and temp_pass_check.rc != 0)
 
     - name: Set MySQL root password using temporary password
       shell: |
         mysql --connect-expired-password -uroot -p"{{ temp_pass.stdout }}" \
         -e "ALTER USER 'root'@'localhost' IDENTIFIED BY '{{ mysql_root_password }}';"
       when: 
-        - temp_pass.stdout is defined 
-        - temp_pass.stdout | length > 0
         - password_check.rc != 0
+        - temp_pass_check.rc is defined
+        - temp_pass_check.rc == 0
       register: password_set
-      failed_when: false
 
     - name: Create /root/.my.cnf for passwordless root login
       copy:
@@ -97,12 +112,12 @@
         owner: root
         group: root
         mode: '0600'
+      when: password_check.rc == 0 or (password_set is defined and password_set.changed)
 
     - name: Verify MySQL authentication works
       shell: mysql -e "SELECT 1;"
       register: auth_test
       changed_when: false
-      failed_when: auth_test.rc != 0
 
     - name: Create PetClinic Database
       shell: |

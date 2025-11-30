@@ -3,134 +3,93 @@
   hosts: mysql
   become: yes
   vars:
-    mysql_root_password: "PetclinicRootPass!"
+    mysql_root_password: "PetclinicRoot123!"
     petclinic_db: "petclinic"
     petclinic_user: "petclinic"
     petclinic_password: "PetClinic@12345!"
     mysql_port: 3306
+  
   tasks:
-    - name: Install required MySQL Python modules
-      ansible.builtin.package:
-        name:
-          - python3-PyMySQL
-        state: present
-
-    - name: Install MySQL server (RedHat)
-      ansible.builtin.yum:
-        name: mysql-server
-        state: present
-      when: ansible_os_family == "RedHat"
-
-    - name: Install MySQL server (Debian/Ubuntu)
-      ansible.builtin.apt:
-        name: mysql-server
-        state: present
-        update_cache: yes
-      when: ansible_os_family == "Debian"
-
-    - name: Ensure MySQL service is running (RedHat)
-      ansible.builtin.service:
+    - name: Verify MySQL is running
+      systemd:
         name: mysqld
         state: started
         enabled: yes
-      when: ansible_os_family == "RedHat"
 
-    - name: Ensure MySQL service is running (Debian/Ubuntu)
-      ansible.builtin.service:
-        name: mysql
+    - name: Wait for MySQL to be fully up
+      wait_for:
+        port: 3306
+        host: 127.0.0.1
+        delay: 2
+        timeout: 30
         state: started
-        enabled: yes
-      when: ansible_os_family == "Debian"
 
-    # This task might fail on fresh installs using temporary passwords or socket auth.
-    # We ignore errors here and proceed to the next tasks which enforce the password.
-    - name: Attempt to set/update root password (initial setup)
-      ansible.builtin.mysql_user:
-        login_user: root
-        login_password: '' # Attempt initial connection with empty or socket auth
-        name: root
-        password: "{{ mysql_root_password }}"
-        host_all: yes
-        priv: "*.*:ALL,GRANT"
-      ignore_errors: yes # Ignore errors if initial connection fails
+    - name: Verify MySQL root authentication
+      shell: mysql -uroot -p"{{ mysql_root_password }}" -e "SELECT 1;" 2>/dev/null
+      register: auth_check
+      changed_when: false
+      failed_when: auth_check.rc != 0
 
     - name: Remove anonymous MySQL users
-      ansible.builtin.mysql_user:
-        login_user: root
-        login_password: "{{ mysql_root_password }}"
-        name: ''
-        host_all: yes
-        state: absent
+      shell: |
+        mysql -uroot -p"{{ mysql_root_password }}" -e "
+        DELETE FROM mysql.user WHERE User='';
+        FLUSH PRIVILEGES;"
+      changed_when: false
+      ignore_errors: yes
 
     - name: Remove test database
-      ansible.builtin.mysql_db:
-        login_user: root
-        login_password: "{{ mysql_root_password }}"
-        name: test
-        state: absent
+      shell: |
+        mysql -uroot -p"{{ mysql_root_password }}" -e "DROP DATABASE IF EXISTS test;"
+      changed_when: false
+      ignore_errors: yes
 
     - name: Create PetClinic database
-      ansible.builtin.mysql_db:
-        login_user: root
-        login_password: "{{ mysql_root_password }}"
-        name: "{{ petclinic_db }}"
-        state: present
-        encoding: utf8mb4
+      shell: |
+        mysql -uroot -p"{{ mysql_root_password }}" -e "CREATE DATABASE IF NOT EXISTS {{ petclinic_db }};"
+      changed_when: false
+
     - name: Create PetClinic user and grant privileges
-      ansible.builtin.mysql_user:
-        login_user: root
-        login_password: "{{ mysql_root_password }}"
-        name: "{{ petclinic_user }}"
-        password: "{{ petclinic_password }}"
-        host: "%"
-        priv: "{{ petclinic_db }}.*:ALL,GRANT" # Added GRANT option here
+      shell: |
+        mysql -uroot -p"{{ mysql_root_password }}" << EOF
+        CREATE USER IF NOT EXISTS '{{ petclinic_user }}'@'%' IDENTIFIED BY '{{ petclinic_password }}';
+        GRANT ALL PRIVILEGES ON {{ petclinic_db }}.* TO '{{ petclinic_user }}'@'%';
+        FLUSH PRIVILEGES;
+        EOF
+      changed_when: false
+
+    - name: Verify petclinic user can connect
+      shell: |
+        mysql -u{{ petclinic_user }} -p"{{ petclinic_password }}" -e "SELECT 1;"
+      register: user_auth_check
+      changed_when: false
+      failed_when: user_auth_check.rc != 0
+
+    - name: Configure MySQL to listen on all interfaces
+      lineinfile:
+        path: /etc/my.cnf
+        regexp: '^bind-address'
+        line: 'bind-address = 0.0.0.0'
         state: present
-    # --- Schema and Data Import Tasks (Corrected for single target path) ---
+      notify: Restart MySQL
 
-    - name: Apply Customer service schema
-      ansible.builtin.mysql_db:
-        login_user: "{{ petclinic_user }}"
-        login_password: "{{ petclinic_password }}"
-        name: "{{ petclinic_db }}"
-        state: import
-        target: /home/ec2-user/workspace/spms-pipeline/spring-petclinic-customers-service/src/main/resources/db/mysql/schema.sql
+    - name: Display MySQL configuration summary
+      debug:
+        msg:
+          - "======================================"
+          - "MySQL Configuration Complete"
+          - "======================================"
+          - "Database: {{ petclinic_db }}"
+          - "User: {{ petclinic_user }}"
+          - "Host: {{ ansible_default_ipv4.address }}"
+          - "Port: {{ mysql_port }}"
+          - "======================================"
+          - "Connection string for apps:"
+          - "jdbc:mysql://{{ ansible_default_ipv4.address }}:{{ mysql_port }}/{{ petclinic_db }}"
+          - "======================================"
 
-    - name: Apply Customer service seed data
-      ansible.builtin.mysql_db:
-        login_user: "{{ petclinic_user }}"
-        login_password: "{{ petclinic_password }}"
-        name: "{{ petclinic_db }}"
-        state: import
-        target: /home/ec2-user/workspace/spms-pipeline/spring-petclinic-customers-service/src/main/resources/db/mysql/data.sql
-
-    - name: Apply Vets service schema
-      ansible.builtin.mysql_db:
-        login_user: "{{ petclinic_user }}"
-        login_password: "{{ petclinic_password }}"
-        name: "{{ petclinic_db }}"
-        state: import
-        target: /home/ec2-user/workspace/spms-pipeline/spring-petclinic-vets-service/src/main/resources/db/mysql/schema.sql
-
-    - name: Apply Vets service seed data
-      ansible.builtin.mysql_db:
-        login_user: "{{ petclinic_user }}"
-        login_password: "{{ petclinic_password }}"
-        name: "{{ petclinic_db }}"
-        state: import
-        target: /home/ec2-user/workspace/spms-pipeline/spring-petclinic-vets-service/src/main/resources/db/mysql/data.sql
-
-    - name: Apply Visits service schema
-      ansible.builtin.mysql_db:
-        login_user: "{{ petclinic_user }}"
-        login_password: "{{ petclinic_password }}"
-        name: "{{ petclinic_db }}"
-        state: import
-        target: /home/ec2-user/workspace/spms-pipeline/spring-petclinic-visits-service/src/main/resources/db/mysql/schema.sql
-
-    - name: Apply Visits service seed data
-      ansible.builtin.mysql_db:
-        login_user: "{{ petclinic_user }}"
-        login_password: "{{ petclinic_password }}"
-        name: "{{ petclinic_db }}"
-        state: import
-        target: /home/ec2-user/workspace/spms-pipeline/spring-petclinic-visits-service/src/main/resources/db/mysql/data.sql
+  handlers:
+    - name: Restart MySQL
+      systemd:
+        name: mysqld
+        state: restarted
