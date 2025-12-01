@@ -61,9 +61,12 @@
     - name: Set MySQL root password
       shell: |
         mysql --connect-expired-password -uroot -p"{{ temp_pass.stdout }}" \
-        -e "ALTER USER 'root'@'localhost' IDENTIFIED BY '{{ mysql_root_password }}';"
+        -e "ALTER USER 'root'@'localhost' IDENTIFIED BY '{{ mysql_root_password }}'; FLUSH PRIVILEGES;"
       register: password_change
       failed_when: password_change.rc != 0
+      retries: 3
+      delay: 2
+      until: password_change.rc == 0
 
     - name: Create /root/.my.cnf for passwordless root login
       copy:
