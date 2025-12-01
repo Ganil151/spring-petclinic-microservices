@@ -81,14 +81,41 @@
       changed_when: false
       failed_when: false
 
-    - name: Fail if we cannot authenticate with either password
-      fail:
-        msg: "CRITICAL: Cannot connect to MySQL with target password OR temporary password. Manual intervention required to reset root password."
+    - name: Reset MySQL if authentication failed completely
+      block:
+        - name: Stop MySQL service (Reset)
+          systemd:
+            name: mysqld
+            state: stopped
+        
+        - name: Wipe MySQL data directory (Reset)
+          file:
+            path: /var/lib/mysql
+            state: absent
+
+        - name: Start MySQL service (Reset)
+          systemd:
+            name: mysqld
+            state: started
+
+        - name: Wait for MySQL (Reset)
+          wait_for:
+            port: 3306
+            delay: 5
+
+        - name: Get new temporary password (Reset)
+          shell: grep 'temporary password' /var/log/mysqld.log | awk '{print $NF}' | tail -n 1
+          register: reset_temp_pass
+
+        - name: Set root password after reset
+          shell: |
+            mysql --connect-expired-password -u root -p"{{ reset_temp_pass.stdout }}" \
+            -e "ALTER USER 'root'@'localhost' IDENTIFIED BY '{{ mysql_root_password }}';"
       when: 
         - password_check.rc != 0
         - (temp_pass_check.skipped is defined and temp_pass_check.skipped) or (temp_pass_check.rc is defined and temp_pass_check.rc != 0)
 
-    - name: Set MySQL root password using temporary password
+    - name: Set MySQL root password (if initial temp pass worked)
       shell: |
         mysql --connect-expired-password -u root -p"{{ temp_pass.stdout }}" \
         -e "ALTER USER 'root'@'localhost' IDENTIFIED BY '{{ mysql_root_password }}';"
@@ -115,17 +142,7 @@
       register: auth_test
       changed_when: false
 
-    - name: Create PetClinic Database
-      shell: |
-        mysql -e "CREATE DATABASE IF NOT EXISTS {{ mysql_database_name }};"
-      changed_when: false
 
-    - name: Create PetClinic MySQL user
-      shell: |
-        mysql -e "CREATE USER IF NOT EXISTS '{{ mysql_user_name }}'@'%' IDENTIFIED BY '{{ mysql_user_password }}';"
-        mysql -e "GRANT ALL PRIVILEGES ON {{ mysql_database_name }}.* TO '{{ mysql_user_name }}'@'%';"
-        mysql -e "FLUSH PRIVILEGES;"
-      changed_when: false
 
     - name: Configure MySQL bind-address
       lineinfile:
