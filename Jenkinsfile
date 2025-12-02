@@ -416,6 +416,9 @@ ENDOFVARS
                                 echo ""
                                 echo "=== Testing Ansible Connectivity ==="
                                 
+                                # Export SSH key path for Ansible inventory
+                                export ANSIBLE_SSH_KEY="${SSH_KEY}"
+                                
                                 if ansible mysql -i inventory.ini -m ping; then
                                     echo "✓ Ansible connectivity verified"
                                 else
@@ -435,6 +438,7 @@ ENDOFVARS
                                 echo "=========================================="
                                 
                                 # Export environment variables for Ansible lookups
+                                export ANSIBLE_SSH_KEY="${SSH_KEY}"
                                 export MYSQL_ROOT_PASSWORD="${MYSQL_ROOT_PASSWORD}"
                                 export MYSQL_PETCLINIC_PASSWORD="${MYSQL_PETCLINIC_PASSWORD}"
                                 export MYSQL_PETCLINIC_USER="${MYSQL_PETCLINIC_USER}"
@@ -461,6 +465,7 @@ ENDOFVARS
                                     echo "=========================================="
                                     
                                     # Export environment variables for Ansible lookups
+                                    export ANSIBLE_SSH_KEY="${SSH_KEY}"
                                     export MYSQL_ROOT_PASSWORD="${MYSQL_ROOT_PASSWORD}"
                                     export MYSQL_PETCLINIC_PASSWORD="${MYSQL_PETCLINIC_PASSWORD}"
                                     export MYSQL_PETCLINIC_USER="${MYSQL_PETCLINIC_USER}"
@@ -491,6 +496,7 @@ ENDOFVARS
                                         echo "=========================================="
                                         
                                         # Export environment variables for Ansible lookups
+                                        export ANSIBLE_SSH_KEY="${SSH_KEY}"
                                         export MYSQL_ROOT_PASSWORD="${MYSQL_ROOT_PASSWORD}"
                                         export MYSQL_PETCLINIC_PASSWORD="${MYSQL_PETCLINIC_PASSWORD}"
                                         export MYSQL_PETCLINIC_USER="${MYSQL_PETCLINIC_USER}"
@@ -523,6 +529,9 @@ ENDOFVARS
                                     echo "=========================================="
                                     echo "MySQL Configuration - Phase 4: Verification"
                                     echo "=========================================="
+                                    
+                                    # Export SSH key for Ansible
+                                    export ANSIBLE_SSH_KEY="${SSH_KEY}"
                                     
                                     # Verify databases were created
                                     echo "=== Verifying Database Creation ==="
