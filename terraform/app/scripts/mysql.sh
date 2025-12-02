@@ -67,9 +67,9 @@ if ! sudo grep -q 'temporary password' /var/log/mysqld.log; then
     exit 1
 fi
 
-# Extract the last temporary password (in case of multiple entries)
+## Extract the last temporary password (in case of multiple entries)
 TEMP_PASSWORD=$(sudo grep 'temporary password' /var/log/mysqld.log | tail -1 | awk '{print $NF}')
-NEW_PASSWORD='Mysql$9999!'
+NEW_PASSWORD='PetMa3ter$3JH3!'
 
 echo "Configuring MySQL root password and security settings..."
 if mysql --connect-expired-password -uroot -p"$TEMP_PASSWORD" <<EOF
