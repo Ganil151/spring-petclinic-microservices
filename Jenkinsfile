@@ -408,12 +408,15 @@ EOF
                     # Fix SSH key permissions (must be 600)
                     chmod 600 "${SSH_KEY}"
                     
-                    # Change to ansible directory (workspace relative, NOT /etc/ansible!)
+                    # Export SSH key path for Ansible inventory (used by group_vars/all.yml)
+                    export ANSIBLE_PRIVATE_KEY_FILE="${SSH_KEY}"
+                    
+                    # Change to ansible directory
                     cd ansible
                     
                     # Test Ansible connectivity
                     echo "=== Testing Ansible Connectivity ==="
-                    ansible mysql -i inventory.ini -m ping --private-key="${SSH_KEY}" || {
+                    ansible mysql -i inventory.ini -m ping || {
                         echo "ERROR: Cannot connect to MySQL server via Ansible"
                         echo "SSH Key: ${SSH_KEY}"
                         echo "Inventory file:"
@@ -425,7 +428,7 @@ EOF
                     
                     # Run Ansible playbook
                     echo "=== Running Ansible Playbook ==="
-                    ansible-playbook -i inventory.ini mysql_setup.yml -v --private-key="${SSH_KEY}" || {
+                    ansible-playbook -i inventory.ini mysql_setup.yml -v || {
                         echo "ERROR: Ansible playbook failed"
                         exit 1
                     }
