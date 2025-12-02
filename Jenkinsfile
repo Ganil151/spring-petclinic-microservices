@@ -262,7 +262,7 @@ REMOTE
             }
         }
 
-                stage('Deploy to Docker-Server') {
+        stage('Deploy to Docker-Server') {
             steps {
                 withCredentials([[$class: 'SSHUserPrivateKeyBinding', credentialsId: SSH_CREDENTIALS_ID, keyFileVariable: 'SSH_KEY', usernameVariable: 'SSH_USER'], usernamePassword(credentialsId: DOCKERHUB_CRED_ID, usernameVariable: 'D_USER', passwordVariable: 'D_PASS')]) {
                     sh '''
@@ -367,7 +367,7 @@ REMOTE
             }
         }
 
-         stage('Configure MySQL Database') {
+        stage('Configure MySQL Database') {
             steps {
             withCredentials([
                 [$class: 'SSHUserPrivateKeyBinding', credentialsId: SSH_CREDENTIALS_ID, keyFileVariable: 'SSH_KEY', usernameVariable: 'SSH_USER'],

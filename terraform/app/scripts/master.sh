@@ -61,6 +61,8 @@ sudo yum upgrade -y
 sudo yum install jenkins -y
 sudo systemctl daemon-reload
 
+
+
 # Start and enable Jenkins
 echo "Starting Jenkins service..."
 sudo systemctl enable jenkins
@@ -141,6 +143,18 @@ while [ ! -f /var/lib/jenkins/secrets/initialAdminPassword ] && [ $COUNTER -lt $
     COUNTER=$((COUNTER + 2))
     echo "Waiting for Jenkins initialization... ($COUNTER/$MAX_WAIT seconds)"
 done
+
+# Install Jenkins-CLI (Now that Jenkins is running)
+echo "Installing Jenkins CLI..."
+# Wait a bit more for the web application to fully load
+sleep 5
+wget http://localhost:8080/jnlpJars/jenkins-cli.jar -O /usr/local/bin/jenkins-cli.jar
+chmod +x /usr/local/bin/jenkins-cli.jar
+cat << 'EOF' | sudo tee /usr/local/bin/jenkins-cli
+#!/bin/bash
+java -jar /usr/local/bin/jenkins-cli.jar -s http://localhost:8080 "$@"
+EOF
+sudo chmod +x /usr/local/bin/jenkins-cli
 
 if [ -f /var/lib/jenkins/secrets/initialAdminPassword ]; then
     echo "Jenkins Initial Admin Password:"
