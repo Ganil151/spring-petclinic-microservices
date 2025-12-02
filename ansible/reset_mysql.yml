@@ -1,117 +1,88 @@
 ---
-- name: Reset and Reinstall MySQL 8 on Amazon Linux 2023
+- name: Fully reset MySQL 8 on Amazon Linux 2023 (FIXED)
   hosts: mysql
   become: true
-  
+
+  vars:
+    mysql_root_password: "PetMa3ter$3JH3!"
+
   tasks:
-    - name: Display reset information
-      debug:
-        msg: |
-          ==========================================
-          Resetting MySQL
-          ==========================================
-          This will completely reinitialize MySQL
-          ==========================================
-    
-    - name: Stop MySQL service
+
+    - name: Stop MySQL
       systemd:
         name: mysqld
         state: stopped
       ignore_errors: yes
-    
-    - name: Kill any remaining MySQL processes
-      shell: |
-        pkill -9 mysqld || true
-        pkill -9 mysqld_safe || true
-      ignore_errors: yes
-    
-    - name: Wait for processes to stop
-      wait_for:
-        port: 3306
-        state: stopped
-        timeout: 30
-      ignore_errors: yes
-    
+
+    - name: Kill leftover MySQL processes
+      shell: pkill -9 mysqld || true
+
     - name: Remove MySQL data directory
       file:
         path: /var/lib/mysql
         state: absent
-    
-    - name: Remove .my.cnf files
+
+    - name: Remove old log (temporary password no longer valid)
       file:
-        path: "{{ item }}"
+        path: /var/log/mysqld.log
         state: absent
-      loop:
-        - /root/.my.cnf
-        - /home/ec2-user/.my.cnf
-      ignore_errors: yes
-    
-    - name: Recreate MySQL data directory
+
+    - name: Recreate data directory
       file:
         path: /var/lib/mysql
         state: directory
         owner: mysql
         group: mysql
-        mode: '0755'
-    
-    - name: Start MySQL service (will auto-initialize)
+        mode: "0755"
+
+    - name: Initialize MySQL database properly
+      shell: |
+        mysqld --initialize --user=mysql --datadir=/var/lib/mysql
+      register: init_out
+
+    - debug:
+        var: init_out.stdout_lines
+
+    - name: Get new temporary root password
+      shell: grep 'temporary password' /var/log/mysqld.log | awk '{print $NF}'
+      register: temp_pass
+
+    - debug:
+        msg: "Temp password → {{ temp_pass.stdout }}"
+
+    - name: Start MySQL
       systemd:
         name: mysqld
         state: started
         enabled: yes
-    
-    - name: Wait for MySQL to be fully up
+
+    - name: Wait for MySQL
       wait_for:
         port: 3306
-        host: 127.0.0.1
-        delay: 5
-        timeout: 60
-        state: started
-    
-    - name: Get temporary MySQL root password
-      shell: grep 'temporary password' /var/log/mysqld.log | tail -1 | awk '{print $NF}'
-      register: temp_pass
-      changed_when: false
-    
-    - name: Set MySQL root password
+        delay: 3
+        timeout: 40
+
+    - name: Set NEW root password
       shell: |
-        /usr/bin/mysql --connect-expired-password -uroot -p"{{ temp_pass.stdout }}" \
+        mysql --connect-expired-password \
+        -uroot -p"{{ temp_pass.stdout }}" \
         -e "ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY '{{ mysql_root_password }}'; FLUSH PRIVILEGES;"
-      register: password_change
-      failed_when: password_change.rc != 0
-      retries: 3
-      delay: 2
-      until: password_change.rc == 0
-    
-    - name: Debug - Verify password variable
-      debug:
-        msg: "Password variable length: {{ mysql_root_password | length }}"
-    
-    - name: Create /root/.my.cnf for passwordless root login
+      register: pass_change
+      failed_when: pass_change.rc != 0
+
+    - name: Create root .my.cnf
       copy:
         dest: /root/.my.cnf
+        mode: "0600"
         content: |
           [client]
           user=root
           password="{{ mysql_root_password }}"
-        owner: root
-        group: root
-        mode: '0600'
-    
+
     - name: Test MySQL authentication
-      shell: /usr/bin/mysql -e "SELECT 1;"
+      shell: mysql -e "SELECT 1;"
+      register: test_out
       changed_when: false
-    
-    - name: Configure MySQL bind-address
-      lineinfile:
-        path: /etc/my.cnf
-        regexp: '^bind-address'
-        line: 'bind-address = 0.0.0.0'
-        state: present
-      notify: Restart MySQL
-  
-  handlers:
-    - name: Restart MySQL
-      systemd:
-        name: mysqld
-        state: restarted
+
+    - debug:
+        var: test_out.stdout
