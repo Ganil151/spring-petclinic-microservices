@@ -1,6 +1,6 @@
 ---
-mysql_root_password: "PetclinicRoot123!"
-mysql_petclinic_password: "PetClinic@12345!"
+mysql_root_password: "PetMa3ter$3JH3!"
+mysql_petclinic_password: "Wor8erPet@12S45!"
 
 petclinic_databases:
   - customers
