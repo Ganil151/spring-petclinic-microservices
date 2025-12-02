@@ -66,13 +66,13 @@
       failed_when: false
 
     - name: Check if root password is already set correctly
-      shell: mysql -u root -p"{{ mysql_root_password }}" -e "SELECT 1;" 2>/dev/null
+      shell: /usr/bin/mysql -u root -p"{{ mysql_root_password }}" -e "SELECT 1;" 2>/dev/null
       register: password_check
       changed_when: false
       failed_when: false
 
     - name: Check if temporary password works (if target password failed)
-      shell: mysql --connect-expired-password -u root -p"{{ temp_pass.stdout }}" -e "SELECT 1;" 2>/dev/null
+      shell: /usr/bin/mysql --connect-expired-password -u root -p"{{ temp_pass.stdout }}" -e "SELECT 1;" 2>/dev/null
       register: temp_pass_check
       when: 
         - password_check.rc != 0
@@ -109,16 +109,16 @@
 
         - name: Set root password after reset
           shell: |
-            mysql --connect-expired-password -u root -p"{{ reset_temp_pass.stdout }}" \
-            -e "ALTER USER 'root'@'localhost' IDENTIFIED BY '{{ mysql_root_password }}';"
+            /usr/bin/mysql --connect-expired-password -u root -p"{{ reset_temp_pass.stdout }}" \
+            -e "ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY '{{ mysql_root_password }}';"
       when: 
         - password_check.rc != 0
         - (temp_pass_check.skipped is defined and temp_pass_check.skipped) or (temp_pass_check.rc is defined and temp_pass_check.rc != 0)
 
     - name: Set MySQL root password (if initial temp pass worked)
       shell: |
-        mysql --connect-expired-password -u root -p"{{ temp_pass.stdout }}" \
-        -e "ALTER USER 'root'@'localhost' IDENTIFIED BY '{{ mysql_root_password }}';"
+        /usr/bin/mysql --connect-expired-password -u root -p"{{ temp_pass.stdout }}" \
+        -e "ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY '{{ mysql_root_password }}';"
       when: 
         - password_check.rc != 0
         - temp_pass_check.rc is defined
@@ -138,7 +138,7 @@
       when: password_check.rc == 0 or (password_set is defined and password_set.changed)
 
     - name: Verify MySQL authentication works
-      shell: mysql -e "SELECT 1;"
+      shell: /usr/bin/mysql -e "SELECT 1;"
       register: auth_test
       changed_when: false
 

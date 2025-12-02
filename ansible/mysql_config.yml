@@ -3,10 +3,10 @@
   hosts: mysql
   become: yes
   vars:
-
+    mysql_root_password: "PetMa3ter$3JH3!"
     petclinic_db: "petclinic"
     petclinic_user: "petclinic"
-    petclinic_password: "WorkerPet@12345!"
+    petclinic_password: "Wor8erPet@12S45!"
     mysql_port: 3306
   
   tasks:
@@ -25,14 +25,14 @@
         state: started
 
     - name: Verify MySQL root authentication
-      shell: mysql -e "SELECT 1;"
+      shell: mysql -uroot -p"{{ mysql_root_password }}" -e "SELECT 1;" 2>/dev/null
       register: auth_check
       changed_when: false
       failed_when: auth_check.rc != 0
 
     - name: Remove anonymous MySQL users
       shell: |
-        mysql -e "
+        mysql -uroot -p"{{ mysql_root_password }}" -e "
         DELETE FROM mysql.user WHERE User='';
         FLUSH PRIVILEGES;"
       changed_when: false
@@ -40,18 +40,18 @@
 
     - name: Remove test database
       shell: |
-        mysql -e "DROP DATABASE IF EXISTS test;"
+        mysql -uroot -p"{{ mysql_root_password }}" -e "DROP DATABASE IF EXISTS test;"
       changed_when: false
       ignore_errors: yes
 
     - name: Create PetClinic database
       shell: |
-        mysql -e "CREATE DATABASE IF NOT EXISTS {{ petclinic_db }};"
+        mysql -uroot -p"{{ mysql_root_password }}" -e "CREATE DATABASE IF NOT EXISTS {{ petclinic_db }};"
       changed_when: false
 
     - name: Create PetClinic user and grant privileges
       shell: |
-        mysql << EOF
+        mysql -uroot -p"{{ mysql_root_password }}" << EOF
         CREATE USER IF NOT EXISTS '{{ petclinic_user }}'@'%' IDENTIFIED BY '{{ petclinic_password }}';
         GRANT ALL PRIVILEGES ON {{ petclinic_db }}.* TO '{{ petclinic_user }}'@'%';
         FLUSH PRIVILEGES;

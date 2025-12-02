@@ -2,20 +2,20 @@
 # MySQL Petclinic Database Setup Tasks
 
 - name: Verify MySQL root password is set
-  shell: mysql -uroot -p"{{ mysql_root_password }}" -e "SELECT 1;" 2>/dev/null
+  shell: /usr/bin/mysql -uroot -p"{{ mysql_root_password }}" -e "SELECT 1;" 2>/dev/null
   register: root_auth_check
   changed_when: false
   failed_when: root_auth_check.rc != 0
 
 - name: Ensure MySQL databases exist
   shell: |
-    mysql -uroot -p"{{ mysql_root_password }}" -e "CREATE DATABASE IF NOT EXISTS {{ item }};"
+    /usr/bin/mysql -uroot -p"{{ mysql_root_password }}" -e "CREATE DATABASE IF NOT EXISTS petclinic_{{ item }};"
   loop: "{{ petclinic_databases }}"
   changed_when: false
 
 - name: Ensure petclinic users exist and have privileges
   shell: |
-    mysql -uroot -p"{{ mysql_root_password }}" << 'EOF'
+    /usr/bin/mysql -uroot -p"{{ mysql_root_password }}" << 'EOF'
     CREATE USER IF NOT EXISTS '{{ item.name }}'@'%' IDENTIFIED BY '{{ item.password }}';
     GRANT ALL PRIVILEGES ON *.* TO '{{ item.name }}'@'%';
     FLUSH PRIVILEGES;
@@ -43,7 +43,7 @@
 
 - name: Load database schema
   shell: |
-    mysql -uroot -p"{{ mysql_root_password }}" {{ item }} < /tmp/petclinic/{{ item }}-schema.sql
+    /usr/bin/mysql -uroot -p"{{ mysql_root_password }}" petclinic_{{ item }} < /tmp/petclinic/{{ item }}-schema.sql
   loop:
     - customers
     - visits
@@ -53,7 +53,7 @@
 
 - name: Verify databases were created
   shell: |
-    mysql -uroot -p"{{ mysql_root_password }}" -e "SHOW DATABASES LIKE '{{ item }}';" | grep -q "{{ item }}"
+    /usr/bin/mysql -uroot -p"{{ mysql_root_password }}" -e "SHOW DATABASES LIKE 'petclinic_{{ item }}';" | grep -q "petclinic_{{ item }}"
   loop: "{{ petclinic_databases }}"
   register: db_verify
   changed_when: false
