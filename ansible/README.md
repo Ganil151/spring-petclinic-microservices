@@ -1127,3 +1127,13 @@ Show available plugins:
 ```bash
 ansible-doc -t module -l
 ```
+
+Test connection to a host:
+```bash
+ansible -m ping -i inventory.ini
+``` 
+
+Test connection to a group:
+```bash
+ansible -m ping -i inventory.ini -l docker
+``` 
