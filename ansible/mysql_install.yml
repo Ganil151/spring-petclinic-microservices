@@ -111,6 +111,7 @@
           shell: |
             /usr/bin/mysql --connect-expired-password -u root -p"{{ reset_temp_pass.stdout }}" \
             -e "ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY '{{ mysql_root_password }}';"
+          register: reset_password_set
       when: 
         - password_check.rc != 0
         - (temp_pass_check.skipped is defined and temp_pass_check.skipped) or (temp_pass_check.rc is defined and temp_pass_check.rc != 0)
@@ -135,7 +136,7 @@
         owner: root
         group: root
         mode: '0600'
-      when: password_check.rc == 0 or (password_set is defined and password_set.changed)
+      when: password_check.rc == 0 or (password_set is defined and password_set.changed) or (reset_password_set is defined and reset_password_set.changed)
 
     - name: Verify MySQL authentication works
       shell: /usr/bin/mysql -e "SELECT 1;"
