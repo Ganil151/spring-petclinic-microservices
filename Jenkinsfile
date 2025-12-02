@@ -367,251 +367,157 @@ REMOTE
             }
         }
 
-        stage('Configure MySQL Database') {
-            when {
-                expression { return params.CONFIGURE_MYSQL }
-            }
+         stage('Configure MySQL Database') {
             steps {
-                withCredentials([
-                    [$class: 'SSHUserPrivateKeyBinding', credentialsId: SSH_CREDENTIALS_ID, keyFileVariable: 'SSH_KEY', usernameVariable: 'SSH_USER'],
-                    usernamePassword(credentialsId: env.MYSQL_ROOT_CREDENTIALS_ID, usernameVariable: 'MYSQL_ROOT_USER', passwordVariable: 'MYSQL_ROOT_PASSWORD'),
-                    usernamePassword(credentialsId: env.MYSQL_PETCLINIC_CREDENTIALS_ID, usernameVariable: 'MYSQL_PETCLINIC_USER', passwordVariable: 'MYSQL_PETCLINIC_PASSWORD')
-                ]) {
-                    script {
-                        echo "Configuring MySQL databases with Ansible..."
-                        
-                        // Run from the ansible directory
-                        dir('ansible') {
-                            // First, create the group_vars file
-                            sh '''
-                                set -euo pipefail
-                                echo "=========================================="
-                                echo "MySQL Configuration - Creating Variables"
-                                echo "=========================================="
-                                
-                                # Ensure ansible directory structure exists
-                                mkdir -p group_vars files roles
-                                
-                                # Create group_vars/mysql.yml using Ansible lookups for safety
-                                cat > group_vars/mysql.yml << 'ENDOFVARS'
+            withCredentials([
+                [$class: 'SSHUserPrivateKeyBinding', credentialsId: SSH_CREDENTIALS_ID, keyFileVariable: 'SSH_KEY', usernameVariable: 'SSH_USER'],
+                usernamePassword(credentialsId: 'mysql-root-credentials', usernameVariable: 'MYSQL_ROOT_USER', passwordVariable: 'MYSQL_ROOT_PASSWORD'),
+                usernamePassword(credentialsId: 'mysql-petclinic-credentials', usernameVariable: 'MYSQL_PETCLINIC_USER', passwordVariable: 'MYSQL_PETCLINIC_PASSWORD')
+            ]) {
+                script {
+                    echo "Configuring MySQL databases with Ansible..."
+                    
+                    sh '''
+                    set -e
+                    
+                    echo "=== MySQL Configuration ==="
+                    echo "MySQL Root User: ${MYSQL_ROOT_USER}"
+                    echo "Petclinic User: ${MYSQL_PETCLINIC_USER}"
+                    echo ""
+                    
+                    # Update Ansible group_vars with credentials from Jenkins
+                    echo "Updating Ansible variables with Jenkins credentials..."
+                    cat > ansible/group_vars/mysql.yml <<EOF
 ---
-mysql_root_password: "{{ lookup('env', 'MYSQL_ROOT_PASSWORD') }}"
-mysql_petclinic_password: "{{ lookup('env', 'MYSQL_PETCLINIC_PASSWORD') }}"
-mysql_database_name: "petclinic"
-mysql_user_name: "{{ lookup('env', 'MYSQL_PETCLINIC_USER') }}"
-mysql_user_password: "{{ lookup('env', 'MYSQL_PETCLINIC_PASSWORD') }}"
+mysql_root_password: "${MYSQL_ROOT_PASSWORD}"
+mysql_petclinic_password: "${MYSQL_PETCLINIC_PASSWORD}"
 
 petclinic_databases:
 - customers
 - visits
 - vets
-ENDOFVARS
-                                
-                                echo "✓ Ansible variables configured"
-                            '''
-                            
-                            // Test connectivity
-                            sh '''
-                                set -euo pipefail
-                                echo ""
-                                echo "=== Testing Ansible Connectivity ==="
-                                
-                                # Export SSH key path for Ansible inventory
-                                export ANSIBLE_SSH_KEY="${SSH_KEY}"
-                                
-                                if ansible mysql -i inventory.ini -m ping; then
-                                    echo "✓ Ansible connectivity verified"
-                                else
-                                    echo "ERROR: Cannot connect to MySQL server via Ansible"
-                                    echo "Checking inventory file..."
-                                    cat inventory.ini || echo "inventory.ini not found"
-                                    exit 1
-                                fi
-                            '''
-                            
-                            // Run diagnostic playbook
-                            sh '''
-                                set -euo pipefail
-                                echo ""
-                                echo "=========================================="
-                                echo "MySQL Configuration - Phase 2: Diagnostics"
-                                echo "=========================================="
-                                
-                                # Export environment variables for Ansible lookups
-                                export ANSIBLE_SSH_KEY="${SSH_KEY}"
-                                export MYSQL_ROOT_PASSWORD="${MYSQL_ROOT_PASSWORD}"
-                                export MYSQL_PETCLINIC_PASSWORD="${MYSQL_PETCLINIC_PASSWORD}"
-                                export MYSQL_PETCLINIC_USER="${MYSQL_PETCLINIC_USER}"
-                                
-                                # Check if diagnostic playbook exists
-                                if [ -f mysql_diagnostic.yml ]; then
-                                    echo "Running diagnostic playbook..."
-                                    ansible-playbook -i inventory.ini mysql_diagnostic.yml || {
-                                        echo "WARNING: Diagnostic playbook failed (may be expected)"
-                                    }
-                                else
-                                    echo "WARNING: mysql_diagnostic.yml not found, skipping diagnostics"
-                                fi
-                            '''
-                            
-                            // Run setup playbook
-                            def setupSuccess = false
-                            try {
-                                sh '''
-                                    set -euo pipefail
-                                    echo ""
-                                    echo "=========================================="
-                                    echo "MySQL Configuration - Phase 3: Setup"
-                                    echo "=========================================="
-                                    
-                                    # Export environment variables for Ansible lookups
-                                    export ANSIBLE_SSH_KEY="${SSH_KEY}"
-                                    export MYSQL_ROOT_PASSWORD="${MYSQL_ROOT_PASSWORD}"
-                                    export MYSQL_PETCLINIC_PASSWORD="${MYSQL_PETCLINIC_PASSWORD}"
-                                    export MYSQL_PETCLINIC_USER="${MYSQL_PETCLINIC_USER}"
-                                    
-                                    # Check if setup playbook exists
-                                    if [ ! -f mysql_setup.yml ]; then
-                                        echo "ERROR: mysql_setup.yml not found"
-                                        echo "Available files:"
-                                        ls -la
-                                        exit 1
-                                    fi
-                                    
-                                    # Run mysql_setup.yml
-                                    ansible-playbook -i inventory.ini mysql_setup.yml -v
-                                '''
-                                setupSuccess = true
-                            } catch (Exception e) {
-                                echo "Setup failed with error: ${e.message}"
-                                echo "Attempting to reset MySQL..."
-                                
-                                // Try reset if setup failed
-                                try {
-                                    sh '''
-                                        set -euo pipefail
-                                        echo ""
-                                        echo "=========================================="
-                                        echo "Attempting MySQL Reset"
-                                        echo "=========================================="
-                                        
-                                        # Export environment variables for Ansible lookups
-                                        export ANSIBLE_SSH_KEY="${SSH_KEY}"
-                                        export MYSQL_ROOT_PASSWORD="${MYSQL_ROOT_PASSWORD}"
-                                        export MYSQL_PETCLINIC_PASSWORD="${MYSQL_PETCLINIC_PASSWORD}"
-                                        export MYSQL_PETCLINIC_USER="${MYSQL_PETCLINIC_USER}"
-                                        
-                                        if [ -f reset_mysql.yml ]; then
-                                            ansible-playbook -i inventory.ini reset_mysql.yml -v \
-                                                -e "force_reset=yes"
-                                            
-                                            echo ""
-                                            echo "Reset complete. Retrying setup..."
-                                            
-                                            ansible-playbook -i inventory.ini mysql_setup.yml -v
-                                        else
-                                            echo "ERROR: reset_mysql.yml not found"
-                                            exit 1
-                                        fi
-                                    '''
-                                    setupSuccess = true
-                                } catch (Exception resetError) {
-                                    echo "Reset and retry failed: ${resetError.message}"
-                                    error("MySQL setup failed. Check password policy compliance.")
-                                }
-                            }
-                            
-                            // Verify databases
-                            if (setupSuccess) {
-                                sh '''
-                                    set -euo pipefail
-                                    echo ""
-                                    echo "=========================================="
-                                    echo "MySQL Configuration - Phase 4: Verification"
-                                    echo "=========================================="
-                                    
-                                    # Export SSH key for Ansible
-                                    export ANSIBLE_SSH_KEY="${SSH_KEY}"
-                                    
-                                    # Verify databases were created
-                                    echo "=== Verifying Database Creation ==="
-                                    
-                                    # Get database list using simple approach
-                                    DB_OUTPUT=$(ansible mysql -i inventory.ini -m shell \
-                                        -a "/usr/bin/mysql -u root -p'${MYSQL_ROOT_PASSWORD}' -e 'SHOW DATABASES;' -N -B 2>/dev/null || echo 'ERROR'" \
-                                        2>&1 || echo "ANSIBLE_FAILED")
-                                    
-                                    echo "Database check output:"
-                                    echo "$DB_OUTPUT"
-                                    echo ""
-                                    
-                                    # Check for required databases
-                                    MISSING=""
-                                    for db in petclinic_customers petclinic_visits petclinic_vets; do
-                                        if echo "$DB_OUTPUT" | grep -q "$db"; then
-                                            echo "✓ Database $db exists"
-                                        else
-                                            echo "✗ Database $db is MISSING"
-                                            MISSING="$MISSING $db"
-                                        fi
-                                    done
-                                    
-                                    if [ -n "$MISSING" ]; then
-                                        echo ""
-                                        echo "ERROR: The following databases are missing:$MISSING"
-                                        echo ""
-                                        echo "Troubleshooting:"
-                                        echo "1. Check if password meets MySQL 8.x requirements:"
-                                        echo "   - Minimum 8 characters"
-                                        echo "   - At least 1 uppercase letter"
-                                        echo "   - At least 1 lowercase letter"
-                                        echo "   - At least 1 number"
-                                        echo "   - At least 1 special character"
-                                        echo ""
-                                        echo "2. Update Jenkins credentials (Recommended):"
-                                        echo "   - Go to: Jenkins → Manage Jenkins → Credentials"
-                                        echo "   - Update 'mysql-root-credentials'"
-                                        echo "   - Use password like: Petclinic2025!"
-                                        echo ""
-                                        exit 1
-                                    fi
-                                    
-                                    echo ""
-                                    echo "✓ All required databases exist"
-                                    
-                                    # Verify user
-                                    echo ""
-                                    echo "=== Verifying Petclinic User ==="
-                                    
-                                    USER_OUTPUT=$(ansible mysql -i inventory.ini -m shell \
-                                        -a "/usr/bin/mysql -u root -p'${MYSQL_ROOT_PASSWORD}' -e \"SELECT User,Host FROM mysql.user WHERE User='${MYSQL_PETCLINIC_USER}';\" -N -B 2>/dev/null || echo 'ERROR'" \
-                                        2>&1 || echo "ANSIBLE_FAILED")
-                                    
-                                    if echo "$USER_OUTPUT" | grep -q "${MYSQL_PETCLINIC_USER}"; then
-                                        echo "✓ User '${MYSQL_PETCLINIC_USER}' exists"
-                                    else
-                                        echo "WARNING: Could not verify user (may still exist)"
-                                    fi
-                                    
-                                    # Get MySQL server info
-                                    MYSQL_IP=$(grep "mysql" inventory.ini | grep "ansible_host" | awk '{print $2}' | cut -d'=' -f2 || echo "Unknown")
-                                    
-                                    echo ""
-                                    echo "=========================================="
-                                    echo "MySQL Configuration Complete!"
-                                    echo "=========================================="
-                                    echo "✓ Databases: petclinic_customers, petclinic_visits, petclinic_vets"
-                                    echo "✓ User: ${MYSQL_PETCLINIC_USER}"
-                                    echo "✓ Connection: ${MYSQL_IP}:3306"
-                                    echo "✓ All health checks passed"
-                                    echo "=========================================="
-                                '''
-                            }
-                        }
+
+petclinic_users:
+- name: ${MYSQL_PETCLINIC_USER}
+password: "{{ mysql_petclinic_password }}"
+priv: "*.*:ALL"
+EOF
+                    echo "✓ Ansible variables updated"
+                    echo ""
+                    
+                    # Fix SSH key permissions (must be 600)
+                    chmod 600 "${SSH_KEY}"
+                    
+                    # Export SSH key path for Ansible inventory  
+                    export ANSIBLE_PRIVATE_KEY_FILE="${SSH_KEY}"
+                    
+                    # Change to ansible directory
+                    cd ansible
+                    
+                    # Test Ansible connectivity
+                    echo "=== Testing Ansible Connectivity ==="
+                    ansible mysql -i inventory.ini -m ping || {
+                        echo "ERROR: Cannot connect to MySQL server via Ansible"
+                        echo "SSH Key: ${SSH_KEY}"
+                        echo "Inventory file:"
+                        cat inventory.ini
+                        exit 1
                     }
+                    echo "✓ Ansible connectivity verified"
+                    echo ""
+                    
+                    # Run Ansible playbook
+                    echo "=== Running Ansible Playbook ==="
+                    ansible-playbook -i inventory.ini mysql_setup.yml -v || {
+                        echo "ERROR: Ansible playbook failed"
+                        exit 1
+                    }
+                    echo "✓ Ansible playbook completed successfully"
+                    echo ""
+                    
+                    # Verify databases were created
+                    echo "=== Verifying Database Creation ==="
+                    ansible mysql -i inventory.ini -m shell \\
+                        -a "mysql -u ${MYSQL_ROOT_USER} -p${MYSQL_ROOT_PASSWORD} -e 'SHOW DATABASES;'" \\
+                        | grep -E 'customers|visits|vets' || {
+                        echo "ERROR: Required databases not found"
+                        exit 1
+                    }
+                    echo "✓ All required databases exist (customers, visits, vets)"
+                    echo ""
+                    
+                    # Verify petclinic user was created
+                    echo "=== Verifying Petclinic User ==="
+                    ansible mysql -i inventory.ini -m shell \\
+                        -a "mysql -u ${MYSQL_ROOT_USER} -p${MYSQL_ROOT_PASSWORD} -e 'SELECT User FROM mysql.user WHERE User=\"${MYSQL_PETCLINIC_USER}\";'" \\
+                        | grep "${MYSQL_PETCLINIC_USER}" || {
+                        echo "ERROR: Petclinic user not found"
+                        exit 1
+                    }
+                    echo "✓ Petclinic user exists: ${MYSQL_PETCLINIC_USER}"
+                    echo ""
+                    
+                    # Test petclinic user can connect
+                    echo "=== Testing Petclinic User Connection ==="
+                    ansible mysql -i inventory.ini -m shell \\
+                        -a "mysql -u ${MYSQL_PETCLINIC_USER} -p${MYSQL_PETCLINIC_PASSWORD} -e 'SELECT 1;'" || {
+                        echo "ERROR: Petclinic user cannot connect"
+                        exit 1
+                    }
+                    echo "✓ Petclinic user can connect successfully"
+                    echo ""
+                    
+                    # Test petclinic user has access to databases
+                    echo "=== Verifying Database Access ==="
+                    for db in customers visits vets; do
+                        echo "Testing access to $db database..."
+                        ansible mysql -i inventory.ini -m shell \\
+                            -a "mysql -u ${MYSQL_PETCLINIC_USER} -p${MYSQL_PETCLINIC_PASSWORD} -e 'USE $db; SELECT 1;'" || {
+                            echo "ERROR: Petclinic user cannot access $db database"
+                            exit 1
+                        }
+                        echo "✓ Access to $db database verified"
+                    done
+                    echo ""
+                    
+                    # Check if tables exist (schema loaded)
+                    echo "=== Checking Database Schema ==="
+                    for db in customers visits vets; do
+                        echo "Checking tables in $db database..."
+                        TABLE_COUNT=$(ansible mysql -i inventory.ini -m shell \\
+                            -a "mysql -u ${MYSQL_PETCLINIC_USER} -p${MYSQL_PETCLINIC_PASSWORD} -e 'USE $db; SHOW TABLES;'" \\
+                            | grep -c "owners\\|pets\\|visits\\|vets\\|specialties" || echo "0")
+                        
+                        if [ "$TABLE_COUNT" -gt 0 ]; then
+                            echo "✓ $db database has $TABLE_COUNT tables"
+                        else
+                            echo "⚠ $db database has no tables (schema may need to be loaded)"
+                        fi
+                    done
+                    echo ""
+                    
+                    # Get MySQL server info
+                    echo "=== MySQL Server Information ==="
+                    ansible mysql -i inventory.ini -m shell \\
+                        -a "mysql -u ${MYSQL_ROOT_USER} -p${MYSQL_ROOT_PASSWORD} -e 'SELECT VERSION();'" \\
+                        | grep -v "CHANGED\\|mysql" || true
+                    echo ""
+                    
+                    # Get MySQL server IP
+                    MYSQL_IP=$(grep "mysql-server ansible_host" ansible/inventory.ini | awk '{print $2}' | cut -d'=' -f2)
+                    echo "MySQL Server IP: $MYSQL_IP"
+                    echo ""
+                    
+                    echo "=== MySQL Configuration Complete ==="
+                    echo "✓ Databases: customers, visits, vets"
+                    echo "✓ User: ${MYSQL_PETCLINIC_USER}"
+                    echo "✓ Connection: ${MYSQL_IP}:3306"
+                    echo "✓ All health checks passed"
+                    '''
                 }
             }
         }
+    }
 
     }
 
