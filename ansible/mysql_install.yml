@@ -2,19 +2,20 @@
 - name: Install & Configure MySQL 8 on Amazon Linux 2023
   hosts: mysql
   become: true
-  
+
   vars:
     mysql_repo_url: "https://repo.mysql.com/mysql80-community-release-el9.rpm"
     mysql_repo_path: "/tmp/mysql80-community-release.rpm"
     mysql_gpg_key: "https://repo.mysql.com/RPM-GPG-KEY-mysql-2023"
+    mysql_root_password: "PetMa3ter$3JH3!"  # Replace with a secure password
 
   tasks:
-
-    - name: Install required dependencies
+    - name: Ensure required dependencies are installed
       yum:
         name:
           - python3-pip
           - shadow-utils
+          - curl
         state: present
 
     - name: Import MySQL GPG key
@@ -22,32 +23,30 @@
         state: present
         key: "{{ mysql_gpg_key }}"
 
-    - name: Download MySQL repo using curl
-      shell: |
-        curl -vL "{{ mysql_repo_url }}" -o "{{ mysql_repo_path }}"
-      args:
-        creates: "{{ mysql_repo_path }}"
-      register: curl_debug
-      ignore_errors: yes
-    
-    - debug:
-        var: curl_debug.stdout
+    - name: Download MySQL repository RPM
+      get_url:
+        url: "{{ mysql_repo_url }}"
+        dest: "{{ mysql_repo_path }}"
+        mode: '0644'
+      register: download_result
 
-    - debug:
-        var: curl_debug.stderr
+    - name: Fail if MySQL repo RPM file is missing or invalid
+      fail:
+        msg: "MySQL repo RPM file is missing or invalid at {{ mysql_repo_path }}"
+      when: not download_result.dest | stat.exists or download_result.size == 0
 
-    - name: Install MySQL 8 repo
+    - name: Install MySQL 8 repository
       yum:
         name: "{{ mysql_repo_path }}"
         state: present
-        disable_gpg_check: yes
+        disable_gpg_check: no
 
     - name: Install MySQL 8 Community Server
       yum:
         name: mysql-community-server
         state: present
 
-    - name: Ensure MySQL service is started
+    - name: Ensure MySQL service is started and enabled
       systemd:
         name: mysqld
         state: started
@@ -76,7 +75,7 @@
     - name: Check if temporary password works (if target password failed)
       shell: mysql --connect-expired-password -u root -p"{{ temp_pass.stdout }}" -e "SELECT 1;" 2>/dev/null
       register: temp_pass_check
-      when: 
+      when:
         - password_check.rc != 0
         - temp_pass.stdout is defined
         - temp_pass.stdout | length > 0
@@ -87,7 +86,7 @@
       shell: |
         mysql --connect-expired-password -u root -p"{{ temp_pass.stdout }}" \
         -e "ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY '{{ mysql_root_password }}';"
-      when: 
+      when:
         - password_check.rc != 0
         - temp_pass_check.rc is defined
         - temp_pass_check.rc == 0

@@ -1,9 +1,0 @@
----
-- import_playbook: mysql_install.yml
-
-- name: Configure MySQL for Spring Petclinic Microservices
-  hosts: mysql
-  become: true
-
-  roles:
-    - mysql_petclinic
