@@ -41,5 +41,8 @@ mysql_packages:
   - mysql-community-server
   - mysql-community-client
 
+# Specify which repository to use for package installation  
+mysql_enablerepo: "mysql80-community"
+
 # Ensure MySQL starts on boot
 mysql_enabled_on_startup: true
