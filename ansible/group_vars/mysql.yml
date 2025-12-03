@@ -15,6 +15,7 @@ petclinic_users:
 # Configuration for geerlingguy.mysql role
 mysql_bind_address: '0.0.0.0'
 mysql_root_password_update: true
+mysql_install_packages: false  # We install MySQL in pre_tasks
 
 # Define databases for the role to create
 mysql_databases:
@@ -35,14 +36,6 @@ mysql_users:
     priv: "*.*:ALL"
     host: "%"
 
-# Amazon Linux 2023 specific package configuration
+# Amazon Linux 2023 specific settings
 mysql_daemon: mysqld
-mysql_packages:
-  - mysql-community-server
-  - mysql-community-client
-
-# Specify which repository to use for package installation  
-mysql_enablerepo: "mysql80-community"
-
-# Ensure MySQL starts on boot
 mysql_enabled_on_startup: true

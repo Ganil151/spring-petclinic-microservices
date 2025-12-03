@@ -33,11 +33,30 @@
         state: present
         disable_gpg_check: yes
 
+    - name: Install MySQL 8 Community Server
+      yum:
+        name: mysql-community-server
+        state: present
+
     - name: Install PyMySQL (required for ansible mysql modules)
       pip:
         name: pymysql
         state: present
         executable: pip3
+
+    - name: Ensure MySQL service is started
+      systemd:
+        name: mysqld
+        state: started
+        enabled: yes
+
+    - name: Wait for MySQL to be fully up
+      wait_for:
+        port: 3306
+        host: 127.0.0.1
+        delay: 5
+        timeout: 60
+        state: started
 
   roles:
     - role: geerlingguy.mysql
