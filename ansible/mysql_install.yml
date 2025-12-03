@@ -24,11 +24,9 @@
         key: "{{ mysql_gpg_key }}"
 
     - name: Download MySQL 8 repository RPM
-      get_url:
-        url: "{{ mysql_repo_url }}"
-        dest: "{{ mysql_repo_path }}"
-        mode: '0644'
-        force: yes
+      shell: "wget --user-agent='Mozilla/5.0' -q -O {{ mysql_repo_path }} {{ mysql_repo_url }}"
+      args:
+        creates: "{{ mysql_repo_path }}"
 
     - name: Install MySQL 8 repository
       yum:
