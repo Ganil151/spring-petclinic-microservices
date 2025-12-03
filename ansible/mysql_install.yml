@@ -13,7 +13,6 @@
     - name: Install required dependencies
       yum:
         name:
-          - curl
           - python3-pip
           - shadow-utils
         state: present
