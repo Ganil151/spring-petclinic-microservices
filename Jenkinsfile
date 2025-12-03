@@ -424,14 +424,14 @@ REMOTE
                                     echo "=== Installing Ansible Galaxy Role ==="
                                     ansible-galaxy install geerlingguy.mysql || {
                                         echo "WARNING: Could not install Galaxy role, falling back to manual setup"
-                                        PLAYBOOK="mysql_setup.yml"
+                                        PLAYBOOK="mysql_setup_galaxy.yml"
                                     }
                                     
                                     if [ -z "${PLAYBOOK:-}" ]; then
                                         PLAYBOOK="mysql_setup_galaxy.yml"
                                     fi
                                 else
-                                    PLAYBOOK="mysql_setup.yml"
+                                    PLAYBOOK="mysql_setup_galaxy.yml"
                                 fi
                                 
                                 echo "=== Running MySQL Setup: $PLAYBOOK ==="
