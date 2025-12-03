@@ -1,161 +1,106 @@
 ---
-- name: Install & Configure MySQL 8 on Amazon Linux 2023
+# Install the role first:
+# ansible-galaxy install geerlingguy.mysql
+
+- name: Setup MySQL using Ansible Galaxy Role
   hosts: mysql
   become: true
   
   vars:
-    mysql_repo_url: "https://dev.mysql.com/get/mysql80-community-release-el9-1.noarch.rpm"
-    mysql_repo_path: "/tmp/mysql80-community-release.rpm"
-
-
-  tasks:
-
-    - name: Install required dependencies
-      yum:
-        name:
-          - python3-pip
-          - wget  # <-- Ensure wget is present
-          - perl
-          - shadow-utils
+    # MySQL root password
+    mysql_root_password: "{{ mysql_root_password | default('Petclinic2025!') }}"
+    mysql_root_password_update: yes
+    
+    # MySQL configuration
+    mysql_enabled_on_startup: yes
+    mysql_bind_address: '0.0.0.0'
+    mysql_port: '3306'
+    mysql_datadir: /var/lib/mysql
+    mysql_socket: /var/lib/mysql/mysql.sock
+    mysql_log_error: /var/log/mysqld.log
+    mysql_pid_file: /var/run/mysqld/mysqld.pid
+    
+    # Character set
+    mysql_character_set_server: utf8mb4
+    mysql_collation_server: utf8mb4_unicode_ci
+    
+    # Performance settings
+    mysql_max_connections: 200
+    mysql_max_allowed_packet: '64M'
+    mysql_innodb_buffer_pool_size: '1G'
+    mysql_innodb_log_file_size: '256M'
+    
+    # Databases to create
+    mysql_databases:
+      - name: petclinic_customers
+        collation: utf8mb4_unicode_ci
+        encoding: utf8mb4
+      - name: petclinic_visits
+        collation: utf8mb4_unicode_ci
+        encoding: utf8mb4
+      - name: petclinic_vets
+        collation: utf8mb4_unicode_ci
+        encoding: utf8mb4
+    
+    # Users to create
+    mysql_users:
+      - name: petclinic
+        host: '%'
+        password: "{{ mysql_petclinic_password | default('Petclinic2025!') }}"
+        priv: 'petclinic_%.*:ALL'
         state: present
-
-    # PyMySQL is not needed when using shell commands instead of community.mysql modules
-
-    - name: Remove conflicting MariaDB packages (if any)
-      yum:
-        name:
-          - mariadb*
-        state: absent
-      ignore_errors: yes
-
-    # --- FIX START: Using shell command to bypass 403 Forbidden ---
-    - name: Download and Install MySQL 8 repository RPM
-      shell: |
-        # Use wget to download the RPM to a temporary location
-        wget -q -O {{ mysql_repo_path }} {{ mysql_repo_url }}
-        # Use yum to install the local RPM file
-        yum install -y {{ mysql_repo_path }}
-      args:
-        creates: /etc/yum.repos.d/mysql-community.repo
-    # --- FIX END ---
-
-    - name: Install MySQL 8 Community Server
-      yum:
-        name:
-          - mysql-community-server
-        state: present
-
-    - name: Ensure MySQL service is started
+    
+    # Disable password validation for easier setup
+    mysql_validate_password_policy: LOW
+    mysql_validate_password_length: 8
+  
+  roles:
+    - role: geerlingguy.mysql
+      become: yes
+  
+  post_tasks:
+    - name: Verify MySQL is running
       systemd:
         name: mysqld
         state: started
         enabled: yes
-
-    - name: Wait for MySQL to be fully up
+    
+    - name: Wait for MySQL to be ready
       wait_for:
         port: 3306
-        host: 127.0.0.1
         delay: 5
         timeout: 60
-        state: started
-
-    - name: Get temporary MySQL root password
-      shell: grep 'temporary password' /var/log/mysqld.log | awk '{print $NF}' | tail -n 1
-      register: temp_pass
+    
+    - name: Test MySQL connection
+      shell: mysql -u root -p'{{ mysql_root_password }}' -e "SELECT VERSION();"
+      register: mysql_version
       changed_when: false
-      failed_when: false
-
-    - name: Check if root password is already set correctly
-      shell: /usr/bin/mysql -u root -p"{{ mysql_root_password }}" -e "SELECT 1;" 2>/dev/null
-      register: password_check
+      no_log: true
+    
+    - name: Display MySQL version
+      debug:
+        msg: "{{ mysql_version.stdout_lines }}"
+    
+    - name: Verify databases exist
+      shell: mysql -u root -p'{{ mysql_root_password }}' -e "SHOW DATABASES LIKE 'petclinic_%';"
+      register: databases
       changed_when: false
-      failed_when: false
-
-    - name: Check if temporary password works (if target password failed)
-      shell: /usr/bin/mysql --connect-expired-password -u root -p"{{ temp_pass.stdout }}" -e "SELECT 1;" 2>/dev/null
-      register: temp_pass_check
-      when: 
-        - password_check.rc != 0
-        - temp_pass.stdout is defined
-        - temp_pass.stdout | length > 0
+      no_log: true
+    
+    - name: Display databases
+      debug:
+        msg: "{{ databases.stdout_lines }}"
+    
+    - name: Test petclinic user
+      shell: mysql -u petclinic -p'{{ mysql_petclinic_password }}' -e "SELECT 1;"
+      register: user_test
       changed_when: false
-      failed_when: false
-
-    - name: Reset MySQL if authentication failed completely
-      block:
-        - name: Stop MySQL service (Reset)
-          systemd:
-            name: mysqld
-            state: stopped
-        
-        - name: Wipe MySQL data directory (Reset)
-          file:
-            path: /var/lib/mysql
-            state: absent
-
-        - name: Start MySQL service (Reset)
-          systemd:
-            name: mysqld
-            state: started
-
-        - name: Wait for MySQL (Reset)
-          wait_for:
-            port: 3306
-            delay: 5
-
-        - name: Get new temporary password (Reset)
-          shell: grep 'temporary password' /var/log/mysqld.log | awk '{print $NF}' | tail -n 1
-          register: reset_temp_pass
-
-        - name: Set root password after reset
-          shell: |
-            /usr/bin/mysql --connect-expired-password -u root -p"{{ reset_temp_pass.stdout }}" \
-            -e "ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY '{{ mysql_root_password }}';"
-          register: reset_password_set
-      when: 
-        - password_check.rc != 0
-        - (temp_pass_check.skipped is defined and temp_pass_check.skipped) or (temp_pass_check.rc is defined and temp_pass_check.rc != 0)
-
-    - name: Set MySQL root password (if initial temp pass worked)
-      shell: |
-        /usr/bin/mysql --connect-expired-password -u root -p"{{ temp_pass.stdout }}" \
-        -e "ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY '{{ mysql_root_password }}';"
-      when: 
-        - password_check.rc != 0
-        - temp_pass_check.rc is defined
-        - temp_pass_check.rc == 0
-      register: password_set
-
-    - name: Create /root/.my.cnf for passwordless root login
-      copy:
-        dest: /root/.my.cnf
-        content: |
-          [client]
-          user=root
-          password="{{ mysql_root_password }}"
-        owner: root
-        group: root
-        mode: '0600'
-      when: password_check.rc == 0 or (password_set is defined and password_set.changed) or (reset_password_set is defined and reset_password_set.changed)
-
-    - name: Verify MySQL authentication works
-      shell: /usr/bin/mysql -e "SELECT 1;"
-      register: auth_test
-      changed_when: false
-
-
-
-    - name: Configure MySQL bind-address
-      lineinfile:
-        path: /etc/my.cnf
-        regexp: '^bind-address'
-        line: 'bind-address = 0.0.0.0'
-        state: present
-      notify: Restart MySQL
-
-  handlers:
-    - name: Restart MySQL
-      systemd:
-        name: mysqld
-        state: restarted
-                                              
+      no_log: true
+    
+    - name: Display success message
+      debug:
+        msg: |
+          ✓ MySQL installed and configured
+          ✓ Databases: petclinic_customers, petclinic_visits, petclinic_vets
+          ✓ User: petclinic (remote access enabled)
+          ✓ Bind address: 0.0.0.0:3306
