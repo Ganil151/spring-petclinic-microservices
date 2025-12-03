@@ -24,9 +24,17 @@
 
     - name: Download MySQL repo using curl
       shell: |
-        curl -L "{{ mysql_repo_url }}" -o "{{ mysql_repo_path }}"
+        curl -vL "{{ mysql_repo_url }}" -o "{{ mysql_repo_path }}"
       args:
         creates: "{{ mysql_repo_path }}"
+      register: curl_debug
+      ignore_errors: yes
+    
+    - debug:
+        var: curl_debug.stdout
+
+    - debug:
+        var: curl_debug.stderr
 
     - name: Install MySQL 8 repo
       yum:
