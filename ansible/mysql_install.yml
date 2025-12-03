@@ -4,7 +4,7 @@
   become: true
   
   vars:
-    mysql_repo_url: "https://dev.mysql.com/get/mysql80-community-release-el9-1.noarch.rpm"
+    mysql_repo_url: "https://repo.mysql.com/mysql80-community-release-el9.rpm"
     mysql_repo_path: "/tmp/mysql80-community-release.rpm"
     mysql_gpg_key: "https://repo.mysql.com/RPM-GPG-KEY-mysql-2023"
 
@@ -13,7 +13,7 @@
     - name: Install required dependencies
       yum:
         name:
-          - wget
+          - curl
           - python3-pip
           - shadow-utils
         state: present
@@ -23,12 +23,13 @@
         state: present
         key: "{{ mysql_gpg_key }}"
 
-    - name: Download MySQL 8 repository RPM
-      shell: "wget --user-agent='Mozilla/5.0' -q -O {{ mysql_repo_path }} {{ mysql_repo_url }}"
+    - name: Download MySQL repo using curl
+      shell: |
+        curl -L "{{ mysql_repo_url }}" -o "{{ mysql_repo_path }}"
       args:
         creates: "{{ mysql_repo_path }}"
 
-    - name: Install MySQL 8 repository
+    - name: Install MySQL 8 repo
       yum:
         name: "{{ mysql_repo_path }}"
         state: present
