@@ -6,73 +6,40 @@
   vars:
     mysql_repo_url: "https://dev.mysql.com/get/mysql80-community-release-el9-1.noarch.rpm"
     mysql_repo_path: "/tmp/mysql80-community-release.rpm"
-    mysql_gpg_key_url: "https://repo.mysql.com/RPM-GPG-KEY-mysql-2023"
+    mysql_gpg_key: "https://repo.mysql.com/RPM-GPG-KEY-mysql-2023"
 
   tasks:
+
     - name: Install required dependencies
       yum:
         name:
-          - python3-pip
           - wget
-          - perl
+          - python3-pip
           - shadow-utils
         state: present
 
-    - name: Remove conflicting MariaDB packages
-      yum:
-        name:
-          - mariadb*
-        state: absent
-      ignore_errors: yes
-
-    # ====== FIX: Import MySQL GPG Key ======
     - name: Import MySQL GPG key
       rpm_key:
         state: present
-        key: "{{ mysql_gpg_key_url }}"
-      ignore_errors: yes
+        key: "{{ mysql_gpg_key }}"
 
-    - name: Import additional MySQL GPG keys
-      rpm_key:
-        state: present
-        key: "{{ item }}"
-      loop:
-        - "https://repo.mysql.com/RPM-GPG-KEY-mysql-2022"
-        - "https://repo.mysql.com/RPM-GPG-KEY-mysql"
-      ignore_errors: yes
-    # =======================================
-
-    - name: Download MySQL repository RPM
+    - name: Download MySQL 8 repository RPM
       get_url:
         url: "{{ mysql_repo_url }}"
         dest: "{{ mysql_repo_path }}"
         mode: '0644'
-      register: download_result
-      failed_when: false
+        force: yes
 
-    - name: Install MySQL repository RPM (fallback to wget)
-      shell: |
-        wget -q -O {{ mysql_repo_path }} {{ mysql_repo_url }}
-        yum install -y {{ mysql_repo_path }}
-      args:
-        creates: /etc/yum.repos.d/mysql-community.repo
-      when: download_result.failed | default(false)
-
-    - name: Install MySQL repository RPM (if downloaded successfully)
+    - name: Install MySQL 8 repository
       yum:
         name: "{{ mysql_repo_path }}"
         state: present
         disable_gpg_check: yes
-      when: not (download_result.failed | default(false))
 
     - name: Install MySQL 8 Community Server
       yum:
-        name:
-          - mysql-community-server
-          - mysql-community-client
-          - mysql-community-common
+        name: mysql-community-server
         state: present
-        disable_gpg_check: yes  # Disable GPG check for MySQL packages
 
     - name: Ensure MySQL service is started
       systemd:
@@ -94,19 +61,14 @@
       changed_when: false
       failed_when: false
 
-    - name: Display temporary password for debugging
-      debug:
-        msg: "Temporary password found: {{ 'Yes' if temp_pass.stdout else 'No' }}"
-
     - name: Check if root password is already set correctly
-      shell: /usr/bin/mysql -u root -p"{{ mysql_root_password }}" -e "SELECT 1;" 2>/dev/null
+      shell: mysql -u root -p"{{ mysql_root_password }}" -e "SELECT 1;" 2>/dev/null
       register: password_check
       changed_when: false
       failed_when: false
-      no_log: true
 
-    - name: Check if temporary password works
-      shell: /usr/bin/mysql --connect-expired-password -u root -p"{{ temp_pass.stdout }}" -e "SELECT 1;" 2>/dev/null
+    - name: Check if temporary password works (if target password failed)
+      shell: mysql --connect-expired-password -u root -p"{{ temp_pass.stdout }}" -e "SELECT 1;" 2>/dev/null
       register: temp_pass_check
       when: 
         - password_check.rc != 0
@@ -114,107 +76,40 @@
         - temp_pass.stdout | length > 0
       changed_when: false
       failed_when: false
-      no_log: true
 
-    - name: Set MySQL root password (if temp password works)
+    - name: Set MySQL root password (if initial temp pass worked)
       shell: |
-        /usr/bin/mysql --connect-expired-password -u root -p"{{ temp_pass.stdout }}" \
-        -e "ALTER USER 'root'@'localhost' IDENTIFIED BY '{{ mysql_root_password }}';"
+        mysql --connect-expired-password -u root -p"{{ temp_pass.stdout }}" \
+        -e "ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY '{{ mysql_root_password }}';"
       when: 
         - password_check.rc != 0
         - temp_pass_check.rc is defined
         - temp_pass_check.rc == 0
       register: password_set
-      no_log: true
 
-    - name: Reset MySQL if authentication failed
-      block:
-        - name: Stop MySQL service
-          systemd:
-            name: mysqld
-            state: stopped
-        
-        - name: Backup and remove MySQL data directory
-          shell: |
-            if [ -d /var/lib/mysql ]; then
-              mv /var/lib/mysql /var/lib/mysql.backup.$(date +%Y%m%d_%H%M%S)
-            fi
-          ignore_errors: yes
-
-        - name: Create fresh MySQL data directory
-          file:
-            path: /var/lib/mysql
-            state: directory
-            owner: mysql
-            group: mysql
-            mode: '0755'
-
-        - name: Start MySQL service
-          systemd:
-            name: mysqld
-            state: started
-
-        - name: Wait for MySQL
-          wait_for:
-            port: 3306
-            delay: 10
-            timeout: 60
-
-        - name: Get new temporary password
-          shell: grep 'temporary password' /var/log/mysqld.log | awk '{print $NF}' | tail -n 1
-          register: reset_temp_pass
-          retries: 3
-          delay: 5
-
-        - name: Set root password after reset
-          shell: |
-            /usr/bin/mysql --connect-expired-password -u root -p"{{ reset_temp_pass.stdout }}" \
-            -e "ALTER USER 'root'@'localhost' IDENTIFIED BY '{{ mysql_root_password }}';"
-          register: reset_password_set
-          no_log: true
-      when: 
-        - password_check.rc != 0
-        - (temp_pass_check.skipped is defined and temp_pass_check.skipped) or (temp_pass_check.rc is defined and temp_pass_check.rc != 0)
-
-    - name: Create /root/.my.cnf for passwordless login
+    - name: Create /root/.my.cnf for passwordless root login
       copy:
         dest: /root/.my.cnf
         content: |
           [client]
           user=root
-          password={{ mysql_root_password }}
+          password="{{ mysql_root_password }}"
         owner: root
         group: root
         mode: '0600'
-      no_log: true
+      when: password_check.rc == 0 or (password_set is defined and password_set.changed)
 
-    - name: Verify MySQL authentication
-      shell: /usr/bin/mysql -e "SELECT VERSION();"
+    - name: Verify MySQL authentication works
+      shell: mysql -e "SELECT 1;"
       register: auth_test
       changed_when: false
-
-    - name: Display MySQL version
-      debug:
-        msg: "{{ auth_test.stdout_lines }}"
 
     - name: Configure MySQL bind-address
       lineinfile:
         path: /etc/my.cnf
         regexp: '^bind-address'
         line: 'bind-address = 0.0.0.0'
-        insertafter: '^\[mysqld\]'
         state: present
-      notify: Restart MySQL
-
-    - name: Configure MySQL character set
-      blockinfile:
-        path: /etc/my.cnf
-        marker: "# {mark} ANSIBLE MANAGED - CHARACTER SET"
-        insertafter: '^\[mysqld\]'
-        block: |
-          character-set-server = utf8mb4
-          collation-server = utf8mb4_unicode_ci
-          max_connections = 200
       notify: Restart MySQL
 
   handlers:
