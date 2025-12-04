@@ -5,8 +5,7 @@
 # MySQL version and packages
 mysql_packages:
   - mysql-server
-  - mysql-devel
-  - python3-PyMySQL
+  - python3-pymysql
 
 # MySQL daemon
 mysql_daemon: mysqld

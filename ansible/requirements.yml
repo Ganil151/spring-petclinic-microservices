@@ -6,6 +6,7 @@
 collections:
   - name: community.mysql
   - name: community.general
+  - name: ansible.posix
 
 roles:
   - name: geerlingguy.mysql

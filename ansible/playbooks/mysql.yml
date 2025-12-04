@@ -19,12 +19,10 @@
         update_cache: yes
       tags: system
 
-    - name: Install Python MySQL Libraries
+    - name: Install Python MySQL Libraries (AL2023 Fix)
       yum:
         name:
-          - python3-PyMySQL
-          - python3-devel
-          - mysql-devel
+          - python3-pymysql
         state: present
       tags: dependencies
 
