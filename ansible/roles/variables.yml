@@ -1,4 +1,8 @@
-- name: Include Amazon Linux variables
-  include_vars: Amazon.yml
-  when: ansible_distribution == "Amazon" or ansible_os_family == "Amazon"
-
+- name: Include OS-specific variables
+  include_vars: "{{ item }}"
+  with_first_found:
+    - "{{ ansible_distribution }}.yml"
+    - "{{ ansible_os_family }}.yml"
+    - "Amazon.yml"
+    - "RedHat.yml"
+  tags: ['mysql']
