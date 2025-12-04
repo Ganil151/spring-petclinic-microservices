@@ -1,0 +1,57 @@
+---
+# Worker Server Configuration (Jenkins/Build Server)
+
+# Java configuration
+java_version: 21
+java_home: /usr/lib/jvm/java-21-amazon-corretto
+
+# Maven configuration
+maven_version: "3.9.5"
+maven_home: /opt/maven
+
+# Docker configuration
+docker_version: "25.0.3"
+docker_compose_version: "2.24.0"
+docker_users:
+  - ec2-user
+  - jenkins
+
+# Jenkins configuration (if needed)
+jenkins_version: "2.426.1"
+jenkins_home: /var/lib/jenkins
+jenkins_port: 8080
+jenkins_admin_username: admin
+jenkins_admin_password: "{{ lookup('env', 'JENKINS_ADMIN_PASSWORD') | default('admin123', true) }}"
+
+# Git configuration
+git_user_name: "Jenkins CI"
+git_user_email: "jenkins@petclinic.local"
+
+# Build tools
+build_dependencies:
+  - git
+  - wget
+  - curl
+  - unzip
+  - tar
+  - which
+  - java-21-amazon-corretto-devel
+
+# Kubectl for Kubernetes deployments
+kubectl_version: "1.28.0"
+
+# Helm for Kubernetes package management
+helm_version: "3.13.2"
+
+# AWS CLI (if deploying to AWS)
+aws_cli_version: "2"
+
+# Docker registry
+docker_registry: "docker.io"
+docker_registry_username: "{{ lookup('env', 'DOCKER_USERNAME') | default('', true) }}"
+docker_registry_password: "{{ lookup('env', 'DOCKER_PASSWORD') | default('', true) }}"
+
+# Spring Petclinic build settings
+petclinic_repo: "https://github.com/spring-petclinic/spring-petclinic-microservices.git"
+petclinic_branch: "main"
+petclinic_workspace: "/opt/petclinic"

@@ -1,0 +1,40 @@
+---
+# Kubernetes Secondary Worker Node Configuration
+
+# Node identification
+k8s_role: worker
+k8s_node_type: secondary-worker
+node_labels:
+  node-role.kubernetes.io/worker: ""
+  workload-type: secondary
+  zone: secondary
+
+# Node taints (none for general workloads)
+node_taints: []
+
+# Container runtime
+container_runtime: containerd
+containerd_version: "1.7.11"
+
+# Kubelet configuration
+kubelet_max_pods: 110
+kubelet_pod_eviction_timeout: 5m
+
+# System requirements
+swap_enabled: false
+selinux_state: permissive
+
+# Firewall ports for worker
+firewall_worker_ports:
+  - 10250/tcp  # Kubelet API
+  - 30000-32767/tcp  # NodePort Services
+
+# Resource allocation
+allocatable_cpu: "3"
+allocatable_memory: "6Gi"
+
+# Workload preferences
+preferred_workloads:
+  - visits-service
+  - api-gateway
+  - discovery-server

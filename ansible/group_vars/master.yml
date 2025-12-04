@@ -1,0 +1,50 @@
+---
+# Master Server Configuration (Main Application/Control Server)
+
+# Java configuration
+java_version: 21
+java_home: /usr/lib/jvm/java-21-amazon-corretto
+
+# System packages
+system_packages:
+  - git
+  - wget
+  - curl
+  - vim
+  - htop
+  - net-tools
+  - bind-utils
+  - telnet
+  - nc
+
+# Timezone
+system_timezone: America/New_York
+
+# SSH configuration
+ssh_permit_root_login: "no"
+ssh_password_authentication: "no"
+ssh_port: 22
+
+# Firewall configuration
+firewall_enabled: true
+firewall_allowed_ports:
+  - 22/tcp    # SSH
+  - 80/tcp    # HTTP
+  - 443/tcp   # HTTPS
+  - 8080/tcp  # Application
+
+# Security updates
+security_updates_enabled: true
+auto_reboot_enabled: false
+
+# NTP configuration
+ntp_enabled: true
+ntp_servers:
+  - 0.amazon.pool.ntp.org
+  - 1.amazon.pool.ntp.org
+  - 2.amazon.pool.ntp.org
+  - 3.amazon.pool.ntp.org
+
+# Log rotation
+logrotate_enabled: true
+log_retention_days: 30

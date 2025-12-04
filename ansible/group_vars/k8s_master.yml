@@ -1,0 +1,47 @@
+---
+# Kubernetes Master Node Configuration Variables
+
+# Node identification
+k8s_role: master
+k8s_node_type: control-plane
+
+# Kubernetes version
+k8s_version: "1.28"
+kubernetes_version: "1.28.0"
+
+# Pod network CIDR
+pod_network_cidr: "10.244.0.0/16"
+
+# Service CIDR
+service_cidr: "10.96.0.0/12"
+
+# Kubeadm init settings
+kubeadm_init_extra_opts: "--pod-network-cidr={{ pod_network_cidr }}"
+
+# CNI Plugin (Calico)
+cni_plugin: calico
+calico_version: "v3.26.1"
+
+# API Server settings
+api_server_advertise_address: "{{ ansible_default_ipv4.address }}"
+api_server_port: 6443
+
+# Container runtime
+container_runtime: containerd
+containerd_version: "1.7.11"
+
+# System requirements
+swap_enabled: false
+selinux_state: permissive
+
+# Firewall ports for master
+firewall_master_ports:
+  - 6443/tcp   # Kubernetes API server
+  - 2379-2380/tcp  # etcd server client API
+  - 10250/tcp  # Kubelet API
+  - 10259/tcp  # kube-scheduler
+  - 10257/tcp  # kube-controller-manager
+
+# Kubeconfig location
+kubeconfig_path: /etc/kubernetes/admin.conf
+kubeconfig_user_path: "{{ ansible_env.HOME }}/.kube/config"

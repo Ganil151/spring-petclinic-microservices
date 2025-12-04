@@ -1,0 +1,70 @@
+---
+# Monitoring Server Configuration (Prometheus + Grafana)
+
+# Prometheus configuration
+prometheus_version: "2.48.0"
+prometheus_config_dir: /etc/prometheus
+prometheus_db_dir: /var/lib/prometheus
+prometheus_listen_address: "0.0.0.0:9090"
+prometheus_retention_time: "15d"
+
+# Prometheus scrape configs
+prometheus_scrape_interval: "15s"
+prometheus_evaluation_interval: "15s"
+
+# Targets to monitor
+prometheus_targets:
+  - job_name: 'kubernetes-apiservers'
+    kubernetes_sd_configs:
+      - role: endpoints
+        api_server: "https://{{ groups['k8s_master'][0] }}:6443"
+    scheme: https
+    
+  - job_name: 'kubernetes-nodes'
+    kubernetes_sd_configs:
+      - role: node
+        api_server: "https://{{ groups['k8s_master'][0] }}:6443"
+    
+  - job_name: 'kubernetes-pods'
+    kubernetes_sd_configs:
+      - role: pod
+        api_server: "https://{{ groups['k8s_master'][0] }}:6443"
+        
+  - job_name: 'mysql'
+    static_configs:
+      - targets: 
+          - "{{ groups['mysql'][0] }}:9104"
+    
+  - job_name: 'spring-boot-apps'
+    static_configs:
+      - targets:
+          - "{{ groups['k8s_master'][0] }}:8081"  # customers-service
+          - "{{ groups['k8s_master'][0] }}:8082"  # vets-service
+          - "{{ groups['k8s_master'][0] }}:8083"  # visits-service
+
+# Grafana configuration
+grafana_version: "10.2.2"
+grafana_address: "0.0.0.0"
+grafana_port: 3000
+grafana_admin_user: admin
+grafana_admin_password: "{{ lookup('env', 'GRAFANA_ADMIN_PASSWORD') | default('admin123', true) }}"
+
+# Grafana datasources
+grafana_datasources:
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    url: "http://localhost:9090"
+    isDefault: true
+
+# Node Exporter
+node_exporter_version: "1.7.0"
+node_exporter_port: 9100
+
+# MySQL Exporter
+mysql_exporter_version: "0.15.1"
+mysql_exporter_port: 9104
+mysql_exporter_datasource: "petclinic:petclinic123@({{ groups['mysql'][0] }}:3306)/"
+
+# Alert Manager (optional)
+alertmanager_enabled: false
