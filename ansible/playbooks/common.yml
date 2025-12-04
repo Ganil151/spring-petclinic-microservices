@@ -100,7 +100,7 @@
         - { regexp: '^#?PasswordAuthentication', line: 'PasswordAuthentication {{ ssh_password_authentication | default("no") }}' }
         - { regexp: '^#?MaxAuthTries', line: 'MaxAuthTries {{ ssh_max_auth_tries | default(3) }}' }
       notify: Restart SSHD
-     tags: ssh
+      tags: ssh
 
     - name: Create System Limits Configuration
       blockinfile:
@@ -112,6 +112,13 @@
           * hard nproc {{ max_user_processes | default(4096) }}
         marker: "# {mark} ANSIBLE MANAGED BLOCK - System Limits"
       tags: limits
+
+    - name: Install rsyslog
+      yum:
+        name: rsyslog
+        state: present
+      when: rsyslog_enabled | default(true)
+      tags: logging
 
     - name: Configure rsyslog
       service:
