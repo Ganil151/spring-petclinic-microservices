@@ -17,8 +17,9 @@ mysql_syslog_tag: mysqld
 mysql_enabled_on_startup: true
 
 # Root credentials
+# Priority: 1. Vault variable, 2. Environment variable, 3. Default (dev only)
 mysql_root_username: root
-mysql_root_password: "{{ lookup('env', 'MYSQL_ROOT_PASSWORD') | default('Petclinic@2024', true) }}"
+mysql_root_password: "{{ vault_mysql_root_password | default(lookup('env', 'MYSQL_ROOT_PASSWORD') | default('Petclinic@2024', true)) }}"
 mysql_root_password_update: true
 
 # MySQL bind address (allow remote connections)
@@ -65,15 +66,16 @@ mysql_databases:
     encoding: utf8mb4
 
 # Spring Petclinic Database Users
+# Password priority: 1. Vault, 2. Environment variable, 3. Default (dev only)
 mysql_users:
   - name: petclinic
     host: "%"
-    password: "{{ lookup('env', 'MYSQL_PETCLINIC_PASSWORD') | default('petclinic123', true) }}"
+    password: "{{ vault_mysql_petclinic_password | default(lookup('env', 'MYSQL_PETCLINIC_PASSWORD') | default('petclinic123', true)) }}"
     priv: "petclinic_customers.*:ALL/petclinic_vets.*:ALL/petclinic_visits.*:ALL"
     state: present
   - name: petclinic_admin
     host: "%"
-    password: "{{ lookup('env', 'MYSQL_ADMIN_PASSWORD') | default('admin123', true) }}"
+    password: "{{ vault_mysql_admin_password | default(lookup('env', 'MYSQL_ADMIN_PASSWORD') | default('admin123', true)) }}"
     priv: "*.*:ALL,GRANT"
     state: present
 

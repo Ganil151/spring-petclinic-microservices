@@ -1,0 +1,114 @@
+---
+# MySQL Installation and Configuration Playbook
+# This playbook installs and configures MySQL using the geerlingguy.mysql role
+
+- name: Install and Configure MySQL Server
+  hosts: mysql
+  become: yes
+  gather_facts: yes
+
+  pre_tasks:
+    - name: Display MySQL Configuration
+      debug:
+        msg: "Installing MySQL with {{ mysql_databases | length }} databases and {{ mysql_users | length }} users"
+
+    - name: Update System Packages
+      yum:
+        name: '*'
+        state: latest
+        update_cache: yes
+      tags: system
+
+    - name: Install Python MySQL Libraries
+      yum:
+        name:
+          - python3-PyMySQL
+          - python3-devel
+          - mysql-devel
+        state: present
+      tags: dependencies
+
+  roles:
+    - role: geerlingguy.mysql
+      tags: mysql
+
+  post_tasks:
+    - name: Ensure MySQL is Running
+      service:
+        name: mysqld
+        state: started
+        enabled: yes
+
+    - name: Configure Firewall for MySQL
+      firewalld:
+        service: mysql
+        permanent: yes
+        state: enabled
+        immediate: yes
+      when: firewalld_enabled | default(true)
+      ignore_errors: yes
+
+    - name: Open MySQL Port in Firewall
+      firewalld:
+        port: 3306/tcp
+        permanent: yes
+        state: enabled
+        immediate: yes
+      when: firewalld_enabled | default(true)
+      ignore_errors: yes
+
+    - name: Verify MySQL Installation
+      command: mysql --version
+      register: mysql_version_output
+      changed_when: false
+
+    - name: Display MySQL Version
+      debug:
+        msg: "MySQL version installed: {{ mysql_version_output.stdout }}"
+
+    - name: Test MySQL Connection
+      mysql_db:
+        name: mysql
+        state: present
+        login_user: root
+        login_password: "{{ mysql_root_password }}"
+        login_unix_socket: /var/lib/mysql/mysql.sock
+      register: mysql_connection_test
+      ignore_errors: yes
+
+    - name: Display Database List
+      shell: mysql -u root -p'{{ mysql_root_password }}' -e "SHOW DATABASES;"
+      register: db_list
+      changed_when: false
+      no_log: true
+
+    - name: Show Created Databases
+      debug:
+        msg: "{{ db_list.stdout_lines }}"
+
+    - name: Verify Petclinic Databases Were Created
+      shell: mysql -u root -p'{{ mysql_root_password }}' -e "SELECT SCHEMA_NAME FROM information_schema.SCHEMATA WHERE SCHEMA_NAME LIKE 'petclinic%';"
+      register: petclinic_dbs
+      changed_when: false
+      no_log: true
+
+    - name: Display Petclinic Databases
+      debug:
+        msg: "{{ petclinic_dbs.stdout_lines }}"
+
+    - name: Success Message
+      debug:
+        msg:
+          - "============================================"
+          - "MySQL Installation Complete!"
+          - "============================================"
+          - "MySQL Root Password: {{ mysql_root_password }}"
+          - "Petclinic User: petclinic"
+          - "Petclinic Password: {{ lookup('env', 'MYSQL_PETCLINIC_PASSWORD') | default('petclinic123', true) }}"
+          - "Databases Created:"
+          - "  - petclinic_customers"
+          - "  - petclinic_vets"
+          - "  - petclinic_visits"
+          - "MySQL Server: {{ inventory_hostname }}"
+          - "Connection String: jdbc:mysql://{{ ansible_host }}:3306/petclinic_customers"
+          - "============================================"

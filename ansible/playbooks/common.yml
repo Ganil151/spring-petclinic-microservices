@@ -1,0 +1,139 @@
+---
+# Common Infrastructure Setup Playbook
+# Apply base configuration to all servers
+
+- name: Common Server Setup
+  hosts: all
+  become: yes
+  gather_facts: yes
+
+  tasks:
+    - name: Set Hostname
+      hostname:
+        name: "{{ inventory_hostname }}"
+      tags: hostname
+
+    - name: Update All Packages
+      yum:
+        name: '*'
+        state: latest
+        update_cache: yes
+      tags: system_update
+
+    - name: Install Common Packages
+      yum:
+        name: "{{ common_packages }}"
+        state: present
+      tags: packages
+
+    - name: Configure Timezone
+      timezone:
+        name: "{{ timezone | default('America/New_York') }}"
+      tags: timezone
+
+    - name: Configure Kernel Parameters
+      sysctl:
+        name: "{{ item.key }}"
+        value: "{{ item.value }}"
+        state: present
+        reload: yes
+        sysctl_set: yes
+      loop: "{{ sysctl_config | dict2items }}"
+      tags: sysctl
+
+    - name: Load Kernel Modules
+      modprobe:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - overlay
+        - br_netfilter
+      tags: kernel_modules
+
+    - name: Ensure Kernel Modules Load on Boot
+      copy:
+        dest: /etc/modules-load.d/k8s.conf
+        content: |
+          overlay
+          br_netfilter
+      tags: kernel_modules
+
+    - name: Configure SELinux
+      selinux:
+        policy: targeted
+        state: "{{ selinux_state | default('permissive') }}"
+      tags: selinux
+
+    - name: Start and Enable Firewalld
+      service:
+        name: firewalld
+        state: started
+        enabled: yes
+      when: firewalld_enabled | default(true)
+      tags: firewall
+
+    - name: Configure SSH Hardening
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: "{{ item.regexp }}"
+        line: "{{ item.line }}"
+        state: present
+      loop:
+        - { regexp: '^#?PermitRootLogin', line: 'PermitRootLogin {{ ssh_permit_root_login | default("no") }}' }
+        - { regexp: '^#?PasswordAuthentication', line: 'PasswordAuthentication {{ ssh_password_authentication | default("no") }}' }
+        - { regexp: '^#?MaxAuthTries', line: 'MaxAuthTries {{ ssh_max_auth_tries | default(3) }}' }
+      notify: Restart SSHD
+      tags: ssh
+
+    - name: Create System Limits Configuration
+      pam_limits:
+        domain: '*'
+        limit_type: "{{ item.type }}"
+        limit_item: "{{ item.item }}"
+        value: "{{ item.value }}"
+      loop:
+        - { type: 'soft', item: 'nofile', value: '{{ max_open_files | default(65536) }}' }
+        - { type: 'hard', item: 'nofile', value: '{{ max_open_files | default(65536) }}' }
+        - { type: 'soft', item: 'nproc', value: '{{ max_user_processes | default(4096) }}' }
+        - { type: 'hard', item: 'nproc', value: '{{ max_user_processes | default(4096) }}' }
+      tags: limits
+
+    - name: Configure rsyslog
+      service:
+        name: rsyslog
+        state: started
+        enabled: yes
+      when: rsyslog_enabled | default(true)
+      tags: logging
+
+    - name: Configure Chrony/NTP
+      yum:
+        name: chrony
+        state: present
+      when: ntp_enabled | default(true)
+      tags: ntp
+
+    - name: Start and Enable Chrony
+      service:
+        name: chronyd
+        state: started
+        enabled: yes
+      when: ntp_enabled | default(true)
+      tags: ntp
+
+    - name: Display System Information
+      debug:
+        msg:
+          - "Hostname: {{ ansible_hostname }}"
+          - "OS: {{ ansible_distribution }} {{ ansible_distribution_version }}"
+          - "Kernel: {{ ansible_kernel }}"
+          - "IP Address: {{ ansible_default_ipv4.address }}"
+          - "Memory: {{ ansible_memtotal_mb }} MB"
+          - "CPUs: {{ ansible_processor_vcpus }}"
+      tags: info
+
+  handlers:
+    - name: Restart SSHD
+      service:
+        name: sshd
+        state: restarted

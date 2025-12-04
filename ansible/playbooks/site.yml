@@ -1,0 +1,60 @@
+---
+# Master Playbook - Orchestrates Complete Infrastructure Deployment
+# Spring Petclinic Microservices Infrastructure
+
+- name: Display Deployment Banner
+  hosts: localhost
+  gather_facts: no
+  tasks:
+    - name: Show Deployment Information
+      debug:
+        msg:
+          - "=============================================="
+          - "  Spring Petclinic Infrastructure Deployment "
+          - "=============================================="
+          - "Deploying to:"
+          - "  - {{ groups['all'] | length }} total servers"
+          - "  - {{ groups['mysql'] | default([]) | length }} MySQL server(s)"
+          - "  - {{ groups['k8s_master'] | default([]) | length }} Kubernetes master(s)"
+          - "  - {{ groups['k8s_primary_workers'] | default([]) | length }} + {{ groups['k8s_secondary_workers'] | default([]) | length }} Kubernetes workers"
+          - "  - {{ groups['monitoring'] | default([]) | length }} monitoring server(s)"
+          - "=============================================="
+
+# Phase 1: Common Setup
+- import_playbook: common.yml
+  tags: [common, phase1]
+
+# Phase 2: MySQL Database Setup
+- import_playbook: mysql.yml
+  tags: [mysql, database, phase2]
+
+# Phase 3: Kubernetes Cluster Setup
+# Uncomment when k8s playbooks are created
+# - import_playbook: k8s-cluster.yml
+#   tags: [k8s, kubernetes, phase3]
+
+# Phase 4: Monitoring Stack
+# Uncomment when monitoring playbook is created
+# - import_playbook: monitoring.yml
+#   tags: [monitoring, phase4]
+
+# Phase 5: Application Deployment
+# Uncomment when deployment playbook is created
+# - import_playbook: deploy-petclinic.yml
+#   tags: [app, deploy, phase5]
+
+- name: Display Deployment Summary
+  hosts: localhost
+  gather_facts: no
+  tasks:
+    - name: Show Completion Message
+      debug:
+        msg:
+          - "=============================================="
+          - "  Deployment Complete!                       "
+          - "=============================================="
+          - "Next Steps:"
+          - "  1. Verify MySQL: ansible mysql -m shell -a 'systemctl status mysqld'"
+          - "  2. Test database connection"
+          - "  3. Proceed with Kubernetes setup"
+          - "=============================================="

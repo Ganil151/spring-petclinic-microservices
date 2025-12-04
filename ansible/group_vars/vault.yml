@@ -1,0 +1,25 @@
+---
+# Encrypted Credentials using Ansible Vault
+# This file should be encrypted with: ansible-vault encrypt group_vars/vault.yml
+
+# MySQL Credentials
+vault_mysql_root_password: "PetMa3ter$3JH3!"
+vault_mysql_petclinic_password: "Wor8erPet@12S45!"
+vault_mysql_admin_password: "AdminPet@12S45!"
+
+# Grafana Credentials
+vault_grafana_admin_password: "GrafanaSecurePass123!"
+
+# Jenkins Credentials
+vault_jenkins_admin_password: "JenkinsSecurePass456!"
+
+# Docker Registry Credentials
+vault_docker_registry_username: "ganil151"
+vault_docker_registry_password: "GanilDocker3773$151"
+
+# AWS Credentials (if needed)
+# vault_aws_access_key_id: "YOUR_AWS_ACCESS_KEY"
+# vault_aws_secret_access_key: "YOUR_AWS_SECRET_KEY"
+
+# SSH Keys passphrase (if applicable)
+# vault_ssh_key_passphrase: "your_ssh_passphrase"
