@@ -13,6 +13,8 @@ mysql_packages:
 mysql_daemon: mysqld
 mysql_log_error: /var/log/mysqld.log
 mysql_syslog_tag: mysqld
+mysql_pid_file: /var/run/mysqld/mysqld.pid
+mysql_socket: /var/lib/mysql/mysql.sock
 
 # MySQL service state
 mysql_enabled_on_startup: true
