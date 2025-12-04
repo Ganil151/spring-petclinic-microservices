@@ -5,7 +5,6 @@
 common_packages:
   - vim
   - wget
-  - curl
   - git
   - htop
   - net-tools
