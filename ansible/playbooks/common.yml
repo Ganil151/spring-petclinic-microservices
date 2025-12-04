@@ -74,6 +74,13 @@
         line: 'SELINUX={{ selinux_state | default("permissive") }}'
       tags: selinux
 
+    - name: Install Firewalld
+      yum:
+        name: firewalld
+        state: present
+      when: firewalld_enabled | default(true)
+      tags: firewall
+
     - name: Start and Enable Firewalld
       service:
         name: firewalld
@@ -93,7 +100,7 @@
         - { regexp: '^#?PasswordAuthentication', line: 'PasswordAuthentication {{ ssh_password_authentication | default("no") }}' }
         - { regexp: '^#?MaxAuthTries', line: 'MaxAuthTries {{ ssh_max_auth_tries | default(3) }}' }
       notify: Restart SSHD
-      tags: ssh
+     tags: ssh
 
     - name: Create System Limits Configuration
       blockinfile:
