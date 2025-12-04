@@ -2,10 +2,12 @@
 # MySQL Server Configuration Variables
 # Used by geerlingguy.mysql role
 
+
+
 # MySQL version and packages
 mysql_packages:
   - mysql-server
-  - python3-pymysql
+
 
 # MySQL daemon
 mysql_daemon: mysqld

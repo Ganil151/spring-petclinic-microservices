@@ -19,11 +19,16 @@
         update_cache: yes
       tags: system
 
-    - name: Install Python MySQL Libraries (AL2023 Fix)
+    - name: Install Python Pip
       yum:
-        name:
-          - python3-pymysql
+        name: python3-pip
         state: present
+      tags: dependencies
+
+    - name: Install PyMySQL via Pip
+      pip:
+        name: pymysql
+        executable: pip3
       tags: dependencies
 
   roles:
