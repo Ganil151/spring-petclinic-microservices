@@ -1,0 +1,4 @@
+- name: Include Amazon Linux variables
+  include_vars: Amazon.yml
+  when: ansible_distribution == "Amazon" or ansible_os_family == "Amazon"
+

@@ -1,0 +1,8 @@
+__mysql_daemon: mysqld
+__mysql_packages:
+  - community-mysql-server
+
+__mysql_pid_file: /run/mysqld/mysqld.pid
+__mysql_log_error: /var/log/mysqld.log
+__mysql_slow_query_log_file: /var/log/mysql-slow.log
+__mysql_slow_query_log_enabled: false
