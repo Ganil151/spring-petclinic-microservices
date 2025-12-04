@@ -1,8 +1,0 @@
----
-- name: Ensure MySQL databases exist
-  mysql_db:
-    name: "{{ item }}"
-    state: present
-    login_user: root
-    login_password: "{{ mysql_root_password }}"
-  loop: "{{ petclinic_databases }}"
