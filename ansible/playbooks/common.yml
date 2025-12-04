@@ -18,7 +18,9 @@
         name: '*'
         state: latest
         update_cache: yes
+        allowerasing: yes
       tags: system_update
+      ignore_errors: true
 
     - name: Install Common Packages
       yum:
@@ -32,22 +34,22 @@
       tags: timezone
 
     - name: Configure Kernel Parameters
-      sysctl:
-        name: "{{ item.key }}"
-        value: "{{ item.value }}"
-        state: present
-        reload: yes
-        sysctl_set: yes
+      shell: |
+        sysctl -w {{ item.key }}={{ item.value }}
+        echo "{{ item.key }}={{ item.value }}" >> /etc/sysctl.d/99-custom.conf
       loop: "{{ sysctl_config | dict2items }}"
+      args:
+        creates: /etc/sysctl.d/99-custom.conf
       tags: sysctl
+      when: sysctl_config is defined
 
     - name: Load Kernel Modules
-      modprobe:
-        name: "{{ item }}"
-        state: present
+      command: modprobe {{ item }}
       loop:
         - overlay
         - br_netfilter
+      ignore_errors: true
+      changed_when: false
       tags: kernel_modules
 
     - name: Ensure Kernel Modules Load on Boot
@@ -59,9 +61,17 @@
       tags: kernel_modules
 
     - name: Configure SELinux
-      selinux:
-        policy: targeted
-        state: "{{ selinux_state | default('permissive') }}"
+      command: setenforce 0
+      when: ansible_selinux.status == 'enabled' and selinux_state | default('permissive') == 'permissive'
+      ignore_errors: true
+      changed_when: false
+      tags: selinux
+
+    - name: Set SELinux to Permissive in Config
+      lineinfile:
+        path: /etc/selinux/config
+        regexp: '^SELINUX='
+        line: 'SELINUX={{ selinux_state | default("permissive") }}'
       tags: selinux
 
     - name: Start and Enable Firewalld
@@ -86,16 +96,14 @@
       tags: ssh
 
     - name: Create System Limits Configuration
-      pam_limits:
-        domain: '*'
-        limit_type: "{{ item.type }}"
-        limit_item: "{{ item.item }}"
-        value: "{{ item.value }}"
-      loop:
-        - { type: 'soft', item: 'nofile', value: '{{ max_open_files | default(65536) }}' }
-        - { type: 'hard', item: 'nofile', value: '{{ max_open_files | default(65536) }}' }
-        - { type: 'soft', item: 'nproc', value: '{{ max_user_processes | default(4096) }}' }
-        - { type: 'hard', item: 'nproc', value: '{{ max_user_processes | default(4096) }}' }
+      blockinfile:
+        path: /etc/security/limits.conf
+        block: |
+          * soft nofile {{ max_open_files | default(65536) }}
+          * hard nofile {{ max_open_files | default(65536) }}
+          * soft nproc {{ max_user_processes | default(4096) }}
+          * hard nproc {{ max_user_processes | default(4096) }}
+        marker: "# {mark} ANSIBLE MANAGED BLOCK - System Limits"
       tags: limits
 
     - name: Configure rsyslog
