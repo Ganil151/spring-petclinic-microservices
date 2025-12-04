@@ -1,0 +1,117 @@
+#!/bin/bash
+# Fix corrupted mysql.yml file on Linux server
+# Run this on: /home/ec2-user/workspace/spms-pipeline/ansible
+
+set -e
+
+echo "Fixing corrupted mysql.yml file..."
+
+cd /home/ec2-user/workspace/spms-pipeline/ansible
+
+# Backup any existing file
+if [ -f group_vars/mysql.yml ]; then
+    cp group_vars/mysql.yml group_vars/mysql.yml.corrupted.bak
+    echo "✓ Backed up corrupted file to group_vars/mysql.yml.corrupted.bak"
+fi
+
+# Create the correct file
+cat > group_vars/mysql.yml << 'EOFMYSQL'
+---
+# MySQL Server Configuration Variables
+# Used by geerlingguy.mysql role
+
+# MySQL version and packages
+mysql_packages:
+  - mysql-server
+  - mysql-devel
+  - python3-PyMySQL
+
+# MySQL daemon
+mysql_daemon: mysqld
+mysql_log_error: /var/log/mysqld.log
+mysql_syslog_tag: mysqld
+
+# MySQL service state
+mysql_enabled_on_startup: true
+
+# Root credentials
+# Priority: 1. Vault variable, 2. Environment variable, 3. Default (dev only)
+mysql_root_username: root
+mysql_root_password: "{{ vault_mysql_root_password | default(lookup('env', 'MYSQL_ROOT_PASSWORD') | default('Petclinic@2024', true)) }}"
+mysql_root_password_update: true
+
+# MySQL bind address (allow remote connections)
+mysql_bind_address: "0.0.0.0"
+mysql_port: 3306
+
+# MySQL configuration
+mysql_key_buffer_size: "256M"
+mysql_max_allowed_packet: "64M"
+mysql_table_open_cache: "256"
+mysql_sort_buffer_size: "1M"
+mysql_read_buffer_size: "1M"
+mysql_read_rnd_buffer_size: "4M"
+mysql_myisam_sort_buffer_size: "64M"
+mysql_thread_cache_size: "8"
+mysql_max_connections: 200
+mysql_tmp_table_size: "16M"
+mysql_max_heap_table_size: "16M"
+mysql_group_concat_max_len: "1024"
+mysql_join_buffer_size: "262144"
+
+# InnoDB configuration
+mysql_innodb_buffer_pool_size: "1G"
+mysql_innodb_log_file_size: "256M"
+mysql_innodb_log_buffer_size: "8M"
+mysql_innodb_flush_log_at_trx_commit: "1"
+mysql_innodb_lock_wait_timeout: "50"
+
+# Slow query log
+mysql_slow_query_log_enabled: true
+mysql_slow_query_time: "2"
+mysql_slow_query_log_file: /var/log/mysql-slow.log
+
+# Spring Petclinic Databases
+mysql_databases:
+  - name: petclinic_customers
+    collation: utf8mb4_general_ci
+    encoding: utf8mb4
+  - name: petclinic_vets
+    collation: utf8mb4_general_ci
+    encoding: utf8mb4
+  - name: petclinic_visits
+    collation: utf8mb4_general_ci
+    encoding: utf8mb4
+
+# Spring Petclinic Database Users
+# Password priority: 1. Vault, 2. Environment variable, 3. Default (dev only)
+mysql_users:
+  - name: petclinic
+    host: "%"
+    password: "{{ vault_mysql_petclinic_password | default(lookup('env', 'MYSQL_PETCLINIC_PASSWORD') | default('petclinic123', true)) }}"
+    priv: "petclinic_customers.*:ALL/petclinic_vets.*:ALL/petclinic_visits.*:ALL"
+    state: present
+  - name: petclinic_admin
+    host: "%"
+    password: "{{ vault_mysql_admin_password | default(lookup('env', 'MYSQL_ADMIN_PASSWORD') | default('admin123', true)) }}"
+    priv: "*.*:ALL,GRANT"
+    state: present
+
+# Replication (disabled for single-server setup)
+mysql_replication_role: ""
+mysql_replication_master: ""
+
+# Additional MySQL configuration
+mysql_config_include_files: []
+EOFMYSQL
+
+echo ""
+echo "✅ File fixed!"
+echo ""
+echo "Verifying syntax..."
+head -25 group_vars/mysql.yml
+
+echo ""
+echo "✓ mysql.yml restored with correct Ansible syntax"
+echo ""
+echo "You can now run: ansible-playbook playbooks/common.yml"

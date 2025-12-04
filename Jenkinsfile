@@ -381,89 +381,88 @@ REMOTE
                                 passwordVariable: 'MYSQL_PETCLINIC_PASSWORD')
                 ]) {
                     script {
-                        echo "Configuring MySQL databases..."
+                        echo "Configuring MySQL databases with Ansible..."
                         
                         dir('ansible') {
                             sh '''
                                 set -euo pipefail
                                 
                                 echo "=========================================="
-                                echo "MySQL Configuration"
+                                echo "Ansible MySQL Configuration"
                                 echo "=========================================="
                                 
-                                # Ensure ansible directory structure
-                                mkdir -p group_vars files roles
-                                
-                                # Create group_vars/mysql.yml
-                                cat > group_vars/mysql.yml <<'EOFVARS'
-        ---
-        mysql_root_password: "${MYSQL_ROOT_PASSWORD}"
-        mysql_petclinic_password: "${MYSQL_PETCLINIC_PASSWORD}"
-        mysql_user_name: "${MYSQL_PETCLINIC_USER}"
-        EOFVARS
-                                
-                                # Replace variables
-                                sed -i "s/\${MYSQL_ROOT_PASSWORD}/${MYSQL_ROOT_PASSWORD}/g" group_vars/mysql.yml
-                                sed -i "s/\${MYSQL_PETCLINIC_PASSWORD}/${MYSQL_PETCLINIC_PASSWORD}/g" group_vars/mysql.yml
-                                sed -i "s/\${MYSQL_PETCLINIC_USER}/${MYSQL_PETCLINIC_USER}/g" group_vars/mysql.yml
-                                
-                                echo "✓ Variables configured"
+                                # Install Ansible Galaxy dependencies
+                                echo "=== Installing Ansible Galaxy Dependencies ==="
+                                ansible-galaxy collection install community.mysql --force || echo "Warning: Could not install community.mysql"
+                                ansible-galaxy collection install community.general --force || echo "Warning: Could not install community.general"
+                                ansible-galaxy role install geerlingguy.mysql --force || {
+                                    echo "ERROR: Could not install geerlingguy.mysql role"
+                                    exit 1
+                                }
+                                echo "✓ Galaxy dependencies installed"
                                 echo ""
                                 
                                 # Test connectivity
                                 echo "=== Testing Ansible Connectivity ==="
-                                if ! ansible mysql -i inventory.ini -m ping; then
+                                if ! ansible mysql -m ping; then
                                     echo "ERROR: Cannot connect to MySQL server via Ansible"
                                     exit 1
                                 fi
                                 echo "✓ Connectivity verified"
                                 echo ""
                                 
-                                # Check which playbook exists
-                                if [ -f mysql_setup_galaxy.yml ]; then
-                                    echo "=== Installing Ansible Galaxy Role ==="
-                                    ansible-galaxy install geerlingguy.mysql || {
-                                        echo "WARNING: Could not install Galaxy role, falling back to manual setup"
-                                        PLAYBOOK="mysql_setup_galaxy.yml"
-                                    }
-                                    
-                                    if [ -z "${PLAYBOOK:-}" ]; then
-                                        PLAYBOOK="mysql_setup_galaxy.yml"
-                                    fi
-                                else
-                                    PLAYBOOK="mysql_setup_galaxy.yml"
-                                fi
+                                # Export credentials as environment variables
+                                export MYSQL_ROOT_PASSWORD="${MYSQL_ROOT_PASSWORD}"
+                                export MYSQL_PETCLINIC_PASSWORD="${MYSQL_PETCLINIC_PASSWORD}"
+                                export MYSQL_ADMIN_PASSWORD="${MYSQL_PETCLINIC_PASSWORD}"
                                 
-                                echo "=== Running MySQL Setup: $PLAYBOOK ==="
-                                ansible-playbook -i inventory.ini "$PLAYBOOK" -v \
-                                    -e "mysql_root_password='${MYSQL_ROOT_PASSWORD}'" \
-                                    -e "mysql_petclinic_password='${MYSQL_PETCLINIC_PASSWORD}'" \
-                                    -e "mysql_user_name='${MYSQL_PETCLINIC_USER}'" || {
+                                # Run MySQL playbook
+                                echo "=== Running MySQL Playbook ==="
+                                ansible-playbook playbooks/mysql.yml -v || {
                                     echo "ERROR: Ansible playbook failed"
                                     exit 1
                                 }
                                 
                                 echo ""
-                                echo "=== Verifying MySQL Setup ==="
+                                echo "=== Verifying MySQL Setup ===\"
                                 
-                                # Verify databases
-                                DB_CHECK=$(ansible mysql -i inventory.ini -m shell \
+                                # Verify databases exist
+                                DB_CHECK=$(ansible mysql -m shell \
                                     -a "mysql -u root -p'${MYSQL_ROOT_PASSWORD}' -e 'SHOW DATABASES;' -N -B 2>/dev/null" \
                                     2>&1 || echo "FAILED")
                                 
                                 if echo "$DB_CHECK" | grep -q "petclinic_customers" && \
-                                echo "$DB_CHECK" | grep -q "petclinic_visits" && \
-                                echo "$DB_CHECK" | grep -q "petclinic_vets"; then
+                                   echo "$DB_CHECK" | grep -q "petclinic_visits" && \
+                                   echo "$DB_CHECK" | grep -q "petclinic_vets"; then
                                     echo "✓ All databases verified"
                                 else
                                     echo "WARNING: Some databases may be missing"
                                     echo "$DB_CHECK"
                                 fi
                                 
+                                # Verify users
+                                echo ""
+                                echo "=== Verifying MySQL Users ==="
+                                USER_CHECK=$(ansible mysql -m shell \
+                                    -a "mysql -u root -p'${MYSQL_ROOT_PASSWORD}' -e \"SELECT user, host FROM mysql.user WHERE user LIKE 'petclinic%';\" -N -B 2>/dev/null" \
+                                    2>&1 || echo "FAILED")
+                                
+                                if echo "$USER_CHECK" | grep -q "petclinic"; then
+                                    echo "✓ MySQL users verified"
+                                else
+                                    echo "WARNING: Petclinic users may not be configured"
+                                    echo "$USER_CHECK"
+                                fi
+                                
                                 echo ""
                                 echo "=========================================="
                                 echo "MySQL Configuration Complete!"
                                 echo "=========================================="
+                                echo ""
+                                echo "Connection details:"
+                                echo "  - Databases: petclinic_customers, petclinic_vets, petclinic_visits"
+                                echo "  - User: ${MYSQL_PETCLINIC_USER}"
+                                echo "  - MySQL server ready for Spring Petclinic"
                             '''
                         }
                     }
