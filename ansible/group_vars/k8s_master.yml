@@ -6,8 +6,8 @@ k8s_role: master
 k8s_node_type: control-plane
 
 # Kubernetes version
-k8s_version: "1.28"
-kubernetes_version: "1.28.0"
+k8s_version: "1.31.14"
+kubernetes_version: "1.31.14"
 
 # Pod network CIDR
 pod_network_cidr: "10.244.0.0/16"
