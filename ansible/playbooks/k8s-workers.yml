@@ -86,7 +86,6 @@
           yum:
             name:
               - containerd
-              - containernetworking-plugins
             state: present
 
         - name: Create containerd config directory

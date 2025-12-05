@@ -22,7 +22,7 @@ pipeline {
         string(name: 'NODE_LABEL', defaultValue: 'worker-node', description: 'Jenkins agent label')
         string(name: 'EC2_INSTANCE_NAME', defaultValue: 'Spring-Petclinic-Docker', description: 'EC2 instance tag Name')
         string(name: 'SSH_CREDENTIALS_ID', defaultValue: 'master_keys', description: 'SSH credentials ID for EC2 instances')
-        choice(name: 'DEPLOYMENT_TARGET', choices: ['docker', 'kubernetes', 'both', 'none'], description: 'Deployment target')
+        choice(name: 'DEPLOYMENT_TARGET', choices: ['both', 'docker', 'kubernetes', 'none'], description: 'Deployment target')
         booleanParam(name: 'CONFIGURE_MYSQL', defaultValue: true, description: 'Run Ansible to configure MySQL databases')
     }
 
