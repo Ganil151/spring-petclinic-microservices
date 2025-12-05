@@ -121,10 +121,17 @@ You have two options:
 
 #### Option B: Create Application via YAML
 
-See `argocd-application.yaml` in this directory.
+We have created environment-specific manifests:
 
 ```bash
-kubectl apply -f kubernetes/argocd/argocd-application.yaml
+# Deploy Dev Environment
+kubectl apply -f kubernetes/argocd/dev-application.yaml
+
+# Deploy Staging Environment
+kubectl apply -f kubernetes/argocd/staging-application.yaml
+
+# Deploy Production Environment
+kubectl apply -f kubernetes/argocd/prod-application.yaml
 ```
 
 ---

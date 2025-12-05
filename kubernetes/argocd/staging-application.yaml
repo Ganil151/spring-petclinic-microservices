@@ -1,0 +1,22 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: spring-petclinic-staging
+  namespace: argocd
+  labels:
+    env: staging
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/Ganil151/spring-petclinic-microservices.git
+    targetRevision: main
+    path: kubernetes/overlays/staging
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: spring-petclinic-staging
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

@@ -1,0 +1,21 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  # Deployments (some contain embedded Services)
+  - deployments/admin-server.yaml
+  - deployments/api-gateway.yaml
+  - deployments/config-server.yaml
+  - deployments/customers-service.yaml
+  - deployments/discovery-server.yaml
+  - deployments/genai-service.yaml
+  - deployments/grafana.yaml
+  - deployments/prometheus.yaml
+  - deployments/secrets.yaml
+  - deployments/tracing-server.yaml
+  - deployments/vets-service.yaml
+  - deployments/visits-service.yaml
+
+  # Standalone Services (extracted)
+  - services/api-gateway.yml
+  - services/customers-services.yml

@@ -1,0 +1,27 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../../base
+
+# Add a label to all resources to identify the environment
+commonLabels:
+  environment: prod
+
+# Production Environment Configuration
+# Inherits 2 replicas from base for High Availability.
+# 
+# Recommended Production Patches (Uncomment to apply):
+# 1. Enforce Resource Quotas
+# 2. Use specific namespace
+# namespace: spring-petclinic
+
+# Example: Increase replicas for critical services in Prod
+# patches:
+#   - target:
+#       kind: Deployment
+#       name: api-gateway
+#     patch: |-
+#       - op: replace
+#         path: /spec/replicas
+#         value: 3

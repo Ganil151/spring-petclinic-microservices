@@ -1,0 +1,13 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../../base
+
+# Add a label to all resources to identify the environment
+commonLabels:
+  environment: staging
+
+# Staging Environment Configuration
+# We keep the default replicas (2) to test HA, similar to production.
+# You can add specific patches here if staging differs from prod (e.g., resource limits).
