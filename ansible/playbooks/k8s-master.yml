@@ -29,6 +29,36 @@
 
   tasks:
     # ========================================
+    # Configure /etc/hosts for all K8s nodes
+    # ========================================
+    - name: Gather facts from all K8s nodes
+      setup:
+      delegate_to: "{{ item }}"
+      delegate_facts: true
+      loop: "{{ groups['kube_cluster'] }}"
+      run_once: true
+
+    - name: Configure /etc/hosts with all K8s nodes
+      blockinfile:
+        path: /etc/hosts
+        marker: "# {mark} ANSIBLE MANAGED K8S HOSTS"
+        block: |
+          {% for host in groups['kube_cluster'] %}
+          {{ hostvars[host]['ansible_default_ipv4']['address'] }} {{ host }} {{ hostvars[host]['ansible_hostname'] }}
+          {% endfor %}
+        create: yes
+        backup: yes
+
+    - name: Verify /etc/hosts configuration
+      command: cat /etc/hosts
+      register: hosts_file
+      changed_when: false
+
+    - name: Display /etc/hosts
+      debug:
+        msg: "{{ hosts_file.stdout_lines }}"
+
+    # ========================================
     # System Prerequisites
     # ========================================
     - name: Disable swap

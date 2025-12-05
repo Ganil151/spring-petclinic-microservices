@@ -20,7 +20,42 @@
           - "Worker Type: {{ 'Primary' if inventory_hostname in groups['k8s_primary_workers'] else 'Secondary' }}"
           - "=============================================="
 
+
   tasks:
+    # ========================================
+    # Configure /etc/hosts for all K8s nodes
+    # ========================================
+    - name: Gather facts from all K8s nodes
+      setup:
+      delegate_to: \"{{ item }}\"
+      delegate_facts: true
+      loop: \"{{ groups['kube_cluster'] }}\"
+      run_once: true
+
+    - name: Configure /etc/hosts with all K8s nodes
+      blockinfile:
+        path: /etc/hosts
+        marker: \"# {mark} ANSIBLE MANAGED K8S HOSTS\"
+        block: |
+          {% for host in groups['kube_cluster'] %}
+          {{ hostvars[host]['ansible_default_ipv4']['address'] }} {{ host }} {{ hostvars[host]['ansible_hostname'] }}
+          {% endfor %}
+        create: yes
+        backup: yes
+
+    - name: Verify connectivity to master node
+      wait_for:
+        host: \"{{ hostvars[groups['k8s_master'][0]]['ansible_default_ipv4']['address'] }}\"
+        port: 6443
+        timeout: 10
+        state: started
+      register: master_connectivity
+      failed_when: false
+
+    - name: Display connectivity result
+      debug:
+        msg: \"Master API server {{ 'IS' if master_connectivity.failed == false else 'IS NOT' }} reachable on port 6443\"
+
     # ========================================
     # System Prerequisites
     # ========================================
@@ -80,24 +115,31 @@
     # ========================================
     # Install Container Runtime (containerd)
     # ========================================
-    - name: Install containerd
-      block:
-        - name: Install containerd package
-          yum:
-            name:
-              - containerd
-            state: present
+    - name: Check if containerd is already installed
+      command: containerd --version
+      register: containerd_installed
+      failed_when: false
+      changed_when: false
 
-        - name: Create containerd config directory
-          file:
-            path: /etc/containerd
-            state: directory
-            mode: '0755'
+    - name: Install containerd package
+      yum:
+        name:
+          - containerd
+        state: present
+      async: 300
+      poll: 5
+      when: containerd_installed.rc != 0
 
-        - name: Generate default containerd config
-          shell: containerd config default > /etc/containerd/config.toml
-          args:
-            creates: /etc/containerd/config.toml
+    - name: Create containerd config directory
+      file:
+        path: /etc/containerd
+        state: directory
+        mode: '0755'
+
+    - name: Generate default containerd config
+      shell: containerd config default > /etc/containerd/config.toml
+      args:
+        creates: /etc/containerd/config.toml
 
         - name: Configure containerd to use systemd cgroup
           lineinfile:
@@ -106,12 +148,12 @@
             line: '            SystemdCgroup = true'
             insertafter: '^\s*\[plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options\]'
 
-        - name: Start and enable containerd
-          systemd:
-            name: containerd
-            state: started
-            enabled: yes
-            daemon_reload: yes
+    - name: Start and enable containerd
+      systemd:
+        name: containerd
+        state: started
+        enabled: yes
+        daemon_reload: yes
 
     # ========================================
     # Install Kubernetes Components
