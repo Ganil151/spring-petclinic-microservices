@@ -129,6 +129,7 @@
         EOSQL
       when: 
         - password_check.rc != 0
+        - temp_pass.stdout | length == 0
         - no_password_check is defined
         - no_password_check.rc == 0
       no_log: true
@@ -143,7 +144,6 @@
       when: 
         - password_check.rc != 0
         - temp_pass.stdout | length > 0
-        - (no_password_check is not defined or no_password_check.rc != 0)
       no_log: true
       register: password_set_temp
 
