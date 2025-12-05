@@ -23,6 +23,7 @@ pipeline {
         string(name: 'EC2_INSTANCE_NAME', defaultValue: 'Spring-Petclinic-Docker', description: 'EC2 instance tag Name')
         string(name: 'SSH_CREDENTIALS_ID', defaultValue: 'master_keys', description: 'SSH credentials ID for EC2 instances')
         choice(name: 'DEPLOYMENT_TARGET', choices: ['both', 'docker', 'kubernetes', 'none'], description: 'Deployment target')
+        choice(name: 'ENVIRONMENT', choices: ['dev', 'staging', 'prod', 'all'], description: 'Target environment for ArgoCD deployment')
         booleanParam(name: 'CONFIGURE_MYSQL', defaultValue: true, description: 'Run Ansible to configure MySQL databases')
     }
 
@@ -585,9 +586,24 @@ REMOTE_K8S
                                 echo "Installing ArgoCD manifests..."
                                 kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
                                 
+                                echo "Patching ArgoCD Server to use NodePort for access..."
+                                kubectl patch svc argocd-server -n argocd -p '{"spec": {"type": "NodePort"}}'
+
                                 echo "Waiting for ArgoCD server components..."
-                                # We do not block too long here to avoid timeouts, just fire and forget or short wait
-                                kubectl wait --for=condition=Available deployment/argocd-server -n argocd --timeout=60s || echo "ArgoCD still starting up..."
+                                kubectl wait --for=condition=Available deployment/argocd-server -n argocd --timeout=90s || echo "ArgoCD still starting up..."
+
+                                echo ""
+                                echo "=== ArgoCD Access Info ==="
+                                NODE_PORT=\$(kubectl get svc argocd-server -n argocd -o jsonpath='{.spec.ports[0].nodePort}')
+                                MASTER_IP=\$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type==\"ExternalIP\")].address}')
+                                if [ -z "\$MASTER_IP" ]; then
+                                    MASTER_IP=\$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type==\"InternalIP\")].address}')
+                                fi
+                                echo "URL: https://\$MASTER_IP:\$NODE_PORT"
+                                echo ""
+                                echo "=== Initial Admin Password ==="
+                                echo "Run the following command to get the password:"
+                                echo "kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath='{.data.password}' | base64 -d"
 REMOTE
                         '''
                     }
@@ -609,16 +625,33 @@ REMOTE
                             
                             SSH_OPTS="-o StrictHostKeyChecking=no -o ConnectTimeout=20 -i ${SSH_KEY}"
                             
-                            # We need to copy the ArgoCD app manifest to the master first
-                            scp ${SSH_OPTS} kubernetes/argocd/dev-application.yaml ${SSH_USER}@${K8S_MASTER_IP}:~/dev-application.yaml
+                            ENV="${ENVIRONMENT}"
                             
-                            ssh ${SSH_OPTS} ${SSH_USER}@${K8S_MASTER_IP} bash -s << 'REMOTE'
+                            # Copy all ArgoCD manifests to the master
+                            scp ${SSH_OPTS} kubernetes/argocd/*.yaml ${SSH_USER}@${K8S_MASTER_IP}:~/
+                            
+                            ssh ${SSH_OPTS} ${SSH_USER}@${K8S_MASTER_IP} bash -s << REMOTE
                                 export KUBECONFIG=/home/ec2-user/.kube/config
+                                ENV="${ENVIRONMENT}"
                                 
-                                echo "Applying ArgoCD Application Manifest..."
-                                kubectl apply -f ~/dev-application.yaml
+                                echo "Applying ArgoCD Application Manifests..."
                                 
-                                echo "Application registered! ArgoCD will now sync the cluster state."
+                                if [ "\$ENV" = "all" ] || [ "\$ENV" = "dev" ]; then
+                                    echo "Deploying DEV..."
+                                    kubectl apply -f ~/dev-application.yaml
+                                fi
+                                
+                                if [ "\$ENV" = "all" ] || [ "\$ENV" = "staging" ]; then
+                                    echo "Deploying STAGING..."
+                                    kubectl apply -f ~/staging-application.yaml
+                                fi
+                                
+                                if [ "\$ENV" = "all" ] || [ "\$ENV" = "prod" ]; then
+                                    echo "Deploying PROD..."
+                                    kubectl apply -f ~/prod-application.yaml
+                                fi
+                                
+                                echo "Applications registered!"
                                 echo "Check status with: kubectl get application -n argocd"
 REMOTE
                         '''
