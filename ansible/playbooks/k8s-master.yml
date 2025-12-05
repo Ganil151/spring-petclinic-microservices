@@ -88,6 +88,13 @@
         state: permissive
       when: ansible_selinux.status == "enabled"
 
+    - name: Stop and disable firewalld
+      systemd:
+        name: firewalld
+        state: stopped
+        enabled: no
+      ignore_errors: yes  # Ignore if firewalld is not installed
+
     - name: Load kernel modules
       block:
         - name: Add required kernel modules

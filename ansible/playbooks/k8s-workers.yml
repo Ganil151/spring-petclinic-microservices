@@ -43,19 +43,23 @@
         create: yes
         backup: yes
 
+    - name: Stop and disable firewalld
+      systemd:
+        name: firewalld
+        state: stopped
+        enabled: no
+      ignore_errors: yes
+
     - name: Verify connectivity to master node
       wait_for:
         host: "{{ hostvars[groups['k8s_master'][0]]['ansible_default_ipv4']['address'] }}"
         port: 6443
         timeout: 10
         state: started
-      register: master_connectivity
-      failed_when: false
 
-    - name: Display connectivity result
+    - name: Display connectivity success
       debug:
-        msg: "Master API server {{ 'IS' if master_connectivity.failed == false else 'IS NOT' }} reachable on port 6443"
-
+        msg: "Successfully connected to Kubernetes API server on {{ hostvars[groups['k8s_master'][0]]['ansible_default_ipv4']['address'] }}:6443"
     # ========================================
     # System Prerequisites
     # ========================================
