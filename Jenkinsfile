@@ -561,6 +561,71 @@ REMOTE_K8S
                 }
             }
         }
+
+        stage('Install ArgoCD') {
+            steps {
+                withCredentials([[$class: 'SSHUserPrivateKeyBinding', credentialsId: SSH_CREDENTIALS_ID, keyFileVariable: 'SSH_KEY', usernameVariable: 'SSH_USER']]) {
+                    script {
+                        echo "Installing ArgoCD on Kubernetes Master..."
+                        
+                        sh '''
+                            set -e
+                            
+                            # Get K8s master IP
+                            K8S_MASTER_IP=$(grep -A 5 "\\[k8s_master\\]" ansible/inventory.ini | grep "ansible_host" | head -n 1 | awk -F "ansible_host=" '{print $2}' | awk '{print $1}')
+                            
+                            SSH_OPTS="-o StrictHostKeyChecking=no -o ConnectTimeout=20 -i ${SSH_KEY}"
+                            
+                            ssh ${SSH_OPTS} ${SSH_USER}@${K8S_MASTER_IP} bash -s << 'REMOTE'
+                                export KUBECONFIG=/home/ec2-user/.kube/config
+                                
+                                echo "Creating ArgoCD namespace..."
+                                kubectl create namespace argocd --dry-run=client -o yaml | kubectl apply -f -
+                                
+                                echo "Installing ArgoCD manifests..."
+                                kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+                                
+                                echo "Waiting for ArgoCD server components..."
+                                # We do not block too long here to avoid timeouts, just fire and forget or short wait
+                                kubectl wait --for=condition=Available deployment/argocd-server -n argocd --timeout=60s || echo "ArgoCD still starting up..."
+                            REMOTE
+                        '''
+                    }
+                }
+            }
+        }
+
+        stage('Deploy to ArgoCD') {
+            steps {
+                withCredentials([[$class: 'SSHUserPrivateKeyBinding', credentialsId: SSH_CREDENTIALS_ID, keyFileVariable: 'SSH_KEY', usernameVariable: 'SSH_USER']]) {
+                    script {
+                        echo "Registering ArgoCD Application..."
+                        
+                        sh '''
+                            set -e
+                            
+                            # Get K8s master IP
+                            K8S_MASTER_IP=$(grep -A 5 "\\[k8s_master\\]" ansible/inventory.ini | grep "ansible_host" | head -n 1 | awk -F "ansible_host=" '{print $2}' | awk '{print $1}')
+                            
+                            SSH_OPTS="-o StrictHostKeyChecking=no -o ConnectTimeout=20 -i ${SSH_KEY}"
+                            
+                            # We need to copy the ArgoCD app manifest to the master first
+                            scp ${SSH_OPTS} kubernetes/argocd/dev-application.yaml ${SSH_USER}@${K8S_MASTER_IP}:~/dev-application.yaml
+                            
+                            ssh ${SSH_OPTS} ${SSH_USER}@${K8S_MASTER_IP} bash -s << 'REMOTE'
+                                export KUBECONFIG=/home/ec2-user/.kube/config
+                                
+                                echo "Applying ArgoCD Application Manifest..."
+                                kubectl apply -f ~/dev-application.yaml
+                                
+                                echo "Application registered! ArgoCD will now sync the cluster state."
+                                echo "Check status with: kubectl get application -n argocd"
+                            REMOTE
+                        '''
+                    }
+                }
+            }
+        }
     }
 
 
