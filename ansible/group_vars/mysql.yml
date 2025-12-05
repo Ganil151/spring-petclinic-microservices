@@ -2,11 +2,19 @@
 # MySQL Server Configuration Variables
 # Used by geerlingguy.mysql role
 
-
+# OS-specific overrides for Amazon Linux 2023
+# These variables are normally set by the role's OS detection, but AL2023 may not be recognized
+__mysql_daemon: mysqld
+__mysql_packages:
+  - community-mysql-server
+__mysql_pid_file: /run/mysqld/mysqld.pid
+__mysql_log_error: /var/log/mysqld.log
+__mysql_syslog_tag: mysqld
+__mysql_slow_query_log_file: /var/log/mysql-slow.log
 
 # MySQL version and packages
 mysql_packages:
-  - mysql-server
+  - community-mysql-server
 
 
 # MySQL daemon
