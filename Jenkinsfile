@@ -588,7 +588,7 @@ REMOTE_K8S
                                 echo "Waiting for ArgoCD server components..."
                                 # We do not block too long here to avoid timeouts, just fire and forget or short wait
                                 kubectl wait --for=condition=Available deployment/argocd-server -n argocd --timeout=60s || echo "ArgoCD still starting up..."
-                            REMOTE
+REMOTE
                         '''
                     }
                 }
@@ -620,7 +620,7 @@ REMOTE_K8S
                                 
                                 echo "Application registered! ArgoCD will now sync the cluster state."
                                 echo "Check status with: kubectl get application -n argocd"
-                            REMOTE
+REMOTE
                         '''
                     }
                 }
