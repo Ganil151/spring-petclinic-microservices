@@ -27,15 +27,15 @@
     # ========================================
     - name: Gather facts from all K8s nodes
       setup:
-      delegate_to: \"{{ item }}\"
+      delegate_to: "{{ item }}"
       delegate_facts: true
-      loop: \"{{ groups['kube_cluster'] }}\"
+      loop: "{{ groups['kube_cluster'] }}"
       run_once: true
 
     - name: Configure /etc/hosts with all K8s nodes
       blockinfile:
         path: /etc/hosts
-        marker: \"# {mark} ANSIBLE MANAGED K8S HOSTS\"
+        marker: "# {mark} ANSIBLE MANAGED K8S HOSTS"
         block: |
           {% for host in groups['kube_cluster'] %}
           {{ hostvars[host]['ansible_default_ipv4']['address'] }} {{ host }} {{ hostvars[host]['ansible_hostname'] }}
@@ -45,7 +45,7 @@
 
     - name: Verify connectivity to master node
       wait_for:
-        host: \"{{ hostvars[groups['k8s_master'][0]]['ansible_default_ipv4']['address'] }}\"
+        host: "{{ hostvars[groups['k8s_master'][0]]['ansible_default_ipv4']['address'] }}"
         port: 6443
         timeout: 10
         state: started
@@ -54,7 +54,7 @@
 
     - name: Display connectivity result
       debug:
-        msg: \"Master API server {{ 'IS' if master_connectivity.failed == false else 'IS NOT' }} reachable on port 6443\"
+        msg: "Master API server {{ 'IS' if master_connectivity.failed == false else 'IS NOT' }} reachable on port 6443"
 
     # ========================================
     # System Prerequisites
