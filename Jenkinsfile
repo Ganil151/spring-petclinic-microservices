@@ -407,6 +407,206 @@ REMOTE
                 }
             }
         }
+
+        stage('Setup Kubernetes Master') {
+            when {
+                expression { 
+                    return params.DEPLOYMENT_TARGET == 'kubernetes' || params.DEPLOYMENT_TARGET == 'both' 
+                }
+            }
+            steps {
+                script {
+                    echo "Setting up Kubernetes master node..."
+                    
+                    dir('ansible') {
+                        sh '''
+                            set -e
+                            
+                            echo "=== Kubernetes Master Setup ==="
+                            
+                            # Test connectivity to K8s master
+                            ansible k8s_master -i inventory.ini -m ping || {
+                                echo "ERROR: Cannot connect to K8s master"
+                                exit 1
+                            }
+                            
+                            # Run K8s master playbook
+                            ansible-playbook -i inventory.ini playbooks/k8s-master.yml -v
+                            
+                            echo "✓ Kubernetes master setup complete"
+                        '''
+                    }
+                }
+            }
+        }
+
+        stage('Setup Kubernetes Workers') {
+            when {
+                expression { 
+                    return params.DEPLOYMENT_TARGET == 'kubernetes' || params.DEPLOYMENT_TARGET == 'both' 
+                }
+            }
+            steps {
+                script {
+                    echo "Setting up Kubernetes worker nodes..."
+                    
+                    dir('ansible') {
+                        sh '''
+                            set -e
+                            
+                            echo "=== Kubernetes Workers Setup ==="
+                            
+                            # Test connectivity to K8s workers
+                            ansible k8s_primary_workers:k8s_secondary_workers -i inventory.ini -m ping || {
+                                echo "ERROR: Cannot connect to K8s workers"
+                                exit 1
+                            }
+                            
+                            # Run K8s workers playbook
+                            ansible-playbook -i inventory.ini playbooks/k8s-workers.yml -v
+                            
+                            echo "✓ Kubernetes workers setup complete"
+                        '''
+                    }
+                }
+            }
+        }
+
+        stage('Deploy to Kubernetes') {
+            when {
+                expression { 
+                    return params.DEPLOYMENT_TARGET == 'kubernetes' || params.DEPLOYMENT_TARGET == 'both' 
+                }
+            }
+            steps {
+                withCredentials([[$class: 'SSHUserPrivateKeyBinding', credentialsId: SSH_CREDENTIALS_ID, keyFileVariable: 'SSH_KEY', usernameVariable: 'SSH_USER']]) {
+                    script {
+                        echo "Deploying Spring Petclinic to Kubernetes..."
+                        
+                        sh '''
+                            set -e
+                            
+                            # Get K8s master IP from inventory
+                            K8S_MASTER_IP=$(python3 -c "
+import configparser
+config = configparser.ConfigParser(allow_no_value=True)
+config.read('ansible/inventory.ini')
+for section in config.sections():
+    if 'k8s_master' in section or section == 'k8s_master':
+        for item in config.items(section):
+            if 'ansible_host' in item[0]:
+                # Extract IP from the line
+                line = item[0]
+                if 'ansible_host=' in line:
+                    print(line.split('ansible_host=')[1].split()[0])
+                    break
+            elif item[1] and 'ansible_host=' in item[1]:
+                print(item[1].split('ansible_host=')[1].split()[0])
+                break
+" | head -1)
+
+                            if [ -z "$K8S_MASTER_IP" ]; then
+                                echo "ERROR: Could not find K8s master IP in inventory"
+                                exit 1
+                            fi
+                            
+                            echo "K8s Master IP: $K8S_MASTER_IP"
+                            SSH_OPTS="-o StrictHostKeyChecking=no -o ConnectTimeout=20 -i ${SSH_KEY}"
+                            
+                            echo "=== Copying Kubernetes manifests ==="
+                            scp -r ${SSH_OPTS} kubernetes/ ${SSH_USER}@${K8S_MASTER_IP}:~/
+                            
+                            echo "=== Deploying to Kubernetes ==="
+                            ssh ${SSH_OPTS} ${SSH_USER}@${K8S_MASTER_IP} bash -s << 'REMOTE_K8S'
+                                set -e
+                                export KUBECONFIG=/home/ec2-user/.kube/config
+                                
+                                echo "Verifying cluster status..."
+                                kubectl get nodes
+                                
+                                echo "Applying Kubernetes manifests..."
+                                cd ~/kubernetes/deployments
+                                
+                                # Deploy the complete manifest
+                                kubectl apply -f deployment.yaml
+                                
+                                echo "Waiting for pods to be ready..."
+                                kubectl wait --for=condition=ready pod -l app=config-server --timeout=300s || true
+                                kubectl wait --for=condition=ready pod -l app=discovery-server --timeout=300s || true
+                                
+                                echo "Cluster status:"
+                                kubectl get pods -o wide
+                                kubectl get svc
+                                
+                                echo "✓ Kubernetes deployment complete"
+REMOTE_K8S
+                        '''
+                    }
+                }
+            }
+        }
+
+        stage('Verify Kubernetes Deployment') {
+            when {
+                expression { 
+                    return params.DEPLOYMENT_TARGET == 'kubernetes' || params.DEPLOYMENT_TARGET == 'both' 
+                }
+            }
+            steps {
+                withCredentials([[$class: 'SSHUserPrivateKeyBinding', credentialsId: SSH_CREDENTIALS_ID, keyFileVariable: 'SSH_KEY', usernameVariable: 'SSH_USER']]) {
+                    script {
+                        echo "Verifying Kubernetes deployment..."
+                        
+                        sh '''
+                            set -e
+                            
+                            # Get K8s master IP
+                            K8S_MASTER_IP=$(python3 -c "
+import configparser
+config = configparser.ConfigParser(allow_no_value=True)
+config.read('ansible/inventory.ini')
+for section in config.sections():
+                    if 'k8s_master' in section or section == 'k8s_master':
+                        for item in config.items(section):
+                            if 'ansible_host' in item[0]:
+                                line = item[0]
+                                if 'ansible_host=' in line:
+                                    print(line.split('ansible_host=')[1].split()[0])
+                                    break
+                            elif item[1] and 'ansible_host=' in item[1]:
+                                print(item[1].split('ansible_host=')[1].split()[0])
+                                break
+" | head -1)
+                            
+                            SSH_OPTS="-o StrictHostKeyChecking=no -o ConnectTimeout=20 -i ${SSH_KEY}"
+                            
+                            echo "=== Kubernetes Cluster Status ==="
+                            ssh ${SSH_OPTS} ${SSH_USER}@${K8S_MASTER_IP} "
+                                export KUBECONFIG=/home/ec2-user/.kube/config
+                                echo '--- Nodes ---'
+                                kubectl get nodes -o wide
+                                echo ''
+                                echo '--- Pods ---'
+                                kubectl get pods -o wide
+                                echo ''
+                                echo '--- Services ---'
+                                kubectl get svc
+                                echo ''
+                                echo '--- API Gateway NodePort URL ---'
+                                NODE_PORT=\$(kubectl get svc api-gateway -o jsonpath='{.spec.ports[0].nodePort}')
+                                NODE_IP=\$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type==\"ExternalIP\")].address}')
+                                if [ -z \"\$NODE_IP\" ]; then
+                                    NODE_IP=\$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type==\"InternalIP\")].address}')
+                                fi
+                                echo \"Access application at: http://\${NODE_IP}:\${NODE_PORT}\"
+                            "
+                            
+                            echo "✓ Kubernetes verification complete"
+                        '''
+                    }
+                }
+            }
+        }
     }
 
 
