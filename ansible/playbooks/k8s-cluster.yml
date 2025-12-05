@@ -1,0 +1,128 @@
+---
+# Complete Kubernetes Cluster Setup Playbook
+# Orchestrates setup of master and worker nodes
+
+- name: Kubernetes Cluster Deployment
+  hosts: localhost
+  gather_facts: no
+  
+  tasks:
+    - name: Display Cluster Deployment Banner
+      debug:
+        msg:
+          - "=============================================="
+          - "  Kubernetes Cluster Deployment"
+          - "=============================================="
+          - "This playbook will:"
+          - "  1. Configure and initialize the master node"
+          - "  2. Set up worker nodes and join them to cluster"
+          - "  3. Apply node labels and roles"
+          - "  4. Verify cluster health"
+          - ""
+          - "Cluster Configuration:"
+          - "  - Master nodes: {{ groups['k8s_master'] | length }}"
+          - "  - Primary workers: {{ groups['k8s_primary_workers'] | length }}"
+          - "  - Secondary workers: {{ groups['k8s_secondary_workers'] | default([]) | length }}"
+          - "  - Total nodes: {{ groups['k8s_master'] | length + groups['k8s_primary_workers'] | length + groups['k8s_secondary_workers'] | default([]) | length }}"
+          - "=============================================="
+
+# Phase 1: Setup Kubernetes Master Node
+- import_playbook: k8s-master.yml
+
+# Phase 2: Setup and Join Worker Nodes
+- import_playbook: k8s-workers.yml
+
+# Phase 3: Final Verification
+- name: Verify Complete Cluster
+  hosts: k8s_master
+  become: yes
+  become_user: ec2-user
+  gather_facts: no
+  
+  tasks:
+    - name: Wait for all pods to be running
+      command: kubectl get pods -n kube-system
+      environment:
+        KUBECONFIG: /home/ec2-user/.kube/config
+      register: kube_system_pods
+      until: "'Running' in kube_system_pods.stdout"
+      retries: 30
+      delay: 10
+      changed_when: false
+
+    - name: Get cluster information
+      command: kubectl cluster-info
+      environment:
+        KUBECONFIG: /home/ec2-user/.kube/config
+      register: cluster_info
+      changed_when: false
+
+    - name: Get node details with roles
+      command: kubectl get nodes -o wide
+      environment:
+        KUBECONFIG: /home/ec2-user/.kube/config
+      register: node_details
+      changed_when: false
+
+    - name: Get component status
+      command: kubectl get cs
+      environment:
+        KUBECONFIG: /home/ec2-user/.kube/config
+      register: component_status
+      changed_when: false
+      failed_when: false
+
+    - name: Display cluster summary
+      debug:
+        msg:
+          - "=============================================="
+          - "  ✅ Kubernetes Cluster Ready!"
+          - "=============================================="
+          - ""
+          - "Cluster Info:"
+          - "{{ cluster_info.stdout_lines }}"
+          - ""
+          - "Nodes:"
+          - "{{ node_details.stdout_lines }}"
+          - ""
+          - "System Pods:"
+          - "{{ kube_system_pods.stdout_lines }}"
+          - ""
+          - "=============================================="
+          - "Next Steps:"
+          - "  1. Verify: kubectl get nodes"
+          - "  2. Deploy apps: ansible-playbook playbooks/deploy-petclinic.yml"
+          - "  3. Access kubectl:"
+          - "     - SSH to master: ssh ec2-user@{{ ansible_default_ipv4.address }}"
+          - "     - Run: kubectl get all --all-namespaces"
+          - "=============================================="
+
+- name: Final Deployment Summary
+  hosts: localhost
+  gather_facts: no
+  
+  tasks:
+    - name: Display completion message
+      debug:
+        msg:
+          - "=============================================="
+          - "  🎉 Kubernetes Cluster Deployment Complete!"
+          - "=============================================="
+          - ""
+          - "Cluster Details:"
+          - "  ✅ Master node configured and running"
+          - "  ✅ {{ groups['k8s_primary_workers'] | length + groups['k8s_secondary_workers'] | default([]) | length }} worker nodes joined"
+          - "  ✅ Calico CNI installed"
+          - "  ✅ Node labels applied"
+          - "  ✅ All system pods running"
+          - ""
+          - "Access your cluster:"
+          - "  ssh -i ~/.ssh/master_keys.pem ec2-user@{{ hostvars[groups['k8s_master'][0]]['ansible_host'] }}"
+          - "  kubectl get nodes"
+          - ""
+          - "Important Files:"
+          - "  - Kubeconfig: /home/ec2-user/.kube/config (on master)"
+          - "  - Join command: /tmp/k8s_join_command.sh (on master)"
+          - ""
+          - "Ready to deploy applications!"
+          - "=============================================="

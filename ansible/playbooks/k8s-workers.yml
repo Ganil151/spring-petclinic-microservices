@@ -1,0 +1,298 @@
+---
+# Kubernetes Worker Nodes Setup Playbook
+# Sets up and joins worker nodes to the cluster
+
+- name: Kubernetes Worker Nodes Configuration
+  hosts: k8s_primary_workers:k8s_secondary_workers
+  become: yes
+  gather_facts: yes
+  
+  pre_tasks:
+    - name: Display Worker Node Information
+      debug:
+        msg:
+          - "=============================================="
+          - "  Kubernetes Worker Node Setup"
+          - "=============================================="
+          - "Target: {{ inventory_hostname }}"
+          - "IP: {{ ansible_default_ipv4.address }}"
+          - "OS: {{ ansible_distribution }} {{ ansible_distribution_version }}"
+          - "Worker Type: {{ 'Primary' if inventory_hostname in groups['k8s_primary_workers'] else 'Secondary' }}"
+          - "=============================================="
+
+  tasks:
+    # ========================================
+    # System Prerequisites
+    # ========================================
+    - name: Disable swap
+      block:
+        - name: Turn off swap
+          command: swapoff -a
+          changed_when: false
+
+        - name: Remove swap from fstab
+          lineinfile:
+            path: /etc/fstab
+            regexp: '^\s*[^#].*swap'
+            state: absent
+
+    - name: Configure SELinux to permissive mode
+      selinux:
+        policy: targeted
+        state: permissive
+      when: ansible_selinux.status == "enabled"
+
+    - name: Load kernel modules
+      block:
+        - name: Add required kernel modules
+          copy:
+            dest: /etc/modules-load.d/k8s.conf
+            content: |
+              overlay
+              br_netfilter
+            mode: '0644'
+
+        - name: Load overlay module
+          modprobe:
+            name: overlay
+            state: present
+
+        - name: Load br_netfilter module
+          modprobe:
+            name: br_netfilter
+            state: present
+
+    - name: Configure sysctl parameters for Kubernetes
+      block:
+        - name: Set sysctl parameters
+          copy:
+            dest: /etc/sysctl.d/k8s.conf
+            content: |
+              net.bridge.bridge-nf-call-iptables  = 1
+              net.bridge.bridge-nf-call-ip6tables = 1
+              net.ipv4.ip_forward                 = 1
+            mode: '0644'
+
+        - name: Apply sysctl parameters
+          command: sysctl --system
+          changed_when: false
+
+    # ========================================
+    # Install Container Runtime (containerd)
+    # ========================================
+    - name: Install containerd
+      block:
+        - name: Install containerd package
+          yum:
+            name:
+              - containerd
+              - containernetworking-plugins
+            state: present
+
+        - name: Create containerd config directory
+          file:
+            path: /etc/containerd
+            state: directory
+            mode: '0755'
+
+        - name: Generate default containerd config
+          shell: containerd config default > /etc/containerd/config.toml
+          args:
+            creates: /etc/containerd/config.toml
+
+        - name: Configure containerd to use systemd cgroup
+          lineinfile:
+            path: /etc/containerd/config.toml
+            regexp: '^\s*SystemdCgroup\s*='
+            line: '            SystemdCgroup = true'
+            insertafter: '^\s*\[plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options\]'
+
+        - name: Start and enable containerd
+          systemd:
+            name: containerd
+            state: started
+            enabled: yes
+            daemon_reload: yes
+
+    # ========================================
+    # Install Kubernetes Components
+    # ========================================
+    - name: Add Kubernetes repository
+      yum_repository:
+        name: kubernetes
+        description: Kubernetes Repository
+        baseurl: https://pkgs.k8s.io/core:/stable:/v1.28/rpm/
+        enabled: yes
+        gpgcheck: yes
+        gpgkey: https://pkgs.k8s.io/core:/stable:/v1.28/rpm/repodata/repomd.xml.key
+        exclude: kubelet kubeadm kubectl cri-tools kubernetes-cni
+
+    - name: Install Kubernetes packages
+      yum:
+        name:
+          - kubelet-{{ k8s_version | default('1.28.0') }}
+          - kubeadm-{{ k8s_version | default('1.28.0') }}
+        state: present
+        disable_excludes: kubernetes
+
+    - name: Enable kubelet service
+      systemd:
+        name: kubelet
+        enabled: yes
+
+    # ========================================
+    # Retrieve Join Command from Master
+    # ========================================
+    - name: Fetch join command from master
+      slurp:
+        src: /tmp/k8s_join_command.sh
+      register: join_command_base64
+      delegate_to: "{{ groups['k8s_master'][0] }}"
+      run_once: yes
+
+    - name: Decode join command
+      set_fact:
+        join_command: "{{ join_command_base64.content | b64decode | trim }}"
+
+    - name: Display join command
+      debug:
+        msg: "Will execute: {{ join_command }}"
+
+    # ========================================
+    # Join Worker to Cluster
+    # ========================================
+    - name: Check if node is already joined
+      stat:
+        path: /etc/kubernetes/kubelet.conf
+      register: kubelet_conf
+
+    - name: Join worker to Kubernetes cluster
+      command: "{{ join_command }}"
+      when: not kubelet_conf.stat.exists
+      register: join_result
+
+    - name: Display join result
+      debug:
+        msg: "{{ join_result.stdout_lines }}"
+      when: join_result is defined and join_result.changed
+
+    # ========================================
+    # Wait for node to be ready
+    # ========================================
+    - name: Wait for node to be registered
+      pause:
+        seconds: 15
+
+- name: Label and Configure Worker Nodes
+  hosts: k8s_master
+  become: yes
+  become_user: ec2-user
+  gather_facts: no
+  
+  tasks:
+    - name: Wait for all worker nodes to be ready
+      command: kubectl get nodes
+      environment:
+        KUBECONFIG: /home/ec2-user/.kube/config
+      register: all_nodes
+      until: all_nodes.stdout_lines | length >= (groups['k8s_primary_workers'] | length + groups['k8s_secondary_workers'] | length + 1)
+      retries: 20
+      delay: 10
+      changed_when: false
+
+    - name: Display all nodes
+      debug:
+        msg: "{{ all_nodes.stdout_lines }}"
+
+    # ========================================
+    # Label Primary Worker Nodes
+    # ========================================
+    - name: Label primary worker nodes
+      command: >
+        kubectl label node {{ hostvars[item]['inventory_hostname'] }}
+        node-role.kubernetes.io/worker=
+        workload-type=primary
+        --overwrite
+      environment:
+        KUBECONFIG: /home/ec2-user/.kube/config
+      loop: "{{ groups['k8s_primary_workers'] }}"
+      register: primary_label_result
+      changed_when: "'labeled' in primary_label_result.stdout"
+      failed_when: false
+
+    # ========================================
+    # Label Secondary Worker Nodes
+    # ========================================
+    - name: Label secondary worker nodes
+      command: >
+        kubectl label node {{ hostvars[item]['inventory_hostname'] }}
+        node-role.kubernetes.io/worker=
+        workload-type=secondary
+        --overwrite
+      environment:
+        KUBECONFIG: /home/ec2-user/.kube/config
+      loop: "{{ groups['k8s_secondary_workers'] }}"
+      register: secondary_label_result
+      changed_when: "'labeled' in secondary_label_result.stdout"
+      failed_when: false
+      when: groups['k8s_secondary_workers'] is defined and groups['k8s_secondary_workers'] | length > 0
+
+    # ========================================
+    # Additional labels for frontend nodes
+    # ========================================
+    - name: Add frontend label to primary workers
+      command: >
+        kubectl label node {{ hostvars[item]['inventory_hostname'] }}
+        node-role.kubernetes.io/frontend=
+        --overwrite
+      environment:
+        KUBECONFIG: /home/ec2-user/.kube/config
+      loop: "{{ groups['k8s_primary_workers'] }}"
+      register: frontend_label_result
+      changed_when: "'labeled' in frontend_label_result.stdout"
+      failed_when: false
+
+  post_tasks:
+    - name: Get final cluster status
+      command: kubectl get nodes -o wide --show-labels
+      environment:
+        KUBECONFIG: /home/ec2-user/.kube/config
+      register: final_nodes
+      changed_when: false
+
+    - name: Display final cluster status
+      debug:
+        msg: "{{ final_nodes.stdout_lines }}"
+
+    - name: Verify all system pods
+      command: kubectl get pods -n kube-system -o wide
+      environment:
+        KUBECONFIG: /home/ec2-user/.kube/config
+      register: all_system_pods
+      changed_when: false
+
+    - name: Display all system pods
+      debug:
+        msg: "{{ all_system_pods.stdout_lines }}"
+
+    - name: Final summary
+      debug:
+        msg:
+          - "=============================================="
+          - "  ✅ Kubernetes Workers Setup Complete!"
+          - "=============================================="
+          - "Cluster Summary:"
+          - "  - Total Nodes: {{ (groups['k8s_primary_workers'] | length + groups['k8s_secondary_workers'] | length + 1) }}"
+          - "  - Master Nodes: 1"
+          - "  - Primary Workers: {{ groups['k8s_primary_workers'] | length }}"
+          - "  - Secondary Workers: {{ groups['k8s_secondary_workers'] | default([]) | length }}"
+          - ""
+          - "Node Labels Applied:"
+          - "  - Primary workers: node-role.kubernetes.io/worker, workload-type=primary, node-role.kubernetes.io/frontend"
+          - "  - Secondary workers: node-role.kubernetes.io/worker, workload-type=secondary"
+          - ""
+          - "Next steps:"
+          - "  1. Deploy applications: ansible-playbook playbooks/deploy-petclinic.yml"
+          - "  2. Verify cluster: kubectl get nodes"
+          - "  3. Check pods: kubectl get pods --all-namespaces"
+          - "=============================================="
