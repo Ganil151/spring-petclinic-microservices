@@ -477,23 +477,7 @@ REMOTE
                             set -e
                             
                             # Get K8s master IP from inventory
-                            K8S_MASTER_IP=$(python3 -c "
-import configparser
-config = configparser.ConfigParser(allow_no_value=True)
-config.read('ansible/inventory.ini')
-for section in config.sections():
-    if 'k8s_master' in section or section == 'k8s_master':
-        for item in config.items(section):
-            if 'ansible_host' in item[0]:
-                # Extract IP from the line
-                line = item[0]
-                if 'ansible_host=' in line:
-                    print(line.split('ansible_host=')[1].split()[0])
-                    break
-            elif item[1] and 'ansible_host=' in item[1]:
-                print(item[1].split('ansible_host=')[1].split()[0])
-                break
-" | head -1)
+                            K8S_MASTER_IP=$(grep -A 5 "\\[k8s_master\\]" ansible/inventory.ini | grep "ansible_host" | head -n 1 | awk -F "ansible_host=" '{print $2}' | awk '{print $1}')
 
                             if [ -z "$K8S_MASTER_IP" ]; then
                                 echo "ERROR: Could not find K8s master IP in inventory"
@@ -546,22 +530,7 @@ REMOTE_K8S
                             set -e
                             
                             # Get K8s master IP
-                            K8S_MASTER_IP=$(python3 -c "
-import configparser
-config = configparser.ConfigParser(allow_no_value=True)
-config.read('ansible/inventory.ini')
-for section in config.sections():
-                    if 'k8s_master' in section or section == 'k8s_master':
-                        for item in config.items(section):
-                            if 'ansible_host' in item[0]:
-                                line = item[0]
-                                if 'ansible_host=' in line:
-                                    print(line.split('ansible_host=')[1].split()[0])
-                                    break
-                            elif item[1] and 'ansible_host=' in item[1]:
-                                print(item[1].split('ansible_host=')[1].split()[0])
-                                break
-" | head -1)
+                            K8S_MASTER_IP=$(grep -A 5 "\\[k8s_master\\]" ansible/inventory.ini | grep "ansible_host" | head -n 1 | awk -F "ansible_host=" '{print $2}' | awk '{print $1}')
                             
                             SSH_OPTS="-o StrictHostKeyChecking=no -o ConnectTimeout=20 -i ${SSH_KEY}"
                             
