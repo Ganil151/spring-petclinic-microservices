@@ -499,7 +499,7 @@ REMOTE
                                 kubectl get nodes
                                 
                                 echo "Applying Kubernetes manifests..."
-                                cd ~/kubernetes/deployments
+                                cd ~/kubernetes/base/deployments
                                 
                                 # Deploy the complete manifest
                                 kubectl apply -f deployment.yaml
