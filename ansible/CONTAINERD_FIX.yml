@@ -1,0 +1,42 @@
+# Fixed containerd configuration section
+# Replace lines 118-157 in k8s-workers.yml with this content:
+
+    - name: Check if containerd is already installed
+      command: containerd --version
+      register: containerd_installed
+      failed_when: false
+      changed_when: false
+
+    - name: Install containerd package
+      yum:
+        name:
+          - containerd
+        state: present
+      async: 300
+      poll: 5
+      when: containerd_installed.rc != 0
+
+    - name: Create containerd config directory
+      file:
+        path: /etc/containerd
+        state: directory
+        mode: '0755'
+
+    - name: Generate default containerd config
+      shell: containerd config default > /etc/containerd/config.toml
+      args:
+        creates: /etc/containerd/config.toml
+
+    - name: Configure containerd to use systemd cgroup
+      lineinfile:
+        path: /etc/containerd/config.toml
+        regexp: '^\\s*SystemdCgroup\\s*='
+        line: '            SystemdCgroup = true'
+        insertafter: '^\\s*\\[plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options\\]'
+
+    - name: Start and enable containerd
+      systemd:
+        name: containerd
+        state: started
+        enabled: yes
+        daemon_reload: yes

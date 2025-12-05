@@ -141,12 +141,12 @@
       args:
         creates: /etc/containerd/config.toml
 
-        - name: Configure containerd to use systemd cgroup
-          lineinfile:
-            path: /etc/containerd/config.toml
-            regexp: '^\s*SystemdCgroup\s*='
-            line: '            SystemdCgroup = true'
-            insertafter: '^\s*\[plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options\]'
+    - name: Configure containerd to use systemd cgroup
+      lineinfile:
+        path: /etc/containerd/config.toml
+        regexp: ^\s*SystemdCgroup\s*=
+        line:             SystemdCgroup = true
+        insertafter: ^\s*\[plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options\]
 
     - name: Start and enable containerd
       systemd:
