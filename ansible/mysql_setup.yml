@@ -1,0 +1,317 @@
+---
+- name: Install & Configure MySQL 8 on Amazon Linux 2023
+  hosts: mysql
+  become: true
+  
+  vars:
+    mysql_repo_url: "https://dev.mysql.com/get/mysql80-community-release-el9-1.noarch.rpm"
+
+  tasks:
+    # ========================================
+    # PREREQUISITES
+    # ========================================
+    - name: Install required dependencies
+      yum:
+        name:
+          - python3-pip
+          - wget
+          - perl
+          - shadow-utils
+        state: present
+        update_cache: yes
+
+    - name: Install PyMySQL for Ansible modules
+      pip:
+        name: pymysql
+        state: present
+
+    - name: Remove conflicting MariaDB packages
+      yum:
+        name: mariadb*
+        state: absent
+      ignore_errors: yes
+
+    # ========================================
+    # MYSQL REPOSITORY SETUP
+    # ========================================
+    - name: Check if MySQL repo already installed
+      stat:
+        path: /etc/yum.repos.d/mysql-community.repo
+      register: mysql_repo_check
+
+    - name: Download and install MySQL repository
+      shell: |
+        wget -q -O /tmp/mysql-repo.rpm {{ mysql_repo_url }}
+        rpm -Uvh /tmp/mysql-repo.rpm || yum install -y /tmp/mysql-repo.rpm
+        rm -f /tmp/mysql-repo.rpm
+      when: not mysql_repo_check.stat.exists
+      register: repo_install
+      failed_when: false
+
+    - name: Verify MySQL repository exists
+      stat:
+        path: /etc/yum.repos.d/mysql-community.repo
+      register: mysql_repo_verify
+      failed_when: not mysql_repo_verify.stat.exists
+
+    # ========================================
+    # GPG KEYS
+    # ========================================
+    - name: Import MySQL GPG keys
+      rpm_key:
+        state: present
+        key: "{{ item }}"
+      loop:
+        - "https://repo.mysql.com/RPM-GPG-KEY-mysql-2023"
+        - "https://repo.mysql.com/RPM-GPG-KEY-mysql-2022"
+      ignore_errors: yes
+
+    # ========================================
+    # INSTALL MYSQL
+    # ========================================
+    - name: Install MySQL 8 Community Server
+      yum:
+        name:
+          - mysql-community-server
+          - mysql-community-client
+        state: present
+        disable_gpg_check: yes
+
+    - name: Ensure MySQL service is started and enabled
+      systemd:
+        name: mysqld
+        state: started
+        enabled: yes
+
+    - name: Wait for MySQL to be ready
+      wait_for:
+        port: 3306
+        host: 127.0.0.1
+        delay: 10
+        timeout: 120
+        state: started
+
+    - name: Additional wait for MySQL initialization
+      pause:
+        seconds: 5
+
+    # ========================================
+    # PASSWORD CONFIGURATION
+    # ========================================
+    - name: Get temporary root password
+      shell: |
+        grep 'temporary password' /var/log/mysqld.log 2>/dev/null | \
+        awk '{print $NF}' | tail -1 || echo ""
+      register: temp_pass
+      changed_when: false
+
+    - name: Check if root password is already correct
+      shell: mysql -u root -p'{{ mysql_root_password }}' -e "SELECT 1;" 2>&1
+      register: password_check
+      changed_when: false
+      failed_when: false
+      no_log: true
+
+    - name: Try MySQL with no password (fresh install)
+      shell: mysql -u root -e "SELECT 1;" 2>&1
+      register: no_password_check
+      changed_when: false
+      failed_when: false
+      when: 
+        - password_check.rc != 0
+        - temp_pass.stdout | length == 0
+
+    - name: Set root password from no-password state
+      shell: |
+        mysql -u root <<'EOSQL'
+        ALTER USER 'root'@'localhost' IDENTIFIED BY '{{ mysql_root_password }}';
+        FLUSH PRIVILEGES;
+        EOSQL
+      when: 
+        - password_check.rc != 0
+        - no_password_check is defined
+        - no_password_check.rc == 0
+      no_log: true
+      register: password_set_nopw
+
+    - name: Set root password from temporary password
+      shell: |
+        mysql --connect-expired-password -u root -p'{{ temp_pass.stdout }}' <<'EOSQL'
+        ALTER USER 'root'@'localhost' IDENTIFIED BY '{{ mysql_root_password }}';
+        FLUSH PRIVILEGES;
+        EOSQL
+      when: 
+        - password_check.rc != 0
+        - temp_pass.stdout | length > 0
+        - (no_password_check is not defined or no_password_check.rc != 0)
+      no_log: true
+      register: password_set_temp
+
+    - name: Create /root/.my.cnf for passwordless root access
+      copy:
+        dest: /root/.my.cnf
+        content: |
+          [client]
+          user=root
+          password={{ mysql_root_password }}
+        owner: root
+        group: root
+        mode: '0600'
+      no_log: true
+
+    - name: Verify MySQL root authentication
+      shell: mysql -e "SELECT VERSION();"
+      register: mysql_version_check
+      changed_when: false
+      retries: 3
+      delay: 5
+      until: mysql_version_check.rc == 0
+
+    - name: Display MySQL version
+      debug:
+        msg: "✓ MySQL {{ mysql_version_check.stdout_lines[0] }} authenticated successfully"
+
+    # ========================================
+    # MYSQL CONFIGURATION
+    # ========================================
+    - name: Ensure [mysqld] section exists in my.cnf
+      lineinfile:
+        path: /etc/my.cnf
+        line: '[mysqld]'
+        insertbefore: BOF
+        state: present
+
+    - name: Configure MySQL bind address for remote access
+      lineinfile:
+        path: /etc/my.cnf
+        regexp: '^bind-address'
+        line: 'bind-address = 0.0.0.0'
+        insertafter: '^\[mysqld\]'
+        state: present
+      notify: Restart MySQL
+
+    - name: Configure MySQL character set and performance
+      blockinfile:
+        path: /etc/my.cnf
+        marker: "# {mark} ANSIBLE MANAGED BLOCK"
+        insertafter: '^\[mysqld\]'
+        block: |
+          character-set-server = utf8mb4
+          collation-server = utf8mb4_unicode_ci
+          max_connections = 200
+        state: present
+      notify: Restart MySQL
+
+    - name: Flush handlers to apply configuration
+      meta: flush_handlers
+
+    - name: Wait for MySQL after configuration changes
+      wait_for:
+        port: 3306
+        delay: 5
+        timeout: 60
+
+    # ========================================
+    # CREATE DATABASES
+    # ========================================
+    - name: Create Petclinic databases
+      shell: |
+        mysql <<'EOSQL'
+        CREATE DATABASE IF NOT EXISTS petclinic_customers CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+        CREATE DATABASE IF NOT EXISTS petclinic_visits CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+        CREATE DATABASE IF NOT EXISTS petclinic_vets CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+        EOSQL
+      register: db_creation
+      changed_when: false
+
+    # ========================================
+    # CREATE USERS
+    # ========================================
+    - name: Create Petclinic MySQL user
+      shell: |
+        mysql <<EOSQL
+        CREATE USER IF NOT EXISTS 'petclinic'@'%' IDENTIFIED BY '{{ mysql_petclinic_password }}';
+        GRANT ALL PRIVILEGES ON petclinic_customers.* TO 'petclinic'@'%';
+        GRANT ALL PRIVILEGES ON petclinic_visits.* TO 'petclinic'@'%';
+        GRANT ALL PRIVILEGES ON petclinic_vets.* TO 'petclinic'@'%';
+        FLUSH PRIVILEGES;
+        EOSQL
+      no_log: true
+      register: user_creation
+      changed_when: false
+
+    # ========================================
+    # VERIFICATION
+    # ========================================
+    - name: Verify databases exist
+      shell: mysql -e "SHOW DATABASES LIKE 'petclinic_%';"
+      register: databases_list
+      changed_when: false
+
+    - name: Display created databases
+      debug:
+        msg: "{{ databases_list.stdout_lines }}"
+
+    - name: Test Petclinic user authentication
+      shell: mysql -u petclinic -p'{{ mysql_petclinic_password }}' -e "SELECT 1;" 2>&1
+      register: user_test
+      changed_when: false
+      failed_when: false
+      no_log: true
+
+    - name: Verify Petclinic user can access databases
+      shell: |
+        mysql -u petclinic -p'{{ mysql_petclinic_password }}' <<'EOSQL'
+        USE petclinic_customers;
+        SELECT 'customers_ok' AS status;
+        USE petclinic_visits;
+        SELECT 'visits_ok' AS status;
+        USE petclinic_vets;
+        SELECT 'vets_ok' AS status;
+        EOSQL
+      register: access_test
+      changed_when: false
+      failed_when: false
+      no_log: true
+
+    - name: Get MySQL server IP
+      shell: hostname -I | awk '{print $1}'
+      register: mysql_ip
+      changed_when: false
+
+    - name: Display setup summary
+      debug:
+        msg: |
+          ==========================================
+          MySQL 8 Setup Complete!
+          ==========================================
+          ✓ MySQL Server installed and running
+          ✓ Root password configured
+          ✓ Remote access enabled (0.0.0.0:3306)
+          ✓ Character set: utf8mb4
+          
+          Databases Created:
+          ✓ petclinic_customers
+          ✓ petclinic_visits
+          ✓ petclinic_vets
+          
+          User Configuration:
+          ✓ User: petclinic
+          ✓ Host: % (remote access enabled)
+          ✓ Privileges: ALL on petclinic_*
+          
+          Connection Info:
+          Host: {{ mysql_ip.stdout }}
+          Port: 3306
+          User: petclinic
+          Password: [configured]
+          
+          Test Connection:
+          mysql -h {{ mysql_ip.stdout }} -u petclinic -p
+          ==========================================
+
+  handlers:
+    - name: Restart MySQL
+      systemd:
+        name: mysqld
+        state: restarted
