@@ -441,11 +441,6 @@ REMOTE
         }
 
         stage('Setup Kubernetes Workers') {
-            when {
-                expression { 
-                    return params.DEPLOYMENT_TARGET == 'kubernetes' || params.DEPLOYMENT_TARGET == 'both' 
-                }
-            }
             steps {
                 script {
                     echo "Setting up Kubernetes worker nodes..."
@@ -473,11 +468,6 @@ REMOTE
         }
 
         stage('Deploy to Kubernetes') {
-            when {
-                expression { 
-                    return params.DEPLOYMENT_TARGET == 'kubernetes' || params.DEPLOYMENT_TARGET == 'both' 
-                }
-            }
             steps {
                 withCredentials([[$class: 'SSHUserPrivateKeyBinding', credentialsId: SSH_CREDENTIALS_ID, keyFileVariable: 'SSH_KEY', usernameVariable: 'SSH_USER']]) {
                     script {
@@ -547,11 +537,6 @@ REMOTE_K8S
         }
 
         stage('Verify Kubernetes Deployment') {
-            when {
-                expression { 
-                    return params.DEPLOYMENT_TARGET == 'kubernetes' || params.DEPLOYMENT_TARGET == 'both' 
-                }
-            }
             steps {
                 withCredentials([[$class: 'SSHUserPrivateKeyBinding', credentialsId: SSH_CREDENTIALS_ID, keyFileVariable: 'SSH_KEY', usernameVariable: 'SSH_USER']]) {
                     script {
