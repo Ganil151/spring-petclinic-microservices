@@ -2,7 +2,7 @@ pipeline {
     agent { label params.NODE_LABEL }
 
     parameters {
-        string(name: 'NODE_LABEL', defaultValue: 'jenkins-agent', description: 'Label of the Jenkins agent to run on')
+        string(name: 'NODE_LABEL', defaultValue: 'worker-node', description: 'Label of the Jenkins agent to run on')
         string(name: 'SSH_CREDENTIALS_ID', defaultValue: 'ssh-credentials', description: 'Jenkins credentials ID for SSH')
         booleanParam(name: 'CONFIGURE_MYSQL', defaultValue: false, description: 'Whether to run Ansible MySQL configuration')
         choice(name: 'DEPLOYMENT_TARGET', choices: ['docker', 'kubernetes', 'both'], description: 'Where to deploy the application')
