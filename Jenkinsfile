@@ -16,7 +16,7 @@ pipeline {
         MYSQL_SCHEMA_PATH    = "ansible/files/mysql_schema.sql"
         MYSQL_ROOT_CREDENTIALS_ID = "mysql-root-credentials"
         MYSQL_PETCLINIC_CREDENTIALS_ID = "mysql-petclinic-credentials"
-    }  
+    }
 
     parameters {
         string(name: 'NODE_LABEL', defaultValue: 'worker-node', description: 'Jenkins agent label')
@@ -25,7 +25,7 @@ pipeline {
         choice(name: 'DEPLOYMENT_TARGET', choices: ['both', 'docker', 'kubernetes', 'none'], description: 'Deployment target')
         booleanParam(name: 'CONFIGURE_MYSQL', defaultValue: true, description: 'Run Ansible to configure MySQL databases')
     }
-    
+
     stages {
         stage('Checkout') {
             steps {
@@ -585,24 +585,9 @@ REMOTE_K8S
                                 echo "Installing ArgoCD manifests..."
                                 kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
                                 
-                                echo "Patching ArgoCD Server to use NodePort for access..."
-                                kubectl patch svc argocd-server -n argocd -p '{"spec": {"type": "NodePort"}}'
-
                                 echo "Waiting for ArgoCD server components..."
-                                kubectl wait --for=condition=Available deployment/argocd-server -n argocd --timeout=90s || echo "ArgoCD still starting up..."
-
-                                echo ""
-                                echo "=== ArgoCD Access Info ==="
-                                NODE_PORT=\$(kubectl get svc argocd-server -n argocd -o jsonpath='{.spec.ports[0].nodePort}')
-                                MASTER_IP=\$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type==\"ExternalIP\")].address}')
-                                if [ -z "\$MASTER_IP" ]; then
-                                    MASTER_IP=\$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type==\"InternalIP\")].address}')
-                                fi
-                                echo "URL: https://\$MASTER_IP:\$NODE_PORT"
-                                echo ""
-                                echo "=== Initial Admin Password ==="
-                                echo "Run the following command to get the password:"
-                                echo "kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath='{.data.password}' | base64 -d"
+                                # We do not block too long here to avoid timeouts, just fire and forget or short wait
+                                kubectl wait --for=condition=Available deployment/argocd-server -n argocd --timeout=60s || echo "ArgoCD still starting up..."
 REMOTE
                         '''
                     }
@@ -614,7 +599,7 @@ REMOTE
             steps {
                 withCredentials([[$class: 'SSHUserPrivateKeyBinding', credentialsId: SSH_CREDENTIALS_ID, keyFileVariable: 'SSH_KEY', usernameVariable: 'SSH_USER']]) {
                     script {
-                        echo "Registering ArgoCD Applications for environment: ${params.ENVIRONMENT}"
+                        echo "Registering ArgoCD Application..."
                         
                         sh '''
                             set -e
@@ -623,41 +608,28 @@ REMOTE
                             K8S_MASTER_IP=$(grep -A 5 "\\[k8s_master\\]" ansible/inventory.ini | grep "ansible_host" | head -n 1 | awk -F "ansible_host=" '{print $2}' | awk '{print $1}')
                             
                             SSH_OPTS="-o StrictHostKeyChecking=no -o ConnectTimeout=20 -i ${SSH_KEY}"
-                            ENV="${ENVIRONMENT}"
                             
-                            # Copy all ArgoCD manifests to the master
-                            scp ${SSH_OPTS} kubernetes/argocd/*.yaml ${SSH_USER}@${K8S_MASTER_IP}:~/
+                            # We need to copy the ArgoCD app manifest to the master first
+                            scp ${SSH_OPTS} kubernetes/argocd/dev-application.yaml ${SSH_USER}@${K8S_MASTER_IP}:~/dev-application.yaml
                             
-                            ssh ${SSH_OPTS} ${SSH_USER}@${K8S_MASTER_IP} bash -s << END_SSH
+                            ssh ${SSH_OPTS} ${SSH_USER}@${K8S_MASTER_IP} bash -s << 'REMOTE'
                                 export KUBECONFIG=/home/ec2-user/.kube/config
-                                ENV="${ENVIRONMENT}"
                                 
-                                echo "Applying ArgoCD Application Manifests..."
+                                echo "Applying ArgoCD Application Manifest..."
+                                kubectl apply -f ~/dev-application.yaml
                                 
-                                if [ "\$ENV" = "all" ] || [ "\$ENV" = "dev" ]; then
-                                    echo "Deploying DEV..."
-                                    kubectl apply -f ~/dev-application.yaml
-                                fi
-                                
-                                if [ "\$ENV" = "all" ] || [ "\$ENV" = "staging" ]; then
-                                    echo "Deploying STAGING..."
-                                    kubectl apply -f ~/staging-application.yaml
-                                fi
-                                
-                                if [ "\$ENV" = "all" ] || [ "\$ENV" = "prod" ]; then
-                                    echo "Deploying PROD..."
-                                    kubectl apply -f ~/prod-application.yaml
-                                fi
-                                
-                                echo "Applications registered!"
+                                echo "Application registered! ArgoCD will now sync the cluster state."
                                 echo "Check status with: kubectl get application -n argocd"
-END_SSH
+REMOTE
                         '''
                     }
                 }
             }
         }
     }
+
+
+       
 
     post {
         success {
