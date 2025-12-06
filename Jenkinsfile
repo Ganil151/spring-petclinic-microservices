@@ -1,6 +1,15 @@
 pipeline {
     agent { label params.NODE_LABEL }
 
+    parameters {
+        string(name: 'NODE_LABEL', defaultValue: 'jenkins-agent', description: 'Label of the Jenkins agent to run on')
+        string(name: 'SSH_CREDENTIALS_ID', defaultValue: 'ssh-credentials', description: 'Jenkins credentials ID for SSH')
+        booleanParam(name: 'CONFIGURE_MYSQL', defaultValue: false, description: 'Whether to run Ansible MySQL configuration')
+        choice(name: 'DEPLOYMENT_TARGET', choices: ['docker', 'kubernetes', 'both'], description: 'Where to deploy the application')
+        choice(name: 'ENVIRONMENT', choices: ['dev', 'staging', 'prod', 'all'], description: 'Target environment for ArgoCD')
+        string(name: 'EC2_INSTANCE_NAME', defaultValue: 'petclinic-docker-server', description: 'Name tag for the Docker Server EC2 instance')
+    }
+
     environment {
         COMPOSE_PROJECT_NAME = "spring-petclinic"
         DOCKER_IMAGE         = "ganil151/spring-petclinic-microservice"
@@ -16,7 +25,8 @@ pipeline {
         MYSQL_SCHEMA_PATH    = "ansible/files/mysql_schema.sql"
         MYSQL_ROOT_CREDENTIALS_ID = "mysql-root-credentials"
         MYSQL_PETCLINIC_CREDENTIALS_ID = "mysql-petclinic-credentials"
-    }
+    }  
+    stages {
         stage('Checkout') {
             steps {
                 retry(3) {
@@ -62,7 +72,7 @@ pipeline {
             steps {
                 sh '''
                 set -e
-                if [ -x ./mvnw ]; then
+                if [ -f ./mvnw ]; then
                     chmod +x ./mvnw
                     sed -i 's/\r$//' ./mvnw || true
                     BUILD_CMD="./mvnw -T1C -DskipTests=false clean install"
@@ -618,7 +628,7 @@ REMOTE
                             # Copy all ArgoCD manifests to the master
                             scp ${SSH_OPTS} kubernetes/argocd/*.yaml ${SSH_USER}@${K8S_MASTER_IP}:~/
                             
-                            ssh ${SSH_OPTS} ${SSH_USER}@${K8S_MASTER_IP} bash -s << REMOTE
+                            ssh ${SSH_OPTS} ${SSH_USER}@${K8S_MASTER_IP} bash -s << END_SSH
                                 export KUBECONFIG=/home/ec2-user/.kube/config
                                 ENV="${ENVIRONMENT}"
                                 
@@ -641,7 +651,7 @@ REMOTE
                                 
                                 echo "Applications registered!"
                                 echo "Check status with: kubectl get application -n argocd"
-REMOTE
+END_SSH
                         '''
                     }
                 }
