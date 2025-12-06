@@ -1,15 +1,6 @@
 pipeline {
     agent { label params.NODE_LABEL }
 
-    parameters {
-        string(name: 'NODE_LABEL', defaultValue: 'worker-node', description: 'Label of the Jenkins agent to run on')
-        string(name: 'SSH_CREDENTIALS_ID', defaultValue: 'ssh-credentials', description: 'Jenkins credentials ID for SSH')
-        booleanParam(name: 'CONFIGURE_MYSQL', defaultValue: false, description: 'Whether to run Ansible MySQL configuration')
-        choice(name: 'DEPLOYMENT_TARGET', choices: ['docker', 'kubernetes', 'both'], description: 'Where to deploy the application')
-        choice(name: 'ENVIRONMENT', choices: ['dev', 'staging', 'prod', 'all'], description: 'Target environment for ArgoCD')
-        string(name: 'EC2_INSTANCE_NAME', defaultValue: 'petclinic-docker-server', description: 'Name tag for the Docker Server EC2 instance')
-    }
-
     environment {
         COMPOSE_PROJECT_NAME = "spring-petclinic"
         DOCKER_IMAGE         = "ganil151/spring-petclinic-microservice"
@@ -26,6 +17,15 @@ pipeline {
         MYSQL_ROOT_CREDENTIALS_ID = "mysql-root-credentials"
         MYSQL_PETCLINIC_CREDENTIALS_ID = "mysql-petclinic-credentials"
     }  
+
+    parameters {
+        string(name: 'NODE_LABEL', defaultValue: 'worker-node', description: 'Jenkins agent label')
+        string(name: 'EC2_INSTANCE_NAME', defaultValue: 'Spring-Petclinic-Docker', description: 'EC2 instance tag Name')
+        string(name: 'SSH_CREDENTIALS_ID', defaultValue: 'master_keys', description: 'SSH credentials ID for EC2 instances')
+        choice(name: 'DEPLOYMENT_TARGET', choices: ['both', 'docker', 'kubernetes', 'none'], description: 'Deployment target')
+        booleanParam(name: 'CONFIGURE_MYSQL', defaultValue: true, description: 'Run Ansible to configure MySQL databases')
+    }
+    
     stages {
         stage('Checkout') {
             steps {
@@ -72,7 +72,7 @@ pipeline {
             steps {
                 sh '''
                 set -e
-                if [ -f ./mvnw ]; then
+                if [ -x ./mvnw ]; then
                     chmod +x ./mvnw
                     sed -i 's/\r$//' ./mvnw || true
                     BUILD_CMD="./mvnw -T1C -DskipTests=false clean install"
