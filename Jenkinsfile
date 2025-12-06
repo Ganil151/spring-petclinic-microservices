@@ -505,6 +505,151 @@ REMOTE
                                 echo "✓ Kubernetes deployment complete"
 REMOTE_K8S
                         '''
+                    }
+                }
+            }
+        }
+
+        stage('Verify Kubernetes Deployment') {
+            steps {
+                withCredentials([[$class: 'SSHUserPrivateKeyBinding', credentialsId: SSH_CREDENTIALS_ID, keyFileVariable: 'SSH_KEY', usernameVariable: 'SSH_USER']]) {
+                    script {
+                        echo "Verifying Kubernetes deployment..."
+                        
+                        sh '''
+                            set -e
+                            
+                            # Get K8s master IP
+                            K8S_MASTER_IP=$(grep -A 5 "\\[k8s_master\\]" ansible/inventory.ini | grep "ansible_host" | head -n 1 | awk -F "ansible_host=" '{print $2}' | awk '{print $1}')
+                            
+                            SSH_OPTS="-o StrictHostKeyChecking=no -o ConnectTimeout=20 -i ${SSH_KEY}"
+                            
+                            echo "=== Kubernetes Cluster Status ==="
+                            ssh ${SSH_OPTS} ${SSH_USER}@${K8S_MASTER_IP} "
+                                export KUBECONFIG=/home/ec2-user/.kube/config
+                                echo '--- Nodes ---'
+                                kubectl get nodes -o wide
+                                echo ''
+                                echo '--- Pods ---'
+                                kubectl get pods -o wide
+                                echo ''
+                                echo '--- Services ---'
+                                kubectl get svc
+                                echo ''
+                                echo '--- API Gateway NodePort URL ---'
+                                NODE_PORT=\$(kubectl get svc api-gateway -o jsonpath='{.spec.ports[0].nodePort}')
+                                NODE_IP=\$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type==\"ExternalIP\")].address}')
+                                if [ -z \"\$NODE_IP\" ]; then
+                                    NODE_IP=\$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type==\"InternalIP\")].address}')
+                                fi
+                                echo \"Access application at: http://\${NODE_IP}:\${NODE_PORT}\"
+                            "
+                            
+                            echo "✓ Kubernetes verification complete"
+                        '''
+                    }
+                }
+            }
+        }
+
+        stage('Install ArgoCD') {
+            steps {
+                withCredentials([[$class: 'SSHUserPrivateKeyBinding', credentialsId: SSH_CREDENTIALS_ID, keyFileVariable: 'SSH_KEY', usernameVariable: 'SSH_USER']]) {
+                    script {
+                        echo "Installing ArgoCD on Kubernetes Master..."
+                        
+                        sh '''
+                            set -e
+                            
+                            # Get K8s master IP
+                            K8S_MASTER_IP=$(grep -A 5 "\\[k8s_master\\]" ansible/inventory.ini | grep "ansible_host" | head -n 1 | awk -F "ansible_host=" '{print $2}' | awk '{print $1}')
+                            
+                            SSH_OPTS="-o StrictHostKeyChecking=no -o ConnectTimeout=20 -i ${SSH_KEY}"
+                            
+                            ssh ${SSH_OPTS} ${SSH_USER}@${K8S_MASTER_IP} bash -s << 'REMOTE'
+                                export KUBECONFIG=/home/ec2-user/.kube/config
+                                
+                                echo "Creating ArgoCD namespace..."
+                                kubectl create namespace argocd --dry-run=client -o yaml | kubectl apply -f -
+                                
+                                echo "Installing ArgoCD manifests..."
+                                kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+                                
+                                echo "Patching ArgoCD Server to use NodePort for access..."
+                                kubectl patch svc argocd-server -n argocd -p '{"spec": {"type": "NodePort"}}'
+
+                                echo "Waiting for ArgoCD server components..."
+                                kubectl wait --for=condition=Available deployment/argocd-server -n argocd --timeout=90s || echo "ArgoCD still starting up..."
+
+                                echo ""
+                                echo "=== ArgoCD Access Info ==="
+                                NODE_PORT=\$(kubectl get svc argocd-server -n argocd -o jsonpath='{.spec.ports[0].nodePort}')
+                                MASTER_IP=\$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type==\"ExternalIP\")].address}')
+                                if [ -z "\$MASTER_IP" ]; then
+                                    MASTER_IP=\$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type==\"InternalIP\")].address}')
+                                fi
+                                echo "URL: https://\$MASTER_IP:\$NODE_PORT"
+                                echo ""
+                                echo "=== Initial Admin Password ==="
+                                echo "Run the following command to get the password:"
+                                echo "kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath='{.data.password}' | base64 -d"
+REMOTE
+                        '''
+                    }
+                }
+            }
+        }
+
+        stage('Deploy to ArgoCD') {
+            steps {
+                withCredentials([[$class: 'SSHUserPrivateKeyBinding', credentialsId: SSH_CREDENTIALS_ID, keyFileVariable: 'SSH_KEY', usernameVariable: 'SSH_USER']]) {
+                    script {
+                        echo "Registering ArgoCD Applications for environment: ${params.ENVIRONMENT}"
+                        
+                        sh '''
+                            set -e
+                            
+                            # Get K8s master IP
+                            K8S_MASTER_IP=$(grep -A 5 "\\[k8s_master\\]" ansible/inventory.ini | grep "ansible_host" | head -n 1 | awk -F "ansible_host=" '{print $2}' | awk '{print $1}')
+                            
+                            SSH_OPTS="-o StrictHostKeyChecking=no -o ConnectTimeout=20 -i ${SSH_KEY}"
+                            ENV="${ENVIRONMENT}"
+                            
+                            # Copy all ArgoCD manifests to the master
+                            scp ${SSH_OPTS} kubernetes/argocd/*.yaml ${SSH_USER}@${K8S_MASTER_IP}:~/
+                            
+                            ssh ${SSH_OPTS} ${SSH_USER}@${K8S_MASTER_IP} bash -s << REMOTE
+                                export KUBECONFIG=/home/ec2-user/.kube/config
+                                ENV="${ENVIRONMENT}"
+                                
+                                echo "Applying ArgoCD Application Manifests..."
+                                
+                                if [ "\$ENV" = "all" ] || [ "\$ENV" = "dev" ]; then
+                                    echo "Deploying DEV..."
+                                    kubectl apply -f ~/dev-application.yaml
+                                fi
+                                
+                                if [ "\$ENV" = "all" ] || [ "\$ENV" = "staging" ]; then
+                                    echo "Deploying STAGING..."
+                                    kubectl apply -f ~/staging-application.yaml
+                                fi
+                                
+                                if [ "\$ENV" = "all" ] || [ "\$ENV" = "prod" ]; then
+                                    echo "Deploying PROD..."
+                                    kubectl apply -f ~/prod-application.yaml
+                                fi
+                                
+                                echo "Applications registered!"
+                                echo "Check status with: kubectl get application -n argocd"
+REMOTE
+                        '''
+                    }
+                }
+            }
+        }
+    }
+
+    post {
         success {
             echo "Pipeline finished: SUCCESS. App image: ${DOCKER_IMAGE}:${IMAGE_TAG}"
         }
