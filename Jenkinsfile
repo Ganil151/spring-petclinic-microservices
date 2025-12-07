@@ -367,6 +367,48 @@ REMOTE
             }
         }
 
+        stage('Configure MySQL Database') {
+            when {
+                expression { return params.CONFIGURE_MYSQL }
+            }
+            steps {
+                withCredentials([
+                    usernamePassword(credentialsId: 'mysql-root-credentials', 
+                                usernameVariable: 'MYSQL_ROOT_USER', 
+                                passwordVariable: 'MYSQL_ROOT_PASSWORD'),
+                    usernamePassword(credentialsId: 'mysql-petclinic-credentials', 
+                                usernameVariable: 'MYSQL_PETCLINIC_USER', 
+                                passwordVariable: 'MYSQL_PETCLINIC_PASSWORD')
+                ]) {
+                    script {
+                        echo "Configuring MySQL databases..."
+                        
+                        dir('ansible') {
+                            sh '''
+                                set -e
+                                
+                                echo "=== MySQL Configuration ==="
+                                
+                                # Test connectivity
+                                ansible mysql -i inventory.ini -m ping || {
+                                    echo "ERROR: Cannot connect to MySQL server"
+                                    exit 1
+                                }
+                                
+                                # Run manual playbook (NOT Galaxy role)
+                                ansible-playbook -i inventory.ini mysql_setup.yml -v \
+                                    -e "mysql_root_password='${MYSQL_ROOT_PASSWORD}'" \
+                                    -e "mysql_petclinic_password='${MYSQL_PETCLINIC_PASSWORD}'"
+                                
+                                echo "✓ MySQL configuration complete"
+                            '''
+                        }
+                    }
+                }
+            }
+        }
+
+
     }       
 
     post {
