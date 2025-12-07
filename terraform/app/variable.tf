@@ -247,9 +247,6 @@ variable "root_volume_type" {
 #   default = {}
 # }
 
-variable "admin_iam_arn" {
-  description = "ARN of the IAM user with admin access"
-  type        = string
-}
+
 
 

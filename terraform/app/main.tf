@@ -1,5 +1,5 @@
 module "vpc" {
-  source                  = "../MODULES/Vpc"
+  source                  = "../modules/Vpc"
   vpc_id                  = var.vpc_id
   vpc_cidr_block          = var.vpc_cidr_block
   project_name_1          = var.project_name_1
@@ -13,7 +13,7 @@ module "vpc" {
 
 # Security Group
 module "master_sg" {
-  source         = "../MODULES/SG"
+  source         = "../modules/SG"
   project_name_1 = var.project_name_1
   vpc_id         = module.vpc.vpc_id
   ingress_rules  = var.ingress_rules
@@ -24,14 +24,14 @@ module "master_sg" {
 
 # Keys
 module "key" {
-  source   = "../MODULES/Keys"
+  source   = "../modules/Keys"
   key_name = var.key_name
 }
 
 
 # Master Instance
 module "jenkins_instance" {
-  source                      = "../MODULES/EC2"
+  source                      = "../modules/Ec2"
   ami                         = var.ami
   key_name                    = var.key_name
   project_name_1              = var.project_name_1
@@ -48,7 +48,7 @@ module "jenkins_instance" {
 
 # Worker Instance
 module "worker_instance" {
-  source                      = "../MODULES/EC2"
+  source                      = "../modules/Ec2"
   ami                         = var.ami
   key_name                    = var.key_name
   project_name_1              = var.project_name_2
@@ -64,7 +64,7 @@ module "worker_instance" {
 
 # Monitoring Instance
 module "monitor_instance" {
-  source                      = "../MODULES/EC2"
+  source                      = "../modules/Ec2"
   ami                         = var.ami
   key_name                    = var.key_name
   project_name_1              = var.project_name_3
@@ -80,7 +80,7 @@ module "monitor_instance" {
 
 # MySQL Instance
 module "mysql_instance" {
-  source                      = "../MODULES/EC2"
+  source                      = "../modules/Ec2"
   ami                         = var.ami
   key_name                    = var.key_name
   project_name_1              = var.project_name_4
@@ -96,7 +96,7 @@ module "mysql_instance" {
 
 # K8s Master
 module "k8s_master_instance" {
-  source                      = "../MODULES/EC2"
+  source                      = "../modules/Ec2"
   ami                         = var.ami
   key_name                    = var.key_name
   project_name_1              = var.project_name_5
@@ -112,7 +112,7 @@ module "k8s_master_instance" {
 
 # K8s Worker
 module "K8s_agent_primary_instance" {
-  source                      = "../MODULES/EC2"
+  source                      = "../modules/Ec2"
   ami                         = var.ami
   key_name                    = var.key_name
   project_name_1              = var.project_name_6
@@ -128,7 +128,7 @@ module "K8s_agent_primary_instance" {
 
 # K8s Worker
 module "K8s_agent_secondary_instance" {
-  source                      = "../MODULES/EC2"
+  source                      = "../modules/Ec2"
   ami                         = var.ami
   key_name                    = var.key_name
   project_name_1              = var.project_name_7
@@ -146,7 +146,7 @@ module "K8s_agent_secondary_instance" {
 # # EKS Cluster (Optional - controlled by enable_eks variable)
 # module "eks_cluster" {
 #   count  = var.enable_eks ? 1 : 0
-#   source = "../MODULES/eks"
+#   source = "../modules/eks"
 
 #   cluster_name    = var.eks_cluster_name
 #   cluster_version = var.eks_cluster_version

@@ -20,4 +20,8 @@ target/
 # Branch switching
 generated/
 
-**/.DS_Store
+**/.ds_store
+
+.env
+
+
