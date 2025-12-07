@@ -231,9 +231,13 @@
       shell: |
         mysql <<EOSQL
         CREATE USER IF NOT EXISTS 'petclinic'@'%' IDENTIFIED BY '{{ mysql_petclinic_password }}';
+        CREATE USER IF NOT EXISTS 'petclinic'@'localhost' IDENTIFIED BY '{{ mysql_petclinic_password }}';
         GRANT ALL PRIVILEGES ON petclinic_customers.* TO 'petclinic'@'%';
         GRANT ALL PRIVILEGES ON petclinic_visits.* TO 'petclinic'@'%';
         GRANT ALL PRIVILEGES ON petclinic_vets.* TO 'petclinic'@'%';
+        GRANT ALL PRIVILEGES ON petclinic_customers.* TO 'petclinic'@'localhost';
+        GRANT ALL PRIVILEGES ON petclinic_visits.* TO 'petclinic'@'localhost';
+        GRANT ALL PRIVILEGES ON petclinic_vets.* TO 'petclinic'@'localhost';
         FLUSH PRIVILEGES;
         EOSQL
       no_log: true
