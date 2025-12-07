@@ -76,9 +76,17 @@
             state: absent
 
     - name: Configure SELinux to permissive mode
-      selinux:
-        policy: targeted
-        state: permissive
+      block:
+        - name: Set SELinux to permissive
+          command: setenforce 0
+          ignore_errors: yes
+          changed_when: false
+
+        - name: Persist SELinux permissive mode
+          lineinfile:
+            path: /etc/selinux/config
+            regexp: '^SELINUX='
+            line: 'SELINUX=permissive'
       when: ansible_selinux.status == "enabled"
 
     - name: Load kernel modules
