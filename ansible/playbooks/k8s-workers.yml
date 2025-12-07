@@ -100,14 +100,12 @@
             mode: '0644'
 
         - name: Load overlay module
-          modprobe:
-            name: overlay
-            state: present
+          command: modprobe overlay
+          changed_when: false
 
         - name: Load br_netfilter module
-          modprobe:
-            name: br_netfilter
-            state: present
+          command: modprobe br_netfilter
+          changed_when: false
 
     - name: Configure sysctl parameters for Kubernetes
       block:
