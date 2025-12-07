@@ -373,6 +373,7 @@ REMOTE
             }
             steps {
                 withCredentials([
+                    [$class: 'SSHUserPrivateKeyBinding', credentialsId: SSH_CREDENTIALS_ID, keyFileVariable: 'SSH_KEY', usernameVariable: 'SSH_USER'],
                     usernamePassword(credentialsId: 'mysql-root-credentials', 
                                 usernameVariable: 'MYSQL_ROOT_USER', 
                                 passwordVariable: 'MYSQL_ROOT_PASSWORD'),
@@ -390,14 +391,15 @@ REMOTE
                                 echo "=== MySQL Configuration ==="
                                 
                                 # Test connectivity
-                                ansible mysql -i inventory.ini -m ping || {
+                                ansible mysql -i inventory.ini -m ping --private-key ${SSH_KEY} || {
                                     echo "ERROR: Cannot connect to MySQL server"
                                     exit 1
                                 }
                                 
                                 # Run manual playbook (NOT Galaxy role)
-                                ansible-playbook -i inventory.ini mysql_setup.yml -v \
-                                    -e "mysql_root_password='${MYSQL_ROOT_PASSWORD}'" \
+                                ansible-playbook -i inventory.ini mysql_setup.yml -v \\
+                                    --private-key ${SSH_KEY} \\
+                                    -e "mysql_root_password='${MYSQL_ROOT_PASSWORD}'" \\
                                     -e "mysql_petclinic_password='${MYSQL_PETCLINIC_PASSWORD}'"
                                 
                                 echo "✓ MySQL configuration complete"
