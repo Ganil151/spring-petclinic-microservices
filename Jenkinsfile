@@ -7,7 +7,7 @@ pipeline {
         IMAGE_TAG            = "${env.BUILD_NUMBER ?: 'latest'}"
         EC2_REGION           = "us-east-1"
         DEPLOY_USER          = "ec2-user"
-        AWS_CREDENTIALS_ID   = "aws-credentials"
+        AWS_CREDENTIALS_ID   = "aws-credential"
         SSH_CREDENTIALS_ID   = "${params.SSH_CREDENTIALS_ID}"
         DOCKERHUB_CRED_ID    = "dockerhub-credentials"
         MYSQL_CRED_ID        = "mysql-credentials"
