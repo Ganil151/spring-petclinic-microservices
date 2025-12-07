@@ -225,7 +225,7 @@
       register: kubelet_conf
 
     - name: Join worker to Kubernetes cluster
-      command: "{{ join_command }}"
+      command: "{{ join_command }} --node-name={{ inventory_hostname }}"
       when: not kubelet_conf.stat.exists
       register: join_result
 
@@ -266,10 +266,16 @@
     # Label Primary Worker Nodes
     # ========================================
     - name: Label primary worker nodes
-      command: >
-        kubectl label node {{ hostvars[item]['inventory_hostname'] }}
-        node-role.kubernetes.io/worker=
-        workload-type=primary
+      shell: |
+        NODE_IP={{ hostvars[item]['ansible_default_ipv4']['address'] }}
+        NODE_NAME=$(kubectl get nodes -o jsonpath="{.items[?(@.status.addresses[?(@.type=='InternalIP')].address=='$NODE_IP')].metadata.name}")
+        if [ -z "$NODE_NAME" ]; then
+          echo "Node with IP $NODE_IP not found"
+          exit 1
+        fi
+        kubectl label node $NODE_NAME \
+        node-role.kubernetes.io/worker= \
+        workload-type=primary \
         --overwrite
       environment:
         KUBECONFIG: /home/ec2-user/.kube/config
@@ -282,10 +288,16 @@
     # Label Secondary Worker Nodes
     # ========================================
     - name: Label secondary worker nodes
-      command: >
-        kubectl label node {{ hostvars[item]['inventory_hostname'] }}
-        node-role.kubernetes.io/worker=
-        workload-type=secondary
+      shell: |
+        NODE_IP={{ hostvars[item]['ansible_default_ipv4']['address'] }}
+        NODE_NAME=$(kubectl get nodes -o jsonpath="{.items[?(@.status.addresses[?(@.type=='InternalIP')].address=='$NODE_IP')].metadata.name}")
+        if [ -z "$NODE_NAME" ]; then
+          echo "Node with IP $NODE_IP not found"
+          exit 1
+        fi
+        kubectl label node $NODE_NAME \
+        node-role.kubernetes.io/worker= \
+        workload-type=secondary \
         --overwrite
       environment:
         KUBECONFIG: /home/ec2-user/.kube/config
@@ -299,9 +311,15 @@
     # Additional labels for frontend nodes
     # ========================================
     - name: Add frontend label to primary workers
-      command: >
-        kubectl label node {{ hostvars[item]['inventory_hostname'] }}
-        node-role.kubernetes.io/frontend=
+      shell: |
+        NODE_IP={{ hostvars[item]['ansible_default_ipv4']['address'] }}
+        NODE_NAME=$(kubectl get nodes -o jsonpath="{.items[?(@.status.addresses[?(@.type=='InternalIP')].address=='$NODE_IP')].metadata.name}")
+        if [ -z "$NODE_NAME" ]; then
+          echo "Node with IP $NODE_IP not found"
+          exit 1
+        fi
+        kubectl label node $NODE_NAME \
+        node-role.kubernetes.io/frontend= \
         --overwrite
       environment:
         KUBECONFIG: /home/ec2-user/.kube/config
