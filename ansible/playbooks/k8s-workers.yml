@@ -172,10 +172,10 @@
       yum_repository:
         name: kubernetes
         description: Kubernetes Repository
-        baseurl: https://pkgs.k8s.io/core:/stable:/v1.28/rpm/
+        baseurl: https://pkgs.k8s.io/core:/stable:/v1.31/rpm/
         enabled: yes
         gpgcheck: yes
-        gpgkey: https://pkgs.k8s.io/core:/stable:/v1.28/rpm/repodata/repomd.xml.key
+        gpgkey: https://pkgs.k8s.io/core:/stable:/v1.31/rpm/repodata/repomd.xml.key
         exclude: kubelet kubeadm kubectl cri-tools kubernetes-cni
 
     - name: Check if Kubernetes is already installed
@@ -187,8 +187,8 @@
     - name: Install Kubernetes packages
       yum:
         name:
-          - kubelet-{{ k8s_version | default('1.28.0') }}-0
-          - kubeadm-{{ k8s_version | default('1.28.0') }}-0
+          - "kubelet-{{ k8s_version }}-0"
+          - "kubeadm-{{ k8s_version }}-0"
         state: present
         disable_excludes: kubernetes
       when: kubeadm_installed.rc != 0
