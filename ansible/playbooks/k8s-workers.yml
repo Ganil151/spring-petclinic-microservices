@@ -328,6 +328,25 @@
       changed_when: "'labeled' in frontend_label_result.stdout"
       failed_when: false
 
+    - name: Add frontend label to secondary workers
+      shell: |
+        NODE_IP={{ hostvars[item]['ansible_default_ipv4']['address'] }}
+        NODE_NAME=$(kubectl get nodes -o jsonpath="{.items[?(@.status.addresses[?(@.type=='InternalIP')].address=='$NODE_IP')].metadata.name}")
+        if [ -z "$NODE_NAME" ]; then
+          echo "Node with IP $NODE_IP not found"
+          exit 1
+        fi
+        kubectl label node $NODE_NAME \
+        node-role.kubernetes.io/frontend= \
+        --overwrite
+      environment:
+        KUBECONFIG: /home/ec2-user/.kube/config
+      loop: "{{ groups['k8s_secondary_workers'] }}"
+      register: secondary_frontend_label_result
+      changed_when: "'labeled' in secondary_frontend_label_result.stdout"
+      failed_when: false
+      when: groups['k8s_secondary_workers'] is defined and groups['k8s_secondary_workers'] | length > 0
+
   post_tasks:
     - name: Get final cluster status
       command: kubectl get nodes -o wide --show-labels
@@ -365,7 +384,7 @@
           - ""
           - "Node Labels Applied:"
           - "  - Primary workers: node-role.kubernetes.io/worker, workload-type=primary, node-role.kubernetes.io/frontend"
-          - "  - Secondary workers: node-role.kubernetes.io/worker, workload-type=secondary"
+          - "  - Secondary workers: node-role.kubernetes.io/worker, workload-type=secondary, node-role.kubernetes.io/frontend"
           - ""
           - "Next steps:"
           - "  1. Deploy applications: ansible-playbook playbooks/deploy-petclinic.yml"

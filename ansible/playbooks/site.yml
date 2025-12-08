@@ -4,7 +4,7 @@
 
 - name: Display Deployment Banner
   hosts: localhost
-  gather_facts: no
+  gather_facts: false
   tasks:
     - name: Show Deployment Information
       debug:
@@ -30,13 +30,12 @@
 
 # Phase 3: Kubernetes Cluster Setup
 # Uncomment when k8s playbooks are created
-# - import_playbook: k8s-cluster.yml
-#   tags: [k8s, kubernetes, phase3]
+- import_playbook: k8s-cluster.yml
+  tags: [k8s, kubernetes, phase3]
 
 # Phase 4: Monitoring Stack
-# Uncomment when monitoring playbook is created
-# - import_playbook: monitoring.yml
-#   tags: [monitoring, phase4]
+- import_playbook: monitoring.yml
+  tags: [monitoring, phase4]
 
 # Phase 5: Application Deployment
 # Uncomment when deployment playbook is created
@@ -45,7 +44,7 @@
 
 - name: Display Deployment Summary
   hosts: localhost
-  gather_facts: no
+  gather_facts: false
   tasks:
     - name: Show Completion Message
       debug:

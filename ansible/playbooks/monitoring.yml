@@ -1,0 +1,496 @@
+---
+# Monitoring Stack Setup Playbook
+# Installs and configures Prometheus, Grafana, Node Exporter, and MySQL Exporter
+
+- name: Monitoring Server Configuration
+  hosts: monitoring
+  become: yes
+  gather_facts: yes
+  
+  pre_tasks:
+    - name: Display Monitoring Server Information
+      debug:
+        msg:
+          - "=============================================="
+          - "  Monitoring Stack Setup"
+          - "=============================================="
+          - "Target: {{ inventory_hostname }}"
+          - "IP: {{ ansible_default_ipv4.address }}"
+          - "OS: {{ ansible_distribution }} {{ ansible_distribution_version }}"
+          - "=============================================="
+
+    - name: Verify system requirements
+      assert:
+        that:
+          - ansible_memtotal_mb >= 4096
+          - ansible_processor_vcpus >= 2
+        fail_msg: "Monitoring server requires minimum 4GB RAM and 2 CPUs"
+        success_msg: "System meets minimum requirements"
+
+  tasks:
+    # ========================================
+    # System Prerequisites
+    # ========================================
+    - name: Update system packages
+      yum:
+        name: '*'
+        state: latest
+      async: 600
+      poll: 5
+
+    - name: Install required packages
+      yum:
+        name:
+          - wget
+          - curl
+          - git
+          - firewalld
+          - container-tools
+        state: present
+
+    - name: Stop and disable firewalld
+      systemd:
+        name: firewalld
+        state: stopped
+        enabled: no
+      ignore_errors: yes
+
+    # ========================================
+    # Install Docker
+    # ========================================
+    - name: Install Docker
+      block:
+        - name: Add Docker repository
+          yum_repository:
+            name: docker-ce
+            description: Docker CE Repository
+            baseurl: https://download.docker.com/linux/rhel/$releasever/$basearch/stable
+            enabled: yes
+            gpgcheck: yes
+            gpgkey: https://download.docker.com/linux/rhel/gpg
+
+        - name: Install Docker packages
+          yum:
+            name:
+              - docker-ce
+              - docker-ce-cli
+              - containerd.io
+              - docker-compose
+            state: present
+
+        - name: Start and enable Docker
+          systemd:
+            name: docker
+            state: started
+            enabled: yes
+            daemon_reload: yes
+
+        - name: Add current user to docker group
+          user:
+            name: "{{ ansible_user }}"
+            groups: docker
+            append: yes
+
+    # ========================================
+    # Create monitoring directories
+    # ========================================
+    - name: Create monitoring directories
+      block:
+        - name: Create Prometheus directories
+          file:
+            path: "{{ item }}"
+            state: directory
+            mode: '0755'
+            owner: nobody
+            group: nogroup
+          loop:
+            - /etc/prometheus
+            - /var/lib/prometheus
+            - /var/lib/prometheus/data
+
+        - name: Create Grafana directories
+          file:
+            path: "{{ item }}"
+            state: directory
+            mode: '0755'
+          loop:
+            - /etc/grafana
+            - /var/lib/grafana
+            - /var/lib/grafana/dashboards
+            - /etc/grafana/provisioning/datasources
+            - /etc/grafana/provisioning/dashboards
+
+        - name: Create Node Exporter directory
+          file:
+            path: /var/lib/node_exporter
+            state: directory
+            mode: '0755'
+
+    # ========================================
+    # Configure Prometheus
+    # ========================================
+    - name: Configure Prometheus
+      block:
+        - name: Generate Prometheus configuration
+          template:
+            src: prometheus.yml.j2
+            dest: /etc/prometheus/prometheus.yml
+            mode: '0644'
+            owner: nobody
+            group: nogroup
+          notify: restart prometheus
+
+        - name: Create Prometheus alerts file
+          copy:
+            dest: /etc/prometheus/alerts.yml
+            content: |
+              groups:
+                - name: petclinic_alerts
+                  interval: 30s
+                  rules:
+                    - alert: HighCPUUsage
+                      expr: node_cpu_seconds_total > 80
+                      for: 5m
+                      annotations:
+                        summary: "High CPU usage detected"
+                    
+                    - alert: HighMemoryUsage
+                      expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 80
+                      for: 5m
+                      annotations:
+                        summary: "High memory usage detected"
+                    
+                    - alert: DiskSpaceLow
+                      expr: node_filesystem_avail_bytes / node_filesystem_size_bytes < 0.1
+                      for: 5m
+                      annotations:
+                        summary: "Low disk space detected"
+            mode: '0644'
+            owner: nobody
+            group: nogroup
+
+        - name: Start Prometheus container
+          docker_container:
+            name: prometheus
+            image: "prom/prometheus:v{{ prometheus_version }}"
+            state: started
+            restart_policy: always
+            ports:
+              - "9090:9090"
+            volumes:
+              - /etc/prometheus:/etc/prometheus:ro
+              - /var/lib/prometheus:/prometheus
+            command:
+              - '--config.file=/etc/prometheus/prometheus.yml'
+              - '--storage.tsdb.path=/prometheus'
+              - '--storage.tsdb.retention.time={{ prometheus_retention_time }}'
+              - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+              - '--web.console.templates=/usr/share/prometheus/consoles'
+            user: 'nobody:nogroup'
+          register: prometheus_container
+          until: prometheus_container is succeeded
+          retries: 3
+          delay: 10
+
+    # ========================================
+    # Install Node Exporter
+    # ========================================
+    - name: Install Node Exporter
+      block:
+        - name: Download Node Exporter
+          get_url:
+            url: "https://github.com/prometheus/node_exporter/releases/download/v{{ node_exporter_version }}/node_exporter-{{ node_exporter_version }}.linux-amd64.tar.gz"
+            dest: /tmp/node_exporter.tar.gz
+            mode: '0644'
+
+        - name: Extract Node Exporter
+          unarchive:
+            src: /tmp/node_exporter.tar.gz
+            dest: /tmp
+            remote_src: yes
+
+        - name: Copy Node Exporter binary
+          copy:
+            src: "/tmp/node_exporter-{{ node_exporter_version }}.linux-amd64/node_exporter"
+            dest: /usr/local/bin/node_exporter
+            mode: '0755'
+            remote_src: yes
+
+        - name: Create Node Exporter systemd service
+          copy:
+            dest: /etc/systemd/system/node_exporter.service
+            content: |
+              [Unit]
+              Description=Node Exporter
+              After=network.target
+              
+              [Service]
+              Type=simple
+              ExecStart=/usr/local/bin/node_exporter \
+                --collector.textfile.directory=/var/lib/node_exporter
+              Restart=always
+              
+              [Install]
+              WantedBy=multi-user.target
+            mode: '0644'
+          notify: enable node_exporter
+
+        - name: Start Node Exporter
+          systemd:
+            name: node_exporter
+            state: started
+            enabled: yes
+            daemon_reload: yes
+
+    # ========================================
+    # Install MySQL Exporter
+    # ========================================
+    - name: Install MySQL Exporter
+      block:
+        - name: Download MySQL Exporter
+          get_url:
+            url: "https://github.com/prometheus/mysqld_exporter/releases/download/v{{ mysql_exporter_version }}/mysqld_exporter-{{ mysql_exporter_version }}.linux-amd64.tar.gz"
+            dest: /tmp/mysql_exporter.tar.gz
+            mode: '0644'
+          when: groups['mysql'] is defined and groups['mysql'] | length > 0
+
+        - name: Extract MySQL Exporter
+          unarchive:
+            src: /tmp/mysql_exporter.tar.gz
+            dest: /tmp
+            remote_src: yes
+          when: groups['mysql'] is defined and groups['mysql'] | length > 0
+
+        - name: Copy MySQL Exporter binary
+          copy:
+            src: "/tmp/mysqld_exporter-{{ mysql_exporter_version }}.linux-amd64/mysqld_exporter"
+            dest: /usr/local/bin/mysqld_exporter
+            mode: '0755'
+            remote_src: yes
+          when: groups['mysql'] is defined and groups['mysql'] | length > 0
+
+        - name: Create MySQL Exporter systemd service
+          copy:
+            dest: /etc/systemd/system/mysql_exporter.service
+            content: |
+              [Unit]
+              Description=MySQL Exporter
+              After=network.target
+              
+              [Service]
+              Type=simple
+              ExecStart=/usr/local/bin/mysqld_exporter \
+                --config.my-cnf=/etc/mysql_exporter/.my.cnf
+              Restart=always
+              
+              [Install]
+              WantedBy=multi-user.target
+            mode: '0644'
+          when: groups['mysql'] is defined and groups['mysql'] | length > 0
+
+        - name: Create MySQL Exporter config
+          file:
+            path: /etc/mysql_exporter
+            state: directory
+            mode: '0755'
+          when: groups['mysql'] is defined and groups['mysql'] | length > 0
+
+        - name: Create MySQL credentials file
+          copy:
+            dest: /etc/mysql_exporter/.my.cnf
+            content: |
+              [client]
+              user=exporter
+              password=exporter_password
+              host={{ groups['mysql'][0] }}
+              port=3306
+            mode: '0600'
+            owner: root
+            group: root
+          when: groups['mysql'] is defined and groups['mysql'] | length > 0
+
+        - name: Start MySQL Exporter
+          systemd:
+            name: mysql_exporter
+            state: started
+            enabled: yes
+            daemon_reload: yes
+          when: groups['mysql'] is defined and groups['mysql'] | length > 0
+
+    # ========================================
+    # Configure Grafana
+    # ========================================
+    - name: Configure Grafana
+      block:
+        - name: Create Grafana configuration
+          copy:
+            dest: /etc/grafana/grafana.ini
+            content: |
+              [server]
+              protocol = http
+              http_addr = {{ grafana_address }}
+              http_port = {{ grafana_port }}
+              root_url = http://%(domain)s:{{ grafana_port }}
+              
+              [security]
+              admin_user = {{ grafana_admin_user }}
+              admin_password = {{ grafana_admin_password }}
+              disable_initial_admin_password = false
+              
+              [auth.anonymous]
+              enabled = false
+              
+              [paths]
+              data = /var/lib/grafana
+              logs = /var/lib/grafana/logs
+              plugins = /var/lib/grafana/plugins
+              provisioning = /etc/grafana/provisioning
+            mode: '0644'
+          notify: restart grafana
+
+        - name: Create Prometheus datasource
+          copy:
+            dest: /etc/grafana/provisioning/datasources/prometheus.yml
+            content: |
+              apiVersion: 1
+              
+              datasources:
+                - name: Prometheus
+                  type: prometheus
+                  access: proxy
+                  url: http://localhost:9090
+                  isDefault: true
+                  editable: true
+            mode: '0644'
+          notify: restart grafana
+
+        - name: Start Grafana container
+          docker_container:
+            name: grafana
+            image: "grafana/grafana:{{ grafana_version }}"
+            state: started
+            restart_policy: always
+            ports:
+              - "{{ grafana_port }}:{{ grafana_port }}"
+            volumes:
+              - /etc/grafana:/etc/grafana:ro
+              - /var/lib/grafana:/var/lib/grafana
+            environment:
+              GF_SECURITY_ADMIN_USER: "{{ grafana_admin_user }}"
+              GF_SECURITY_ADMIN_PASSWORD: "{{ grafana_admin_password }}"
+              GF_PATHS_PROVISIONING: /etc/grafana/provisioning
+            user: '0:0'
+          register: grafana_container
+          until: grafana_container is succeeded
+          retries: 3
+          delay: 10
+
+    # ========================================
+    # Configure firewall ports
+    # ========================================
+    - name: Configure firewall for monitoring services
+      block:
+        - name: Ensure firewalld is running
+          systemd:
+            name: firewalld
+            state: started
+            enabled: yes
+
+        - name: Open Prometheus port
+          firewalld:
+            port: 9090/tcp
+            permanent: yes
+            state: enabled
+            immediate: yes
+
+        - name: Open Grafana port
+          firewalld:
+            port: "{{ grafana_port }}/tcp"
+            permanent: yes
+            state: enabled
+            immediate: yes
+
+        - name: Open Node Exporter port
+          firewalld:
+            port: "{{ node_exporter_port }}/tcp"
+            permanent: yes
+            state: enabled
+            immediate: yes
+
+        - name: Open MySQL Exporter port
+          firewalld:
+            port: "{{ mysql_exporter_port }}/tcp"
+            permanent: yes
+            state: enabled
+            immediate: yes
+
+  handlers:
+    - name: restart prometheus
+      systemd:
+        name: prometheus
+        state: restarted
+        daemon_reload: yes
+
+    - name: restart grafana
+      docker_container:
+        name: grafana
+        state: restarted
+
+    - name: enable node_exporter
+      systemd:
+        name: node_exporter
+        enabled: yes
+        daemon_reload: yes
+
+  post_tasks:
+    - name: Wait for Prometheus to be ready
+      uri:
+        url: http://localhost:9090/-/ready
+        status_code: 200
+      register: prometheus_ready
+      until: prometheus_ready.status == 200
+      retries: 10
+      delay: 5
+
+    - name: Wait for Grafana to be ready
+      uri:
+        url: http://localhost:{{ grafana_port }}/api/health
+        status_code: 200
+      register: grafana_ready
+      until: grafana_ready.status == 200
+      retries: 10
+      delay: 5
+
+    - name: Display monitoring access information
+      debug:
+        msg:
+          - "=============================================="
+          - "  ✅ Monitoring Stack Setup Complete!"
+          - "=============================================="
+          - ""
+          - "Access Information:"
+          - "  Prometheus: http://{{ ansible_default_ipv4.address }}:9090"
+          - "  Grafana: http://{{ ansible_default_ipv4.address }}:{{ grafana_port }}"
+          - "  Node Exporter: http://{{ ansible_default_ipv4.address }}:{{ node_exporter_port }}"
+          - "{% if groups['mysql'] is defined and groups['mysql'] | length > 0 %}"
+          - "  MySQL Exporter: http://{{ ansible_default_ipv4.address }}:{{ mysql_exporter_port }}"
+          - "{% endif %}"
+          - ""
+          - "Grafana Credentials:"
+          - "  Username: {{ grafana_admin_user }}"
+          - "  Password: {{ grafana_admin_password }}"
+          - ""
+          - "Services Running:"
+          - "  - Prometheus (Docker container)"
+          - "  - Grafana (Docker container)"
+          - "  - Node Exporter (systemd service)"
+          - "{% if groups['mysql'] is defined and groups['mysql'] | length > 0 %}"
+          - "  - MySQL Exporter (systemd service)"
+          - "{% endif %}"
+          - ""
+          - "Next steps:"
+          - "  1. Access Grafana at http://{{ ansible_default_ipv4.address }}:{{ grafana_port }}"
+          - "  2. Login with admin credentials"
+          - "  3. Import Kubernetes dashboards"
+          - "  4. Create custom alerts"
+          - "=============================================="
