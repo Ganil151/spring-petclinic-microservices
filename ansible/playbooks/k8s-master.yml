@@ -191,15 +191,30 @@
       failed_when: false
       changed_when: false
 
+    - name: List available Kubernetes packages
+      command: yum list kubelet kubeadm kubectl --showduplicates
+      register: available_k8s_packages
+      changed_when: false
+      failed_when: false
+
+    - name: Display available Kubernetes versions
+      debug:
+        msg: "{{ available_k8s_packages.stdout_lines }}"
+      when: available_k8s_packages.stdout_lines is defined
+
     - name: Install Kubernetes packages
       yum:
         name:
-          - "kubelet-{{ k8s_version }}-0"
-          - "kubeadm-{{ k8s_version }}-0"
-          - "kubectl-{{ k8s_version }}-0"
+          - "kubelet-1.31*"
+          - "kubeadm-1.31*"
+          - "kubectl-1.31*"
         state: present
         disable_excludes: kubernetes
       when: kubectl_installed.rc != 0
+      register: k8s_install_result
+      retries: 3
+      delay: 10
+      until: k8s_install_result is succeeded
 
     - name: Enable kubelet service
       systemd:
