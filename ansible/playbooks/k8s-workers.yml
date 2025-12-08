@@ -406,7 +406,7 @@
           - ""
           - "Node Labels Applied:"
           - "  - Primary workers: node-role.kubernetes.io/worker, workload-type=primary, node-role.kubernetes.io/frontend"
-          - "  - Secondary workers: node-role.kubernetes.io/worker, workload-type=secondary, node-role.kubernetes.io/frontend"
+          - "  - Secondary workers: node-role.kubernetes.io/worker, workload-type=secondary, node-role.kubernetes.io/backend"
           - ""
           - "Next steps:"
           - "  1. Deploy applications: ansible-playbook playbooks/deploy-petclinic.yml"
