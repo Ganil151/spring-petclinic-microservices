@@ -280,9 +280,16 @@
       delay: 15
       changed_when: false
 
+    - name: Get all nodes details
+      command: kubectl get nodes -o wide
+      environment:
+        KUBECONFIG: /home/ec2-user/.kube/config
+      register: all_nodes_details
+      changed_when: false
+
     - name: Display all nodes
       debug:
-        msg: "{{ all_nodes.stdout_lines }}"
+        msg: "{{ all_nodes_details.stdout_lines }}"
 
     # ========================================
     # Label Primary Worker Nodes
