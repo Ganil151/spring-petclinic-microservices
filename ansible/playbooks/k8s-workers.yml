@@ -50,6 +50,13 @@
         enabled: no
       ignore_errors: yes
 
+    - name: Install system utilities for Kubernetes
+      yum:
+        name:
+          - conntrack-tools
+          - iproute-tc
+        state: present
+
     - name: Verify connectivity to master node
       wait_for:
         host: "{{ hostvars[groups['k8s_master'][0]]['ansible_default_ipv4']['address'] }}"

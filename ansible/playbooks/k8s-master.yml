@@ -103,6 +103,13 @@
         enabled: no
       ignore_errors: yes  # Ignore if firewalld is not installed
 
+    - name: Install system utilities for Kubernetes
+      yum:
+        name:
+          - conntrack-tools
+          - iproute-tc
+        state: present
+
     - name: Load kernel modules
       block:
         - name: Add required kernel modules
