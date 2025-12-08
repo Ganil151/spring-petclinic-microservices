@@ -21,7 +21,7 @@ spec:
         - containerPort: 8080
         env:
         - name: SPRING_CONFIG_IMPORT
-          value: "configserver:http://config-server:8888/"
+          value: "configserver:http://config-server.default.svc.cluster.local:8888/"
         - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
           value: "http://discovery-server:8761/eureka/"
         livenessProbe:

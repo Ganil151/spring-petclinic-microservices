@@ -21,7 +21,7 @@ spec:
         - containerPort: 8761
         env:
         - name: SPRING_CONFIG_IMPORT
-          value: "configserver:http://config-server:8888/"
+          value: "configserver:http://config-server.default.svc.cluster.local:8888/"
         livenessProbe:
           httpGet:
             path: /actuator/health/liveness

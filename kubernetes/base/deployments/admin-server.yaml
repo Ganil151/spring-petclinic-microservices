@@ -21,7 +21,7 @@ spec:
         - containerPort: 9090
         env:
         - name: SPRING_CONFIG_IMPORT
-          value: "optional:configserver:http://config-server:8888/"
+          value: "optional:configserver:http://config-server.default.svc.cluster.local:8888/"
         - name: SPRING_CLOUD_CONFIG_ENABLED
           value: "true"
         - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
