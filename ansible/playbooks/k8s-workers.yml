@@ -271,13 +271,13 @@
   
   tasks:
     - name: Wait for all worker nodes to be ready
-      command: kubectl get nodes
+      shell: kubectl get nodes -o jsonpath='{.items[*].metadata.name}' | wc -w
       environment:
         KUBECONFIG: /home/ec2-user/.kube/config
-      register: all_nodes
-      until: all_nodes.stdout_lines | length >= (groups['k8s_primary_workers'] | length + groups['k8s_secondary_workers'] | length + 1)
-      retries: 20
-      delay: 10
+      register: node_count
+      until: node_count.stdout | int >= (groups['k8s_primary_workers'] | length + groups['k8s_secondary_workers'] | length + 1)
+      retries: 30
+      delay: 15
       changed_when: false
 
     - name: Display all nodes
