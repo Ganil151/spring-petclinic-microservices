@@ -21,9 +21,18 @@ spec:
         - containerPort: 9090
         env:
         - name: SPRING_CONFIG_IMPORT
-          value: "configserver:http://config-server:8888/"
+          value: "optional:configserver:http://config-server:8888/"
+        - name: SPRING_CLOUD_CONFIG_ENABLED
+          value: "true"
         - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
           value: "http://discovery-server:8761/eureka/"
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
         livenessProbe:
           httpGet:
             path: /actuator/health/liveness
