@@ -155,21 +155,3 @@
   when: kubeadm_init.stat.exists or kubeadm_output.changed
   changed_when: true
   ignore_errors: yes
-
-- name: Verify CoreDNS pods are running
-  command: kubectl get pods -n kube-system -l k8s-app=kube-dns -o jsonpath='{.items[*].status.phase}'
-  environment:
-    KUBECONFIG: /home/ec2-user/.kube/config
-  register: coredns_status
-  until: "'Running' in coredns_status.stdout"
-  retries: 20
-  delay: 10
-  when: kubeadm_init.stat.exists or kubeadm_output.changed
-  changed_when: false
-
-- name: Save join command to file
-  copy:
-    content: "{{ kubeadm_join_command.stdout }}"
-    dest: /tmp/kubeadm-join-command.sh
-    mode: '0755'
-  when: kubeadm_join_command is defined and kubeadm_join_command.stdout is defined
