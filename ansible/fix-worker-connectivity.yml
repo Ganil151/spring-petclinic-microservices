@@ -1,0 +1,56 @@
+---
+# Fix worker node connectivity
+- name: Fix Worker Node Connectivity
+  hosts: k8s_primary_workers:k8s_secondary_workers
+  become: yes
+  gather_facts: yes
+  
+  tasks:
+    - name: Stop firewalld
+      systemd:
+        name: firewalld
+        state: stopped
+        enabled: no
+      ignore_errors: yes
+
+    - name: Allow all traffic from K8s network
+      iptables:
+        chain: INPUT
+        source: 10.0.1.0/24
+        jump: ACCEPT
+      ignore_errors: yes
+
+    - name: Restart kubelet
+      systemd:
+        name: kubelet
+        state: restarted
+
+- name: Fix Master Node Connectivity
+  hosts: k8s_master
+  become: yes
+  
+  tasks:
+    - name: Stop firewalld
+      systemd:
+        name: firewalld
+        state: stopped
+        enabled: no
+      ignore_errors: yes
+
+    - name: Allow all traffic from K8s network
+      iptables:
+        chain: INPUT
+        source: 10.0.1.0/24
+        jump: ACCEPT
+      ignore_errors: yes
+
+    - name: Test connectivity to workers
+      command: "ping -c 2 {{ hostvars[item]['ansible_default_ipv4']['address'] }}"
+      loop: "{{ groups['k8s_primary_workers'] + groups['k8s_secondary_workers'] }}"
+      register: ping_result
+      changed_when: false
+      ignore_errors: yes
+
+    - name: Display connectivity results
+      debug:
+        msg: "{{ ping_result }}"

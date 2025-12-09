@@ -1,13 +1,12 @@
 ---
-handlers:
-  - name: restart containerd
-    systemd:
-      name: containerd
-      state: restarted
-      daemon_reload: yes
+- name: restart containerd
+  systemd:
+    name: containerd
+    state: restarted
+    daemon_reload: yes
 
-  - name: restart kubelet
-    systemd:
-      name: kubelet
-      state: restarted
-      daemon_reload: yes
+- name: restart kubelet
+  systemd:
+    name: kubelet
+    state: restarted
+    daemon_reload: yes

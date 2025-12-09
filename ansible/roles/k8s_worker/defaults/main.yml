@@ -1,4 +1,4 @@
 ---
 # Default variables for k8s_worker role
 
-kubernetes_version: "1.31.14"
+kubernetes_version: "1.31.*"

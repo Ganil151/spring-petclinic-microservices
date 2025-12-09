@@ -67,10 +67,10 @@ else
     print_info "Applying deployment manifest..."
     
     # Try to find the deployment file
-    if [ -f "kubernetes/deployments/deployment.yaml" ]; then
-        kubectl apply -f kubernetes/deployments/deployment.yaml
-    elif [ -f "../../kubernetes/deployments/deployment.yaml" ]; then
-        kubectl apply -f ../../kubernetes/deployments/deployment.yaml
+    if [ -f "kubernetes/base/kustomization.yaml" ]; then
+        kubectl apply -k kubernetes/base/
+    elif [ -f "../../kubernetes/base/kustomization.yaml" ]; then
+        kubectl apply -k ../../kubernetes/base/
     else
         print_error "No deployment file found!"
         exit 1

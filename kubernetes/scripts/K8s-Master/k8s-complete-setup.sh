@@ -382,7 +382,7 @@ display_summary() {
     echo "     cat /root/k8s_join_command.sh"
     echo ""
     echo "  3. Deploy applications:"
-    echo "     kubectl apply -f your-deployment.yaml"
+    echo "     kubectl apply -k kubernetes/base/"
     echo ""
     print_info "Useful Commands:"
     echo "  • Check node status: kubectl get nodes"

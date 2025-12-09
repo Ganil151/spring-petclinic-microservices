@@ -1,6 +1,6 @@
 ---
 # Default variables for k8s_master role
 
-kubernetes_version: "1.31.14"
+kubernetes_version: "1.31.*"
 pod_subnet: "10.244.0.0/16"
 service_subnet: "10.96.0.0/12"

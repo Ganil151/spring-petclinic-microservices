@@ -15,7 +15,7 @@ echo ""
 
 echo "Step 2: Applying updated deployment configuration..."
 echo "-----------------------------------------------------"
-kubectl apply -f kubernetes/deployments/deployment.yaml
+kubectl apply -k kubernetes/base/
 echo "✓ Deployment configuration applied"
 echo ""
 

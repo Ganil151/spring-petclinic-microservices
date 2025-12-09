@@ -42,8 +42,6 @@
           - "Master node configured successfully!"
           - "{{ nodes_status.stdout_lines }}"
 
----
-# Setup Kubernetes Worker Nodes
 - name: Setup Kubernetes Worker Nodes
   hosts: k8s_primary_workers:k8s_secondary_workers
   become: yes

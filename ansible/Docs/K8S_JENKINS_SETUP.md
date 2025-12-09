@@ -61,7 +61,7 @@ Added 4 new stages to the Jenkins pipeline after the "Configure MySQL Database" 
 - **Actions**:
   - Extracts K8s master IP from Ansible inventory
   - Copies `kubernetes/` manifests to master node
-  - Deploys `kubernetes/deployments/deployment.yaml`
+  - Deploys Kubernetes manifests using kustomize
   - Waits for critical pods (config-server, discovery-server)
   - Shows cluster status
 

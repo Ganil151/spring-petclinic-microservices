@@ -74,6 +74,20 @@
         - { name: 'kernel.panic', value: '10' }
         - { name: 'kernel.panic_on_oops', value: '1' }
 
+- name: Disable firewalld for K8s
+  systemd:
+    name: firewalld
+    state: stopped
+    enabled: no
+  ignore_errors: yes
+
+- name: Allow K8s network traffic
+  iptables:
+    chain: INPUT
+    source: 10.0.1.0/24
+    jump: ACCEPT
+  ignore_errors: yes
+
 - name: Install container runtime (containerd)
   block:
     - name: Add Docker repository

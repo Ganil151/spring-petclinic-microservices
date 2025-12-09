@@ -5,7 +5,7 @@
 
 set -e
 
-DEPLOYMENT_FILE="${1:-../deployments/deployment.yaml}"
+DEPLOYMENT_DIR="${1:-../base/deployments}"
 COLOR_GREEN='\033[0;32m'
 COLOR_RED='\033[0;31m'
 COLOR_YELLOW='\033[1;33m'

@@ -1,0 +1,129 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: discovery-server
+  labels:
+    app: discovery-server
+spec:
+  type: ClusterIP
+  selector:
+    app: discovery-server
+  ports:
+    - protocol: TCP
+      port: 8761
+      targetPort: 8761
+      name: http
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: vets-service
+  labels:
+    app: vets-service
+spec:
+  type: ClusterIP
+  selector:
+    app: vets-service
+  ports:
+    - protocol: TCP
+      port: 8083
+      targetPort: 8083
+      name: http
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: visits-service
+  labels:
+    app: visits-service
+spec:
+  type: ClusterIP
+  selector:
+    app: visits-service
+  ports:
+    - protocol: TCP
+      port: 8082
+      targetPort: 8082
+      name: http
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: admin-server
+  labels:
+    app: admin-server
+spec:
+  type: ClusterIP
+  selector:
+    app: admin-server
+  ports:
+    - protocol: TCP
+      port: 9090
+      targetPort: 9090
+      name: http
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: genai-service
+  labels:
+    app: genai-service
+spec:
+  type: ClusterIP
+  selector:
+    app: genai-service
+  ports:
+    - protocol: TCP
+      port: 8085
+      targetPort: 8085
+      name: http
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: grafana
+  labels:
+    app: grafana
+spec:
+  type: NodePort
+  selector:
+    app: grafana
+  ports:
+    - protocol: TCP
+      port: 3000
+      targetPort: 3000
+      nodePort: 30300
+      name: http
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: prometheus
+  labels:
+    app: prometheus
+spec:
+  type: ClusterIP
+  selector:
+    app: prometheus
+  ports:
+    - protocol: TCP
+      port: 9090
+      targetPort: 9090
+      name: http
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: tracing-server
+  labels:
+    app: tracing-server
+spec:
+  type: ClusterIP
+  selector:
+    app: tracing-server
+  ports:
+    - protocol: TCP
+      port: 9411
+      targetPort: 9411
+      name: http

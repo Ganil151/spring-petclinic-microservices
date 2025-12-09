@@ -85,7 +85,7 @@ case $ISSUE in
         echo "     eksctl scale nodegroup --cluster spring-petclinic-eks --name petclinic-worker-primary --nodes <N+1>"
         echo "  2. Use larger instance types (e.g., t3.xlarge)"
         echo "     (Requires creating new node group in Terraform)"
-        echo "  3. Reduce CPU requests in deployment.yaml"
+        echo "  3. Reduce CPU requests in deployment manifests"
         ;;
     "MEMORY")
         print_error "Issue: Insufficient Memory"
@@ -93,7 +93,7 @@ case $ISSUE in
         echo "  1. Scale up node group (add more nodes)"
         echo "     eksctl scale nodegroup --cluster spring-petclinic-eks --name petclinic-worker-primary --nodes <N+1>"
         echo "  2. Use memory-optimized instances (e.g., r5.large)"
-        echo "  3. Reduce Memory requests in deployment.yaml"
+        echo "  3. Reduce Memory requests in deployment manifests"
         ;;
     "NODES")
         print_error "Issue: No Nodes Available"
