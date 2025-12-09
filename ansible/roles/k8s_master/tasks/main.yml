@@ -97,9 +97,79 @@
   when: kubeadm_init.stat.exists or kubeadm_output.changed
   changed_when: false
 
-- name: Install Calico CNI
+- name: Install Calico CNI operator
   command: kubectl apply -f https://raw.githubusercontent.com/projectcalico/calico/v3.27.0/manifests/tigera-operator.yaml
   environment:
     KUBECONFIG: /home/ec2-user/.kube/config
   when: kubeadm_init.stat.exists or kubeadm_output.changed
   changed_when: true
+
+- name: Wait for Calico operator to be ready
+  command: kubectl wait --for=condition=available --timeout=300s deployment/tigera-operator -n tigera-operator
+  environment:
+    KUBECONFIG: /home/ec2-user/.kube/config
+  when: kubeadm_init.stat.exists or kubeadm_output.changed
+  changed_when: false
+  ignore_errors: yes
+
+- name: Create Calico installation custom resource
+  copy:
+    content: |
+      apiVersion: operator.tigera.io/v1
+      kind: Installation
+      metadata:
+        name: default
+      spec:
+        calicoNetwork:
+          ipPools:
+          - blockSize: 26
+            cidr: 10.244.0.0/16
+            encapsulation: VXLANCrossSubnet
+            natOutgoing: Enabled
+            nodeSelector: all()
+    dest: /tmp/calico-installation.yaml
+    mode: '0644'
+  when: kubeadm_init.stat.exists or kubeadm_output.changed
+
+- name: Apply Calico installation
+  command: kubectl apply -f /tmp/calico-installation.yaml
+  environment:
+    KUBECONFIG: /home/ec2-user/.kube/config
+  when: kubeadm_init.stat.exists or kubeadm_output.changed
+  changed_when: true
+
+- name: Wait for Calico to be ready
+  command: kubectl wait --for=condition=ready --timeout=300s pod -l k8s-app=calico-node -n calico-system
+  environment:
+    KUBECONFIG: /home/ec2-user/.kube/config
+  when: kubeadm_init.stat.exists or kubeadm_output.changed
+  changed_when: false
+  retries: 3
+  delay: 10
+  ignore_errors: yes
+
+- name: Remove master node taint to allow pod scheduling
+  command: kubectl taint nodes --all node-role.kubernetes.io/control-plane- node-role.kubernetes.io/master-
+  environment:
+    KUBECONFIG: /home/ec2-user/.kube/config
+  when: kubeadm_init.stat.exists or kubeadm_output.changed
+  changed_when: true
+  ignore_errors: yes
+
+- name: Verify CoreDNS pods are running
+  command: kubectl get pods -n kube-system -l k8s-app=kube-dns -o jsonpath='{.items[*].status.phase}'
+  environment:
+    KUBECONFIG: /home/ec2-user/.kube/config
+  register: coredns_status
+  until: "'Running' in coredns_status.stdout"
+  retries: 20
+  delay: 10
+  when: kubeadm_init.stat.exists or kubeadm_output.changed
+  changed_when: false
+
+- name: Save join command to file
+  copy:
+    content: "{{ kubeadm_join_command.stdout }}"
+    dest: /tmp/kubeadm-join-command.sh
+    mode: '0755'
+  when: kubeadm_join_command is defined and kubeadm_join_command.stdout is defined
