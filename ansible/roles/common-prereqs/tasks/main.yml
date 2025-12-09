@@ -40,12 +40,12 @@
 - name: Configure kernel modules for Kubernetes
   block:
     - name: Load overlay module
-      modprobe:
+      community.general.modprobe:
         name: overlay
         state: present
 
     - name: Load br_netfilter module
-      modprobe:
+      community.general.modprobe:
         name: br_netfilter
         state: present
 
