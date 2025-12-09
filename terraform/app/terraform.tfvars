@@ -49,7 +49,7 @@ egress_rules = [0]
 key_name = "master_keys"
 
 # Ec2
-ami                         = "ami-052064a798f08f0d3"
+ami                         = "ami-052064a798f08f0d3" 
 instance_type               = "t2.large"
 subnet_id                   = "master_subnet"
 user_data                   = ""
