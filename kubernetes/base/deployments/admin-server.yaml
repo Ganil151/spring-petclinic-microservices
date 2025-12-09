@@ -25,7 +25,7 @@ spec:
         - name: SPRING_CLOUD_CONFIG_ENABLED
           value: "true"
         - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
-          value: "http://discovery-server:8761/eureka/"
+          value: "http://discovery-server.default.svc.cluster.local:8761/eureka/"
         resources:
           requests:
             memory: "256Mi"

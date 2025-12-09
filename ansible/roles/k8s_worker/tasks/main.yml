@@ -1,0 +1,56 @@
+---
+# Role for configuring Kubernetes worker nodes
+
+- name: Create kubeadm configuration directory
+  file:
+    path: /etc/kubernetes
+    state: directory
+    mode: '0755'
+
+- name: Wait for master node to be ready
+  wait_for:
+    host: "{{ hostvars[groups['k8s_master'][0]]['ansible_default_ipv4']['address'] }}"
+    port: 6443
+    timeout: 60
+    state: started
+
+- name: Get kubeadm join command from master
+  command: kubeadm token create --print-join-command
+  register: kubeadm_join_command
+  delegate_to: "{{ groups['k8s_master'][0] }}"
+  changed_when: false
+
+- name: Check if worker already joined cluster
+  command: kubectl get nodes
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  ignore_errors: yes
+  register: node_status
+  changed_when: false
+
+- name: Join worker node to cluster
+  command: "{{ kubeadm_join_command.stdout }}"
+  when: node_status.rc != 0
+  timeout: 300
+
+- name: Wait for kubelet to be ready
+  command: systemctl is-active kubelet
+  register: kubelet_status
+  until: kubelet_status.rc == 0
+  retries: 30
+  delay: 5
+  changed_when: false
+
+- name: Create .kube directory
+  file:
+    path: /home/ec2-user/.kube
+    state: directory
+    owner: ec2-user
+    group: ec2-user
+    mode: '0755'
+
+- name: Copy kubeconfig from master
+  command: "scp -o StrictHostKeyChecking=no ec2-user@{{ hostvars[groups['k8s_master'][0]]['ansible_default_ipv4']['address'] }}:/home/ec2-user/.kube/config /home/ec2-user/.kube/config"
+  become: no
+  ignore_errors: yes
+  changed_when: false

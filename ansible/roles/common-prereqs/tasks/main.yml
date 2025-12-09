@@ -1,0 +1,189 @@
+---
+# Common prerequisites for all Kubernetes nodes
+
+- name: Display system information
+  debug:
+    msg:
+      - "System: {{ ansible_distribution }} {{ ansible_distribution_version }}"
+      - "Kernel: {{ ansible_kernel }}"
+      - "CPU Cores: {{ ansible_processor_vcpus }}"
+      - "Memory: {{ ansible_memtotal_mb }}MB"
+
+- name: Verify system requirements
+  assert:
+    that:
+      - ansible_memtotal_mb >= 2048
+      - ansible_processor_vcpus >= 2
+    fail_msg: "System requires minimum 2GB RAM and 2 CPUs"
+
+- name: Disable swap
+  block:
+    - name: Turn off swap immediately
+      command: swapoff -a
+      changed_when: false
+
+    - name: Remove swap from fstab
+      lineinfile:
+        path: /etc/fstab
+        regexp: '^\s*[^#].*swap'
+        state: absent
+
+    - name: Verify swap is disabled
+      command: free -h
+      register: swap_status
+      changed_when: false
+
+    - name: Display swap status
+      debug:
+        msg: "{{ swap_status.stdout_lines }}"
+
+- name: Configure kernel modules for Kubernetes
+  block:
+    - name: Load overlay module
+      modprobe:
+        name: overlay
+        state: present
+
+    - name: Load br_netfilter module
+      modprobe:
+        name: br_netfilter
+        state: present
+
+    - name: Make kernel modules persistent
+      copy:
+        content: |
+          overlay
+          br_netfilter
+        dest: /etc/modules-load.d/k8s.conf
+        mode: '0644'
+
+- name: Configure kernel parameters for Kubernetes
+  block:
+    - name: Set sysctl parameters
+      sysctl:
+        name: "{{ item.name }}"
+        value: "{{ item.value }}"
+        sysctl_set: yes
+        state: present
+        reload: yes
+      loop:
+        - { name: 'net.bridge.bridge-nf-call-iptables', value: '1' }
+        - { name: 'net.bridge.bridge-nf-call-ip6tables', value: '1' }
+        - { name: 'net.ipv4.ip_forward', value: '1' }
+        - { name: 'vm.overcommit_memory', value: '1' }
+        - { name: 'kernel.panic', value: '10' }
+        - { name: 'kernel.panic_on_oops', value: '1' }
+
+- name: Install container runtime (containerd)
+  block:
+    - name: Add Docker repository
+      yum_repository:
+        name: docker-ce
+        description: Docker CE Repository
+        baseurl: https://download.docker.com/linux/rhel/$releasever/$basearch/stable
+        enabled: yes
+        gpgcheck: yes
+        gpgkey: https://download.docker.com/linux/rhel/gpg
+
+    - name: Install containerd
+      yum:
+        name: containerd.io-1.7.*
+        state: present
+      notify: restart containerd
+
+    - name: Create containerd config directory
+      file:
+        path: /etc/containerd
+        state: directory
+        mode: '0755'
+
+    - name: Generate containerd default config
+      command: containerd config default
+      register: containerd_config
+      changed_when: false
+
+    - name: Save containerd configuration
+      copy:
+        content: "{{ containerd_config.stdout }}"
+        dest: /etc/containerd/config.toml
+        mode: '0644'
+      notify: restart containerd
+
+    - name: Start containerd
+      systemd:
+        name: containerd
+        state: started
+        enabled: yes
+
+- name: Install Kubernetes components
+  block:
+    - name: Add Kubernetes repository
+      yum_repository:
+        name: kubernetes
+        description: Kubernetes Repository
+        baseurl: https://pkgs.k8s.io/core:/stable:/v1.31/rpm/
+        enabled: yes
+        gpgcheck: yes
+        gpgkey: https://pkgs.k8s.io/core:/stable:/v1.31/rpm/repodata/repomd.xml.key
+
+    - name: Install kubelet, kubeadm, and kubectl
+      yum:
+        name:
+          - kubelet-1.31.*
+          - kubeadm-1.31.*
+          - kubectl-1.31.*
+        state: present
+      notify: restart kubelet
+
+    - name: Enable kubelet service
+      systemd:
+        name: kubelet
+        enabled: yes
+
+- name: Configure kubelet
+  block:
+    - name: Create kubelet config directory
+      file:
+        path: /etc/sysconfig
+        state: directory
+        mode: '0755'
+
+    - name: Configure kubelet environment
+      copy:
+        content: |
+          KUBELET_EXTRA_ARGS="--cgroup-driver=systemd --container-runtime-endpoint=unix:///run/containerd/containerd.sock"
+        dest: /etc/sysconfig/kubelet
+        mode: '0644'
+      notify: restart kubelet
+
+- name: Configure /etc/hosts
+  block:
+    - name: Add localhost entries
+      lineinfile:
+        path: /etc/hosts
+        regexp: '^127\.0\.0\.1'
+        line: '127.0.0.1 localhost'
+        state: present
+
+    - name: Gather facts from all hosts
+      setup:
+      delegate_to: "{{ item }}"
+      delegate_facts: true
+      loop: "{{ groups['kube_cluster'] }}"
+      run_once: true
+
+    - name: Add K8s nodes to /etc/hosts
+      blockinfile:
+        path: /etc/hosts
+        marker: "# {mark} ANSIBLE MANAGED K8S HOSTS"
+        block: |
+          {% for host in groups['kube_cluster'] %}
+          {{ hostvars[host]['ansible_default_ipv4']['address'] }} {{ host }}
+          {% endfor %}
+        create: yes
+
+- name: Create .kube directory
+  file:
+    path: /root/.kube
+    state: directory
+    mode: '0755'

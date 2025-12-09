@@ -1,0 +1,105 @@
+---
+# Role for configuring Kubernetes master node
+
+- name: Create kubeadm configuration directory
+  file:
+    path: /etc/kubernetes
+    state: directory
+    mode: '0755'
+
+- name: Create kubeadm-config.yaml
+  copy:
+    content: |
+      apiVersion: kubeadm.k8s.io/v1beta3
+      kind: ClusterConfiguration
+      kubernetesVersion: v1.31.14
+      podSubnet: 10.244.0.0/16
+      serviceSubnet: 10.96.0.0/12
+      controlPlaneEndpoint: "{{ ansible_default_ipv4.address }}:6443"
+      networking:
+        dnsDomain: cluster.local
+        podSubnet: 10.244.0.0/16
+        serviceSubnet: 10.96.0.0/12
+      etcd:
+        local:
+          dataDir: /var/lib/etcd
+      certificatesDir: /etc/kubernetes/pki
+      imageRepository: registry.k8s.io
+      apiServer:
+        certSANs:
+          - "{{ ansible_default_ipv4.address }}"
+          - "{{ ansible_hostname }}"
+          - kubernetes
+          - kubernetes.default
+          - kubernetes.default.svc
+          - kubernetes.default.svc.cluster.local
+        extraArgs:
+          bind-address: "0.0.0.0"
+      controllerManager:
+        extraArgs:
+          bind-address: "0.0.0.0"
+      scheduler:
+        extraArgs:
+          bind-address: "0.0.0.0"
+    dest: /etc/kubernetes/kubeadm-config.yaml
+    mode: '0644'
+
+- name: Check if kubeadm init has already been run
+  stat:
+    path: /etc/kubernetes/manifests/kube-apiserver.yaml
+  register: kubeadm_init
+
+- name: Initialize Kubernetes cluster with kubeadm
+  command: kubeadm init --config=/etc/kubernetes/kubeadm-config.yaml
+  when: not kubeadm_init.stat.exists
+  register: kubeadm_output
+  timeout: 300
+
+- name: Save kubeadm join command
+  shell: kubeadm token create --print-join-command
+  register: kubeadm_join_command
+  when: kubeadm_init.stat.exists or kubeadm_output.changed
+  changed_when: false
+
+- name: Create .kube directory
+  file:
+    path: /home/ec2-user/.kube
+    state: directory
+    owner: ec2-user
+    group: ec2-user
+    mode: '0755'
+
+- name: Copy kubeconfig to ec2-user
+  command: "cp /etc/kubernetes/admin.conf /home/ec2-user/.kube/config"
+  when: kubeadm_init.stat.exists or kubeadm_output.changed
+  changed_when: false
+
+- name: Fix kubeconfig permissions
+  file:
+    path: /home/ec2-user/.kube/config
+    owner: ec2-user
+    group: ec2-user
+    mode: '0600'
+
+- name: Copy kubeconfig for root user
+  command: "cp /etc/kubernetes/admin.conf /root/.kube/config"
+  when: kubeadm_init.stat.exists or kubeadm_output.changed
+  changed_when: false
+
+- name: Wait for API server to be ready
+  command: kubectl get nodes
+  environment:
+    KUBECONFIG: /home/ec2-user/.kube/config
+  register: api_ready
+  until: api_ready.rc == 0
+  retries: 30
+  delay: 5
+  when: kubeadm_init.stat.exists or kubeadm_output.changed
+  changed_when: false
+
+- name: Install Calico CNI
+  command: kubectl apply -f https://raw.githubusercontent.com/projectcalico/calico/v3.27.0/manifests/tigera-operator.yaml
+  environment:
+    KUBECONFIG: /home/ec2-user/.kube/config
+  when: kubeadm_init.stat.exists or kubeadm_output.changed
+  changed_when: true

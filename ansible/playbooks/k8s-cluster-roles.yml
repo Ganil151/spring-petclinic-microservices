@@ -1,0 +1,88 @@
+---
+# Simplified Kubernetes Cluster Setup with Proper Roles
+# This playbook uses Ansible roles to setup K8s master and workers
+
+- name: Setup Kubernetes Master Node
+  hosts: k8s_master
+  become: yes
+  gather_facts: yes
+  
+  pre_tasks:
+    - name: Display Master Node Information
+      debug:
+        msg:
+          - "=============================================="
+          - "  Kubernetes Master Node Setup"
+          - "=============================================="
+          - "Target: {{ inventory_hostname }}"
+          - "IP: {{ ansible_default_ipv4.address }}"
+          - "OS: {{ ansible_distribution }} {{ ansible_distribution_version }}"
+          - "=============================================="
+
+  roles:
+    - role: common-prereqs
+      tags: ['always']
+    - role: k8s_master
+      tags: ['master']
+
+  post_tasks:
+    - name: Verify Master Node Status
+      command: kubectl get nodes -o wide
+      environment:
+        KUBECONFIG: /home/ec2-user/.kube/config
+      register: nodes_status
+      changed_when: false
+      retries: 10
+      delay: 10
+      until: "'Ready' in nodes_status.stdout"
+
+    - name: Display Cluster Status
+      debug:
+        msg:
+          - "Master node configured successfully!"
+          - "{{ nodes_status.stdout_lines }}"
+
+---
+# Setup Kubernetes Worker Nodes
+- name: Setup Kubernetes Worker Nodes
+  hosts: k8s_primary_workers:k8s_secondary_workers
+  become: yes
+  gather_facts: yes
+  serial: 1
+  
+  pre_tasks:
+    - name: Display Worker Node Information
+      debug:
+        msg:
+          - "=============================================="
+          - "  Kubernetes Worker Node Setup"
+          - "=============================================="
+          - "Target: {{ inventory_hostname }}"
+          - "IP: {{ ansible_default_ipv4.address }}"
+          - "Worker Type: {{ 'Primary' if inventory_hostname in groups['k8s_primary_workers'] else 'Secondary' }}"
+          - "=============================================="
+
+  roles:
+    - role: common-prereqs
+      tags: ['always']
+    - role: k8s_worker
+      tags: ['worker']
+
+  post_tasks:
+    - name: Wait for Worker Node to Join
+      command: kubectl get nodes {{ inventory_hostname }}
+      environment:
+        KUBECONFIG: /home/ec2-user/.kube/config
+      register: worker_status
+      until: "'Ready' in worker_status.stdout"
+      retries: 30
+      delay: 10
+      changed_when: false
+      delegate_to: "{{ groups['k8s_master'][0] }}"
+
+    - name: Label Worker Node
+      command: "kubectl label nodes {{ inventory_hostname }} workload-type=application --overwrite"
+      environment:
+        KUBECONFIG: /home/ec2-user/.kube/config
+      delegate_to: "{{ groups['k8s_master'][0] }}"
+      changed_when: true
