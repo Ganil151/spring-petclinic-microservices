@@ -1,0 +1,301 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: config-server
+  labels:
+    app: config-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: config-server
+  template:
+    metadata:
+      labels:
+        app: config-server
+    spec:
+      containers:
+      - name: config-server
+        image: springcommunity/spring-petclinic-config-server
+        ports:
+        - containerPort: 8888
+        env:
+        - name: SPRING_CLOUD_CONFIG_SERVER_GIT_URI
+          value: https://github.com/spring-petclinic/spring-petclinic-microservices-config
+        - name: SPRING_CLOUD_CONFIG_SERVER_GIT_DEFAULT_LABEL
+          value: main
+        livenessProbe:
+          httpGet:
+            path: /actuator/health/liveness
+            port: 8888
+          initialDelaySeconds: 120
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /actuator/health/readiness
+            port: 8888
+          initialDelaySeconds: 120
+          periodSeconds: 10
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: discovery-server
+  labels:
+    app: discovery-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: discovery-server
+  template:
+    metadata:
+      labels:
+        app: discovery-server
+    spec:
+      containers:
+      - name: discovery-server
+        image: springcommunity/spring-petclinic-discovery-server
+        ports:
+        - containerPort: 8761
+        env:
+        - name: SPRING_CONFIG_IMPORT
+          value: "configserver:http://config-server:8888/"
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /actuator/health/liveness
+            port: 8761
+          initialDelaySeconds: 60
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /actuator/health/readiness
+            port: 8761
+          initialDelaySeconds: 60
+          periodSeconds: 10
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: customers-service
+  labels:
+    app: customers-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: customers-service
+  template:
+    metadata:
+      labels:
+        app: customers-service
+    spec:
+      containers:
+      - name: customers-service
+        image: springcommunity/spring-petclinic-customers-service
+        ports:
+        - containerPort: 8081
+        env:
+        - name: SPRING_CONFIG_IMPORT
+          value: "configserver:http://config-server:8888/"
+        - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
+          value: "http://discovery-server:8761/eureka/"
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /actuator/health/liveness
+            port: 8081
+          initialDelaySeconds: 60
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /actuator/health/readiness
+            port: 8081
+          initialDelaySeconds: 60
+          periodSeconds: 10
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vets-service
+  labels:
+    app: vets-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: vets-service
+  template:
+    metadata:
+      labels:
+        app: vets-service
+    spec:
+      containers:
+      - name: vets-service
+        image: springcommunity/spring-petclinic-vets-service
+        ports:
+        - containerPort: 8083
+        env:
+        - name: SPRING_CONFIG_IMPORT
+          value: "configserver:http://config-server:8888/"
+        - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
+          value: "http://discovery-server:8761/eureka/"
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /actuator/health/liveness
+            port: 8083
+          initialDelaySeconds: 60
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /actuator/health/readiness
+            port: 8083
+          initialDelaySeconds: 60
+          periodSeconds: 10
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: visits-service
+  labels:
+    app: visits-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: visits-service
+  template:
+    metadata:
+      labels:
+        app: visits-service
+    spec:
+      containers:
+      - name: visits-service
+        image: springcommunity/spring-petclinic-visits-service
+        ports:
+        - containerPort: 8082
+        env:
+        - name: SPRING_CONFIG_IMPORT
+          value: "configserver:http://config-server:8888/"
+        - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
+          value: "http://discovery-server:8761/eureka/"
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /actuator/health/liveness
+            port: 8082
+          initialDelaySeconds: 60
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /actuator/health/readiness
+            port: 8082
+          initialDelaySeconds: 60
+          periodSeconds: 10
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api-gateway
+  labels:
+    app: api-gateway
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: api-gateway
+  template:
+    metadata:
+      labels:
+        app: api-gateway
+    spec:
+      containers:
+      - name: api-gateway
+        image: springcommunity/spring-petclinic-api-gateway
+        ports:
+        - containerPort: 8080
+        env:
+        - name: SPRING_CONFIG_IMPORT
+          value: "configserver:http://config-server:8888/"
+        - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
+          value: "http://discovery-server:8761/eureka/"
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /actuator/health/liveness
+            port: 8080
+          initialDelaySeconds: 60
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /actuator/health/readiness
+            port: 8080
+          initialDelaySeconds: 60
+          periodSeconds: 10
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: admin-server
+  labels:
+    app: admin-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: admin-server
+  template:
+    metadata:
+      labels:
+        app: admin-server
+    spec:
+      containers:
+      - name: admin-server
+        image: springcommunity/spring-petclinic-admin-server
+        ports:
+        - containerPort: 9090
+        env:
+        - name: SPRING_CONFIG_IMPORT
+          value: "configserver:http://config-server:8888/"
+        - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
+          value: "http://discovery-server:8761/eureka/"
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
