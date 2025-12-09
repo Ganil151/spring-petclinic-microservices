@@ -18,6 +18,7 @@ spec:
       containers:
       - name: config-server
         image: springcommunity/spring-petclinic-config-server
+        imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8888
         env:
@@ -25,18 +26,31 @@ spec:
           value: https://github.com/spring-petclinic/spring-petclinic-microservices-config
         - name: SPRING_CLOUD_CONFIG_SERVER_GIT_DEFAULT_LABEL
           value: main
+        - name: JAVA_OPTS
+          value: "-Xms256m -Xmx512m"
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
         livenessProbe:
           httpGet:
             path: /actuator/health/liveness
             port: 8888
-          initialDelaySeconds: 120
+          initialDelaySeconds: 90
           periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 6
         readinessProbe:
           httpGet:
             path: /actuator/health/readiness
             port: 8888
-          initialDelaySeconds: 120
+          initialDelaySeconds: 60
           periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -57,11 +71,14 @@ spec:
       containers:
       - name: discovery-server
         image: springcommunity/spring-petclinic-discovery-server
+        imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8761
         env:
         - name: SPRING_CONFIG_IMPORT
-          value: "configserver:http://config-server:8888/"
+          value: "optional:configserver:http://config-server:8888/"
+        - name: JAVA_OPTS
+          value: "-Xms256m -Xmx512m"
         resources:
           requests:
             memory: "256Mi"
@@ -73,14 +90,18 @@ spec:
           httpGet:
             path: /actuator/health/liveness
             port: 8761
-          initialDelaySeconds: 60
+          initialDelaySeconds: 90
           periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 6
         readinessProbe:
           httpGet:
             path: /actuator/health/readiness
             port: 8761
           initialDelaySeconds: 60
           periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
 ---
 apiVersion: apps/v1
 kind: Deployment
