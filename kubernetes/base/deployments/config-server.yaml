@@ -30,7 +30,7 @@ spec:
             port: 8888
           initialDelaySeconds: 300
           periodSeconds: 30
-          timeoutSeconds: 15
+          timeoutSeconds: 10
           failureThreshold: 10
         readinessProbe:
           httpGet:
