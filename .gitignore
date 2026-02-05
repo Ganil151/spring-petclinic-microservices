@@ -21,3 +21,7 @@ target/
 generated/
 
 **/.DS_Store
+
+# Amazon-Q
+.amazonq
+
