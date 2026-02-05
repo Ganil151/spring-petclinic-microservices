@@ -225,12 +225,122 @@ EOF`
   - **Details**: Verifies node group is in ACTIVE state
 
 ### Database Layer
+- [ ] Create RDS subnet group
+  - **Command**: `cat > rds.tf << EOF
+resource "aws_db_subnet_group" "petclinic" {
+  name       = "petclinic-db-subnet-group"
+  subnet_ids = module.vpc.private_subnets
+
+  tags = {
+    Name = "PetClinic DB subnet group"
+    Environment = "production"
+  }
+}
+
+resource "aws_security_group" "rds" {
+  name_prefix = "petclinic-rds-"
+  vpc_id      = module.vpc.vpc_id
+
+  ingress {
+    from_port   = 3306
+    to_port     = 3306
+    protocol    = "tcp"
+    cidr_blocks = [module.vpc.vpc_cidr_block]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    Name = "petclinic-rds-sg"
+    Environment = "production"
+  }
+}
+
+resource "aws_db_instance" "petclinic" {
+  identifier = "petclinic-mysql"
+  
+  engine         = "mysql"
+  engine_version = "8.0"
+  instance_class = "db.t3.micro"
+  
+  allocated_storage     = 20
+  max_allocated_storage = 100
+  storage_type         = "gp2"
+  storage_encrypted    = true
+  
+  db_name  = "petclinic"
+  username = "petclinic"
+  password = "ChangeMeInProduction123!"
+  
+  vpc_security_group_ids = [aws_security_group.rds.id]
+  db_subnet_group_name   = aws_db_subnet_group.petclinic.name
+  
+  backup_retention_period = 7
+  backup_window          = "03:00-04:00"
+  maintenance_window     = "sun:04:00-sun:05:00"
+  
+  multi_az               = true
+  publicly_accessible    = false
+  
+  skip_final_snapshot = false
+  final_snapshot_identifier = "petclinic-final-snapshot"
+  
+  tags = {
+    Name = "petclinic-mysql"
+    Environment = "production"
+  }
+}
+EOF`
+  - **Details**: Creates MySQL RDS instance with Multi-AZ for high availability
+
 - [ ] Provision RDS MySQL instance with Multi-AZ
-  - **Command**: `terraform apply -target=module.rds`
+  - **Command**: `terraform plan -target=aws_db_instance.petclinic && terraform apply -target=aws_db_instance.petclinic`
+  - **Details**: Creates managed MySQL database with automated backups
   - **Junior's Safety Note**: NEVER run terraform destroy on RDS module in production
+
+- [ ] Create database initialization script
+  - **Command**: `cat > k8s/db-init-job.yaml << EOF
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: db-init
+  namespace: petclinic
+spec:
+  template:
+    spec:
+      containers:
+      - name: mysql-client
+        image: mysql:8.0
+        command: ["/bin/sh"]
+        args: ["-c", "mysql -h \$DB_HOST -u \$DB_USER -p\$DB_PASSWORD \$DB_NAME < /scripts/schema.sql"]
+        env:
+        - name: DB_HOST
+          value: "petclinic-mysql.region.rds.amazonaws.com"
+        - name: DB_USER
+          value: "petclinic"
+        - name: DB_PASSWORD
+          value: "ChangeMeInProduction123!"
+        - name: DB_NAME
+          value: "petclinic"
+        volumeMounts:
+        - name: db-scripts
+          mountPath: /scripts
+      volumes:
+      - name: db-scripts
+        configMap:
+          name: db-init-scripts
+      restartPolicy: OnFailure
+EOF`
+  - **Details**: Kubernetes job to initialize database schema
 
 - [ ] Create database schemas
   - **Command**: `kubectl apply -f k8s/db-init-job.yaml`
+  - **Details**: Runs database initialization scripts
 
 ### Secrets Management
 - [ ] Set up AWS Secrets Manager for database credentials
