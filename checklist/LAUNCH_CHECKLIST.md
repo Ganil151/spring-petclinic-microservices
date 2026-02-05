@@ -129,12 +129,56 @@ EOF`
 ## Phase 2: Ground Control (Base Infrastructure)
 
 ### Kubernetes Control Plane
+- [ ] Create EKS cluster Terraform configuration
+  - **Command**: `cat > eks.tf << EOF
+module "eks" {
+  source = "terraform-aws-modules/eks/aws"
+  version = "~> 20.0"
+
+  cluster_name    = "petclinic-cluster"
+  cluster_version = "1.29"
+
+  vpc_id     = module.vpc.vpc_id
+  subnet_ids = module.vpc.private_subnets
+
+  cluster_endpoint_public_access = true
+  cluster_endpoint_private_access = true
+
+  cluster_addons = {
+    coredns = {
+      most_recent = true
+    }
+    kube-proxy = {
+      most_recent = true
+    }
+    vpc-cni = {
+      most_recent = true
+    }
+    aws-ebs-csi-driver = {
+      most_recent = true
+    }
+  }
+
+  tags = {
+    Environment = "production"
+    Project = "petclinic"
+  }
+}
+EOF`
+  - **Details**: Defines EKS cluster with essential add-ons
+
 - [ ] Provision EKS cluster with managed control plane
-  - **Command**: `terraform apply -target=module.eks`
+  - **Command**: `terraform plan -target=module.eks && terraform apply -target=module.eks`
+  - **Details**: Creates Kubernetes control plane (takes 10-15 minutes)
   - **Junior's Safety Note**: EKS cluster creation takes 10-15 minutes
 
 - [ ] Configure kubectl context
   - **Command**: `aws eks update-kubeconfig --region us-west-2 --name petclinic-cluster`
+  - **Details**: Updates local kubectl configuration to connect to new cluster
+
+- [ ] Verify cluster access
+  - **Command**: `kubectl cluster-info`
+  - **Details**: Confirms successful connection to EKS cluster
 
 ### Worker Nodes
 - [ ] Deploy managed node groups with auto-scaling
