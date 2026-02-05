@@ -343,11 +343,58 @@ EOF`
   - **Details**: Runs database initialization scripts
 
 ### Secrets Management
+- [ ] Generate secure database password
+  - **Command**: `export DB_PASSWORD=$(openssl rand -base64 32)`
+  - **Details**: Creates cryptographically secure random password
+
 - [ ] Set up AWS Secrets Manager for database credentials
-  - **Command**: `aws secretsmanager create-secret --name petclinic/db/credentials --secret-string '{"username":"petclinic","password":"${DB_PASSWORD}"}'`
+  - **Command**: `aws secretsmanager create-secret --name petclinic/db/credentials --description "PetClinic database credentials" --secret-string '{"username":"petclinic","password":"'${DB_PASSWORD}'","engine":"mysql","host":"petclinic-mysql.region.rds.amazonaws.com","port":3306,"dbname":"petclinic"}'`
+  - **Details**: Stores database credentials securely in AWS Secrets Manager
+
+- [ ] Create IAM policy for Secrets Manager access
+  - **Command**: `cat > secrets-policy.json << EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "secretsmanager:GetSecretValue",
+        "secretsmanager:DescribeSecret"
+      ],
+      "Resource": "arn:aws:secretsmanager:us-west-2:*:secret:petclinic/db/credentials-*"
+    }
+  ]
+}
+EOF`
+  - **Details**: Defines minimal permissions for accessing database secrets
 
 - [ ] Install AWS Secrets Store CSI Driver
-  - **Command**: `helm repo add secrets-store-csi-driver https://kubernetes-sigs.github.io/secrets-store-csi-driver/charts && helm install csi-secrets-store secrets-store-csi-driver/secrets-store-csi-driver --namespace kube-system`
+  - **Command**: `helm repo add secrets-store-csi-driver https://kubernetes-sigs.github.io/secrets-store-csi-driver/charts && helm install csi-secrets-store secrets-store-csi-driver/secrets-store-csi-driver --namespace kube-system --set syncSecret.enabled=true`
+  - **Details**: Enables Kubernetes pods to access AWS Secrets Manager
+
+- [ ] Create SecretProviderClass for database credentials
+  - **Command**: `cat > k8s/secret-provider.yaml << EOF
+apiVersion: secrets-store.csi.x-k8s.io/v1
+kind: SecretProviderClass
+metadata:
+  name: petclinic-db-secrets
+  namespace: petclinic
+spec:
+  provider: aws
+  parameters:
+    objects: |
+      - objectName: "petclinic/db/credentials"
+        objectType: "secretsmanager"
+        jmesPath:
+          - path: "username"
+            objectAlias: "db-username"
+          - path: "password"
+            objectAlias: "db-password"
+          - path: "host"
+            objectAlias: "db-host"
+EOF`
+  - **Details**: Maps AWS Secrets Manager secrets to Kubernetes secrets
 
 ## Phase 3: Payload Preparation (Microservices Configuration)
 
