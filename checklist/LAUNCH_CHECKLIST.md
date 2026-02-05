@@ -181,12 +181,48 @@ EOF`
   - **Details**: Confirms successful connection to EKS cluster
 
 ### Worker Nodes
+- [ ] Add managed node group configuration to eks.tf
+  - **Command**: `cat >> eks.tf << EOF
+
+  eks_managed_node_groups = {
+    petclinic_nodes = {
+      min_size     = 2
+      max_size     = 6
+      desired_size = 3
+
+      instance_types = ["t3.medium"]
+      capacity_type  = "ON_DEMAND"
+
+      k8s_labels = {
+        Environment = "production"
+        NodeGroup = "petclinic-workers"
+      }
+
+      update_config = {
+        max_unavailable_percentage = 25
+      }
+
+      tags = {
+        Environment = "production"
+        Project = "petclinic"
+      }
+    }
+  }
+EOF`
+  - **Details**: Configures auto-scaling worker nodes with rolling updates
+
 - [ ] Deploy managed node groups with auto-scaling
-  - **Command**: `terraform apply -target=module.eks_node_groups`
+  - **Command**: `terraform plan -target=module.eks && terraform apply -target=module.eks`
+  - **Details**: Provisions EC2 instances as Kubernetes worker nodes
   - **Junior's Safety Note**: Verify node group is in ACTIVE state before proceeding
 
-- [ ] Validate cluster connectivity
-  - **Command**: `kubectl get nodes`
+- [ ] Validate cluster connectivity and node status
+  - **Command**: `kubectl get nodes -o wide`
+  - **Details**: Shows all nodes with their status, roles, and IP addresses
+
+- [ ] Check node group status in AWS console
+  - **Command**: `aws eks describe-nodegroup --cluster-name petclinic-cluster --nodegroup-name petclinic_nodes`
+  - **Details**: Verifies node group is in ACTIVE state
 
 ### Database Layer
 - [ ] Provision RDS MySQL instance with Multi-AZ
