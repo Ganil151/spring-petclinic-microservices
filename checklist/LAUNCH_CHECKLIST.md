@@ -55,19 +55,75 @@ EOF`
   - **Details**: Grants necessary permissions while maintaining least privilege
 
 ### State Management
+- [ ] Generate unique suffix for resource naming
+  - **Command**: `export RANDOM_SUFFIX=$(openssl rand -hex 4)`
+  - **Details**: Creates unique identifier to avoid naming conflicts
+
 - [ ] Create S3 bucket for Terraform remote state
-  - **Command**: `aws s3 mb s3://petclinic-terraform-state-${RANDOM_SUFFIX}`
+  - **Command**: `aws s3 mb s3://petclinic-terraform-state-${RANDOM_SUFFIX} --region us-west-2`
+  - **Details**: Stores Terraform state remotely for team collaboration
   - **Junior's Safety Note**: Enable versioning and encryption on state bucket
 
+- [ ] Enable S3 bucket versioning
+  - **Command**: `aws s3api put-bucket-versioning --bucket petclinic-terraform-state-${RANDOM_SUFFIX} --versioning-configuration Status=Enabled`
+  - **Details**: Protects against accidental state file corruption
+
+- [ ] Enable S3 bucket encryption
+  - **Command**: `aws s3api put-bucket-encryption --bucket petclinic-terraform-state-${RANDOM_SUFFIX} --server-side-encryption-configuration '{"Rules":[{"ApplyServerSideEncryptionByDefault":{"SSEAlgorithm":"AES256"}}]}'`
+  - **Details**: Encrypts state files at rest
+
 - [ ] Create DynamoDB table for state locking
-  - **Command**: `aws dynamodb create-table --table-name petclinic-terraform-locks --attribute-definitions AttributeName=LockID,AttributeType=S --key-schema AttributeName=LockID,KeyType=HASH --billing-mode PAY_PER_REQUEST`
+  - **Command**: `aws dynamodb create-table --table-name petclinic-terraform-locks --attribute-definitions AttributeName=LockID,AttributeType=S --key-schema AttributeName=LockID,KeyType=HASH --billing-mode PAY_PER_REQUEST --region us-west-2`
+  - **Details**: Prevents concurrent Terraform operations that could corrupt state
 
 ### Network Foundation
+- [ ] Create Terraform backend configuration
+  - **Command**: `cat > backend.tf << EOF
+terraform {
+  backend "s3" {
+    bucket         = "petclinic-terraform-state-${RANDOM_SUFFIX}"
+    key            = "petclinic/terraform.tfstate"
+    region         = "us-west-2"
+    dynamodb_table = "petclinic-terraform-locks"
+    encrypt        = true
+  }
+}
+EOF`
+  - **Details**: Configures remote state storage with locking
+
 - [ ] Initialize Terraform backend configuration
-  - **Command**: `terraform init -backend-config="bucket=petclinic-terraform-state-${SUFFIX}"`
+  - **Command**: `terraform init`
+  - **Details**: Downloads providers and configures backend
+
+- [ ] Create VPC Terraform configuration
+  - **Command**: `cat > vpc.tf << EOF
+module "vpc" {
+  source = "terraform-aws-modules/vpc/aws"
+  version = "~> 5.0"
+
+  name = "petclinic-vpc"
+  cidr = "10.0.0.0/16"
+
+  azs             = ["us-west-2a", "us-west-2b", "us-west-2c"]
+  private_subnets = ["10.0.1.0/24", "10.0.2.0/24", "10.0.3.0/24"]
+  public_subnets  = ["10.0.101.0/24", "10.0.102.0/24", "10.0.103.0/24"]
+
+  enable_nat_gateway = true
+  enable_vpn_gateway = false
+  enable_dns_hostnames = true
+  enable_dns_support = true
+
+  tags = {
+    Environment = "production"
+    Project = "petclinic"
+  }
+}
+EOF`
+  - **Details**: Defines VPC with high availability across 3 AZs
 
 - [ ] Provision VPC with 3 AZs (3 public + 3 private subnets)
-  - **Command**: `terraform apply -target=module.vpc`
+  - **Command**: `terraform plan -target=module.vpc && terraform apply -target=module.vpc`
+  - **Details**: Creates network foundation with NAT gateways for private subnets
   - **Junior's Safety Note**: Always review terraform plan before applying
 
 ## Phase 2: Ground Control (Base Infrastructure)
