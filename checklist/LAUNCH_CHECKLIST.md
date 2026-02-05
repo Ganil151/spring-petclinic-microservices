@@ -3,12 +3,56 @@
 ## Phase 1: Pre-Flight (Environment & Security)
 
 ### IAM & Access Management
+- [ ] Create trust policy document for Terraform role
+  - **Command**: `cat > trust-policy.json << EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "Service": "ec2.amazonaws.com"
+      },
+      "Action": "sts:AssumeRole"
+    }
+  ]
+}
+EOF`
+  - **Details**: Creates trust relationship allowing EC2 instances to assume this role
+
 - [ ] Create dedicated Terraform execution role with least privilege
   - **Command**: `aws iam create-role --role-name terraform-petclinic-role --assume-role-policy-document file://trust-policy.json`
+  - **Details**: Creates IAM role specifically for Terraform operations
   - **Junior's Safety Note**: NEVER use root credentials for Terraform operations
 
-- [ ] Attach required policies to Terraform role
-  - **Command**: `aws iam attach-role-policy --role-name terraform-petclinic-role --policy-arn arn:aws:iam::aws:policy/PowerUserAccess`
+- [ ] Create custom policy for PetClinic deployment
+  - **Command**: `cat > petclinic-policy.json << EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "ec2:*",
+        "eks:*",
+        "rds:*",
+        "s3:*",
+        "iam:*",
+        "route53:*",
+        "acm:*",
+        "secretsmanager:*",
+        "ecr:*"
+      ],
+      "Resource": "*"
+    }
+  ]
+}
+EOF`
+  - **Details**: Defines minimum required permissions for deployment
+
+- [ ] Attach custom policy to Terraform role
+  - **Command**: `aws iam put-role-policy --role-name terraform-petclinic-role --policy-name PetClinicDeployment --policy-document file://petclinic-policy.json`
+  - **Details**: Grants necessary permissions while maintaining least privilege
 
 ### State Management
 - [ ] Create S3 bucket for Terraform remote state
