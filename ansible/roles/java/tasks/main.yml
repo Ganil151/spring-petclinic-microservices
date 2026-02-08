@@ -1,0 +1,66 @@
+---
+- name: Install Amazon Corretto 21 (RedHat/Amazon Linux)
+  when: ansible_os_family == "RedHat"
+  block:
+    - name: Import Corretto GPG key
+      rpm_key:
+        state: present
+        key: https://yum.corretto.aws/corretto.key
+
+    - name: Add Corretto repository
+      yum_repository:
+        name: corretto
+        description: Amazon Corretto YUM Repository
+        baseurl: https://yum.corretto.aws/corretto.repo
+        enabled: yes
+        gpgcheck: yes
+
+    - name: Install Java 21
+      yum:
+        name: java-21-amazon-corretto-devel
+        state: present
+
+- name: Install Amazon Corretto 21 (Debian/Ubuntu)
+  when: ansible_os_family == "Debian"
+  block:
+    - name: Install dependencies
+      apt:
+        name:
+          - wget
+          - apt-transport-https
+          - gnupg
+        state: present
+        update_cache: yes
+
+    - name: Import Corretto GPG key
+      apt_key:
+        url: https://apt.corretto.aws/corretto.key
+        state: present
+
+    - name: Add Corretto repository
+      apt_repository:
+        repo: "deb https://apt.corretto.aws stable main"
+        state: present
+        filename: corretto
+
+    - name: Install Java 21
+      apt:
+        name: java-21-amazon-corretto-jdk
+        state: present
+        update_cache: yes
+
+- name: Set JAVA_HOME environment variable
+  lineinfile:
+    path: /etc/environment
+    regexp: '^JAVA_HOME='
+    line: 'JAVA_HOME={{ java_home }}'
+    create: yes
+
+- name: Verify Java installation
+  command: java -version
+  register: java_version_output
+  changed_when: false
+
+- name: Display Java version
+  debug:
+    msg: "{{ java_version_output.stderr_lines }}"
