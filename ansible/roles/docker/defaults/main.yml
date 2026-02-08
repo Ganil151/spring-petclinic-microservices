@@ -1,0 +1,4 @@
+---
+docker_users:
+  - ec2-user
+  - "{{ ansible_user }}"
