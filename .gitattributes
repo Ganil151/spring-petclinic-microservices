@@ -1,1 +1,18 @@
+# Generated CSS files
 *.css linguist-generated=true
+
+# Line endings
+* text=auto
+*.java text eol=lf
+*.xml text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.properties text eol=lf
+*.sh text eol=lf
+*.md text eol=lf
+
+# Binary files
+*.jar binary
+*.png binary
+*.jpg binary
+*.jpeg binary
