@@ -1,3 +1,6 @@
 variable "aws_region" {}
 variable "Environment" {}
 variable "bucket_name" {}
+variable "sp" {
+  
+}
