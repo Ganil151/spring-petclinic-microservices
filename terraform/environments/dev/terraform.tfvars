@@ -22,4 +22,4 @@ db_instance_class = "db.t3.micro"
 allocated_storage = 20
 
 # Monitoring
-sns_email = "devops@example.com"
+sns_email = "ganilbatistyan@gmail..com"
