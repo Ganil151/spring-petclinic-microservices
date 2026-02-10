@@ -9,3 +9,4 @@ module "vpc" {
   availability_zones   = var.data_availability_zone
 }
 
+module
