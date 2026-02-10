@@ -29,3 +29,4 @@ iam_instance_profile = ""
 root_volume_size = 20
 allowed_cidr_blocks = ["0.0.0.0/0"]
 extra_volume_size = 0
+  
