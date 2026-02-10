@@ -62,18 +62,33 @@ variable "ami" {
   type        = string
 }
 
-# EC2 / Compute Variables
-variable "instance_name" {
-  description = "Name for the EC2 instance"
+# Jenkins Configuration
+variable "jenkins_instance_name" {
+  description = "Name for the Jenkins EC2 instance"
   type        = string
+  default     = "jenkins-master"
 }
 
-variable "instance_type" {
-  description = "EC2 instance type"
+variable "jenkins_instance_type" {
+  description = "EC2 instance type for Jenkins"
   type        = string
-  default     = "t3.micro"
+  default     = "t3.large"
 }
 
+# SonarQube Configuration
+variable "sonarqube_instance_name" {
+  description = "Name for the SonarQube EC2 instance"
+  type        = string
+  default     = "sonarqube-server"
+}
+
+variable "sonarqube_instance_type" {
+  description = "EC2 instance type for SonarQube"
+  type        = string
+  default     = "t2.medium"
+}
+
+# Common EC2 Variables
 variable "key_name" {
   description = "SSH key pair name"
   type        = string
