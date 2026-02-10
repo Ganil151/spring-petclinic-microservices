@@ -18,4 +18,4 @@ db_allocated_storage = 20
 db_username          = "petclinic"
 
 # Infrastructure Configuration
-ami = 
+ami = "ami-0c1fe732b5494dc14"
