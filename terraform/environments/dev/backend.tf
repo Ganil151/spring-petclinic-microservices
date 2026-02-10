@@ -4,10 +4,10 @@
 
 # terraform {
 #   backend "s3" {
-#     bucket         = var.
+#     bucket         = var.bucket_name
 #     key            = "tfstate/dev/terraform.tfstate"
-#     region         = "us-east-1"
-#     dynamodb_table = "petclinic-terraform-locks"
+#     region         = var.aws_region
+#     dynamodb_table = var.dynamodb_table
 #     encrypt        = true
 #   }
 # }
