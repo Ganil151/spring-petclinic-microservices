@@ -9,8 +9,20 @@ variable "environment" {
 }
 
 variable "instance_name" {
-  description = "Name tag for the EC2 instance"
+  description = "Name tag prefix for the EC2 instance(s)"
   type        = string
+}
+
+variable "instance_count" {
+  description = "Number of instances to launch"
+  type        = number
+  default     = 1
+}
+
+variable "role" {
+  description = "The role of the instance (e.g. master, slave, sonarqube)"
+  type        = string
+  default     = "worker"
 }
 
 variable "ami_id" {
