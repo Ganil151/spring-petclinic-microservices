@@ -17,3 +17,15 @@ module "eks" {
   private_subnet_ids = module.networking.private_subnet_ids
   environment        = var.environment
 }
+
+module "rds" {
+  source = "../rds"
+
+  db_name              = var.db_name
+  db_user              = var.db_user
+  db_password          = var.db_password
+  vpc_id               = module.networking.vpc_id
+  private_subnet_ids   = module.networking.private_subnet_ids
+  environment          = var.environment
+  project_name         = var.project_name
+}
