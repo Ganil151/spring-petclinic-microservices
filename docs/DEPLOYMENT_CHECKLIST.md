@@ -77,15 +77,16 @@ terraform/
 ### 🛠️ Bootstrapping the Terraform Structure
 Run the following command to initialize the directory structure and placeholder files:
 ```bash
-mkdir -p terraform/modules/{vpc,eks,rds,alb,ecr,monitoring} && \
+mkdir -p terraform/modules/{vpc,eks,rds,alb,ecr,waf,monitoring} && \
 mkdir -p terraform/environments/{dev,staging,prod} && \
 mkdir -p terraform/global/{route53,iam} && \
 mkdir -p terraform/scripts && \
 touch terraform/modules/vpc/{main,variables,outputs}.tf && \
-touch terraform/modules/eks/{main,variables,addons,irsa,output}.tf && \
+touch terraform/modules/eks/{main,variables,addons,irsa,outputs}.tf && \
 touch terraform/modules/rds/{main,variables,outputs,security-group}.tf && \
 touch terraform/modules/alb/{main,variables,outputs}.tf && \
 touch terraform/modules/ecr/{main,variables,outputs}.tf && \
+touch terraform/modules/waf/{main,variables,outputs}.tf && \
 touch terraform/environments/dev/{main,backend,providers,variables,versions}.tf && \
 touch terraform/environments/dev/terraform.tfvars && \
 touch terraform/environments/staging/{main,backend,providers,variables,versions}.tf && \
