@@ -19,7 +19,7 @@ private_subnet_cidrs = ["10.1.0.0/24", "10.1.1.0/24"]
 # Data Availability Zone
 data_availability_zone = ["us-east-1a", "us-east-1b"]
 
-# Data AMI
+# AMI
 data_ami = "ami-0c55b159cbfafe1f0"
 
 # Data AMI
