@@ -31,7 +31,6 @@ variable "private_subnet_cidrs" {
 variable "data_availability_zone" {
   description = "Availability zones"
   type        = list(string)
-  default     = ["us-east-1a", "us-east-1b"]
 }
 
 variable "cluster_version" {
