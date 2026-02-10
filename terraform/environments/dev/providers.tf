@@ -3,8 +3,8 @@ provider "aws" {
   default_tags {
     tags = {
       Environment = var.environment
-      Project = "PetClinic"
-      ManagedBy = "Terraform"
+      Project     = "PetClinic"
+      ManagedBy   = "Terraform"
     }
   }
 }
