@@ -1,3 +1,3 @@
 variable "aws_region" {}
 variable "Environment" {}
-variable 
+variable "bucket_name" {}
