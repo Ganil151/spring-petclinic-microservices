@@ -3,11 +3,11 @@
 # and run 'terraform init' to migrate your local state.
 
 terraform {
-#   backend "s3" {
-#     bucket         = var.bucket_name
-#     key            = "tfstate/dev/terraform.tfstate"
-#     region         = var.aws_region
-#     dynamodb_table = var.dynamodb_table
-#     encrypt        = true
-#   }
-# }
+  backend "s3" {
+    bucket         = var.bucket_name
+    key            = "tfstate/dev/terraform.tfstate"
+    region         = var.aws_region
+    dynamodb_table = var.dynamodb_table
+    encrypt        = true
+  }
+}
