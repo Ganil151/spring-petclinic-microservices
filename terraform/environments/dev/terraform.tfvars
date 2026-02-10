@@ -8,3 +8,4 @@ aws_region = "us-east-1"
 environment = "dev"
 
 # Vpc Cidr
+vpc_cidr = "
