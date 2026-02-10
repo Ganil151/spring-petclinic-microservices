@@ -1,4 +1,5 @@
 resource "aws_instance" "this" {
+  count                       = var.instance_count
   ami                         = var.ami_id
   instance_type               = var.instance_type
   subnet_id                   = var.subnet_id
@@ -15,30 +16,32 @@ resource "aws_instance" "this" {
   }
 
   tags = {
-    Name        = "${var.project_name}-${var.environment}-${var.instance_name}"
+    Name        = var.instance_count > 1 ? "${var.project_name}-${var.environment}-${var.instance_name}-${count.index + 1}" : "${var.project_name}-${var.environment}-${var.instance_name}"
     Environment = var.environment
     Project     = var.project_name
+    Role        = var.role
   }
 }
 
 # Optional Additional EBS Volume
 resource "aws_ebs_volume" "extra" {
-  count             = var.extra_volume_size > 0 ? 1 : 0
-  availability_zone = aws_instance.this.availability_zone
+  count             = var.extra_volume_size > 0 ? var.instance_count : 0
+  availability_zone = aws_instance.this[count.index].availability_zone
   size              = var.extra_volume_size
   type              = "gp3"
   encrypted         = true
 
   tags = {
-    Name        = "${var.project_name}-${var.environment}-${var.instance_name}-data"
+    Name        = var.instance_count > 1 ? "${var.project_name}-${var.environment}-${var.instance_name}-data-${count.index + 1}" : "${var.project_name}-${var.environment}-${var.instance_name}-data"
     Environment = var.environment
     Project     = var.project_name
+    Role        = var.role
   }
 }
 
 resource "aws_volume_attachment" "this" {
-  count       = var.extra_volume_size > 0 ? 1 : 0
+  count       = var.extra_volume_size > 0 ? var.instance_count : 0
   device_name = "/dev/sdb"
-  volume_id   = aws_ebs_volume.extra[0].id
-  instance_id = aws_instance.this.id
+  volume_id   = aws_ebs_volume.extra[count.index].id
+  instance_id = aws_instance.this[count.index].id
 }
