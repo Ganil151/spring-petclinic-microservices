@@ -21,3 +21,5 @@ data_availability_zone = "us-east-1a"
 
 # Data AMI
 data_ami = "ami-0c55b159cbfafe1f0"
+
+# Data AMI
