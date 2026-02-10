@@ -1,4 +1,9 @@
-variable ""
+variable "project_name" {
+  description = "Project name"
+  type        = string
+  default     = "petclinic"
+}
+
 variable "aws_region" {
   description = "AWS region"
   type        = string
