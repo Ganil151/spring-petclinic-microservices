@@ -13,68 +13,65 @@ This repository is architected following the **Separation of Concerns** principl
 
 ```text
 terraform/
-├── modules/                              # Reusable, parameterized components
-│   ├── vpc/
-│   │   ├── main.tf
-│   │   ├── variables.tf
-│   │   ├── outputs.tf
-│   │   └── README.md                     # Usage examples & interface contract
-│   ├── eks/
-│   │   ├── main.tf                       # EKS cluster + node groups
-│   │   ├── addons.tf                     # CoreDNS, VPC-CNI, EBS CSI
-│   │   ├── irsa.tf                       # IAM Roles for Service Accounts
-│   │   ├── variables.tf
-│   │   ├── outputs.tf
+├── modules/                              # Reusable, parameterized components (SRE-Grade)
+│   ├── vpc/                              # Networking Foundation (L3/L4)
+│   │   ├── main.tf                       # VPC, Subnets, IGW, NATGW, Route Tables
+│   │   ├── variables.tf                  # CIDR ranges, AZ distribution logic
+│   │   ├── outputs.tf                    # Subnet IDs (EKS/RDS/ALB discovery)
+│   │   └── README.md                     # Documentation on EKS-specific tagging
+│   ├── eks/                              # Container Orchestration (Control Plane)
+│   │   ├── main.tf                       # EKS Cluster + Managed Node Groups (MNG)
+│   │   ├── addons.tf                     # Amazon VPC CNI, CoreDNS, Kube-Proxy
+│   │   ├── irsa.tf                       # IAM Roles for Service Accounts (OIDC)
+│   │   ├── variables.tf                  # Cluster version (v1.31), Instance types
+│   │   ├── outputs.tf                    # Cluster CA, Endpoint, Auth token
 │   │   └── README.md
-│   ├── rds/
-│   │   ├── main.tf                       # Multi-AZ RDS + parameter group
-│   │   ├── security-group.tf
-│   │   ├── variables.tf
-│   │   ├── outputs.tf
+│   ├── rds/                              # Persistence Layer (Managed MySQL)
+│   │   ├── main.tf                       # Multi-AZ RDS Instance, Subnet Groups
+│   │   ├── security-group.tf             # DB-specific ingress (Post 3306)
+│   │   ├── variables.tf                  # Encryption, Storage, Credentials
+│   │   ├── outputs.tf                    # RDS Endpoint, VPC Security Group ID
 │   │   └── README.md
-│   ├── alb/
-│   │   ├── main.tf                       # ALB + target groups for ingress
-│   │   ├── variables.tf
-│   │   └── outputs.tf
-│   ├── ecr/
-│   │   ├── main.tf                       # Per-service ECR repos (customers, visits, etc.)
-│   │   ├── variables.tf
-│   │   └── outputs.tf
-│   └── monitoring/                       # Optional: CloudWatch dashboards, alerts
-│       ├── main.tf
-│       └── ...
-├── environments/
-│   ├── dev/
-│   │   ├── main.tf                       # Composes modules with dev params
-│   │   ├── backend.tf                    # Unique S3 key: tfstate/dev/...
-│   │   ├── providers.tf                  # Region + alias config
-│   │   ├── terraform.tfvars              # env_name="dev", instance_type="t3.small", etc.
-│   │   ├── variables.tf                  # Declares ONLY environment-specific vars
-│   │   └── versions.tf                   # Terraform + provider versions
-│   ├── staging/
-│   │   ├── main.tf                       # Composes SAME modules with staging params
-│   │   ├── backend.tf                    # Unique S3 key: tfstate/staging/...
-│   │   ├── providers.tf
-│   │   ├── terraform.tfvars              # env_name="staging", instance_type="m6i.large", etc.
-│   │   ├── variables.tf
-│   │   └── versions.tf
-│   └── prod/
-│       ├── main.tf                       # Composes SAME modules with prod params
-│       ├── backend.tf                    # Unique S3 key: tfstate/prod/...
-│       ├── providers.tf
-│       ├── terraform.tfvars              # env_name="prod", instance_type="m6i.xlarge", etc.
-│       ├── variables.tf
-│       ├── versions.tf
-│       └── security.tf                   # Prod-only: stricter SGs, encryption, backups
-├── global/                               # ONE-TIME resources (not per-env)
+│   ├── alb/                              # Traffic Ingress (L7 Load Balancing)
+│   │   ├── main.tf                       # ALB, Target Groups (TG), Listeners (HTTPS)
+│   │   ├── variables.tf                  # Subnet IDs, SG IDs, ACM Certs
+│   │   └── outputs.tf                    # LB DNS Name, Zone ID (Route53 Alias)
+│   ├── ecr/                              # Container Artifact Storage
+│   │   ├── main.tf                       # Private Repos for each Microservice
+│   │   ├── variables.tf                  # Image scanning, Lifecycle policies
+│   │   └── outputs.tf                    # Registry URLs for CI/CD pipelines
+│   ├── waf/                              # Perimeter Security (Web Application Firewall)
+│   │   ├── main.tf                       # Web ACLs: SQLi, XSS, Bot Control
+│   │   ├── variables.tf                  # Scope (Regional), Rule priorities
+│   │   └── outputs.tf                    # WAF Web ACL ARN for ALB attachment
+│   └── monitoring/                       # Observability (Health & Performance)
+│       ├── main.tf                       # CloudWatch Dashboards, Log Groups, Alarms
+│       └── variables.tf
+├── environments/                         # Environment-Specific Workspaces
+│   ├── dev/                              # Sandbox: Cost-Optimized settings
+│   │   ├── main.tf                       # Composes modules (Low-Scale)
+│   │   ├── backend.tf                    # Remote State: s3://.../tfstate/dev/
+│   │   ├── providers.tf                  # Region + Default Tags (CreatedBy: Terraform)
+│   │   ├── terraform.tfvars              # Dev params (Single NAT, t3.small)
+│   │   ├── variables.tf                  # Environment specific variables
+│   │   └── versions.tf                   # Terraform 1.6+ and AWS Provider 6.0+
+│   ├── staging/                          # Pre-Prod: Full Scale Mirror
+│   │   ├── main.tf                       # Composes modules (Prod-Scale)
+│   │   ├── backend.tf                    # Remote State: s3://.../tfstate/staging/
+│   │   └── ...
+│   └── prod/                             # Production: Mission Critical
+│       ├── main.tf                       # Strict security & HA configuration
+│       ├── backend.tf                    # Remote State: s3://.../tfstate/prod/
+│       └── security.tf                   # Prod-specific hardening (WAF, Shield)
+├── global/                               # Shared Multi-Env Resources
 │   ├── route53/
-│   │   └── main.tf                       # Shared DNS zones (e.g., petclinic.example.com)
+│   │   └── main.tf                       # Public Hosted Zones, Shared Records
 │   └── iam/
-│       └── main.tf                       # Cross-account roles, SSO permissions
+│       └── main.tf                       # Cross-account roles, Admin break-glass
 ├── scripts/
-│   ├── deploy.sh                         # Wrapper: terraform init/plan/apply per env
-│   └── validate-modules.sh               # Check module interfaces pre-commit
-└── README.md                             # Setup guide, env promotion workflow, diagram
+│   ├── deploy.sh                         # CI/CD wrapper for TF Apply
+│   └── validate.sh                       # Pre-commit: fmt, validate, checkov
+└── README.md                             # High-level architecture & SDR Link
 ```
 
 ### 🛠️ Bootstrapping the Terraform Structure
