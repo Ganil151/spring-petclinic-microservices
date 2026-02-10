@@ -1,13 +1,9 @@
-# S3 Backend configuration for remote state management
-# To enable this, replace the bucket name with your actual S3 bucket name
-# and run 'terraform init' to migrate your local state.
-
 terraform {
   backend "s3" {
-    bucket         = var.bucket_name
+    bucket         = "petclinic-terraform-state-17a538b3"
     key            = "tfstate/dev/terraform.tfstate"
-    region         = var.aws_region
-    dynamodb_table = var.dynamodb_table
+    region         = "us-east-1"
+    dynamodb_table = "petclinic-terraform-locks-17a538b3"
     encrypt        = true
   }
 }
