@@ -1,46 +1,133 @@
-# Maven
+# ==========================================
+# Java / Maven
+# ==========================================
 target/
 !.mvn/wrapper/maven-wrapper.jar
+*.class
+*.jar
+*.war
+*.ear
+*.zip
+*.tar.gz
+*.rar
 
-# Jenv
-.java-version
+# ==========================================
+# Terraform
+# ==========================================
+# Local .terraform directories
+**/.terraform/*
+
+# .tfstate files
+*.tfstate
+*.tfstate.*
+
+# Crash log files
+crash.log
+crash.*.log
+
+# Exclude all .tfvars files, which are likely to contain sensitive data, such as
+# password, private keys, and other secrets. These should not be part of version 
+# control as they are data based configuration files.
+# *.tfvars
+# *.tfvars.json
+
+# Ignore override files as they are usually used to override resources locally and so
+# are not checked in
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Include override files you do wish to add to version control using negated pattern
+# !example_override.tf
+
+# Include plugin cache directory
+.terraform.lock.hcl
+
+# Ignore CLI configuration files
+.terraformrc
+terraform.rc
+
+# Ignore plan files
+tfplan
+tfplan.json
+
+# ==========================================
+# Python (Infra Testing & Ansible)
+# ==========================================
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.venv/
+venv/
+ENV/
+env/
+.tox/
+.coverage
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.log
+
+# ==========================================
+# Ansible
+# ==========================================
+*.retry
+retry/
+ansible_fact_cache/
+
+# ==========================================
+# Secrets & Credentials
+# ==========================================
+*.pem
+*.key
+*.pub
+secrets.json
+.env
+.env.*
+!.env.example
+*.pkcs12
+*.p12
+*.pfx
+*.jks
+*.truststore
+
+# ==========================================
+# IDEs
+# ==========================================
+# IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+out/
 
 # Eclipse
 .settings/
 .classpath
 .project
-
-# IntelliJ IDEA
-.idea
-*.iml
-
-# Visual Studio Code
 .factorypath
+
+# VS Code
 .vscode/
 
-# Branch switching
-generated/
+# ==========================================
+# OS Specific
+# ==========================================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
 
-# macOS
-**/.DS_Store
-
-# Amazon Q
+# ==========================================
+# Project Specific
+# ==========================================
+.java-version
 .amazonq
-
-# Logs
-*.log
+generated/
 nohup.out
-
-# Terraform
-*.tfstate
-*.tfstate.backup
-.terraform/
-.terraform.lock.hcl
-
-# Environment
-.env
-.env.local
-
-# Docker
 docker-compose.override.yml
-
