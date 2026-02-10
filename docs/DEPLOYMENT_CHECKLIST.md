@@ -189,7 +189,7 @@ To ensure high-availability and build performance, we utilize the following comp
 *   **Fargate Profiles:** Allows running pods without managing EC2 instances. Pods are billed per vCPU/RAM per second.
 
 ### 3. High Availability & Persistence
-*   **Multi-AZ Strategy:** The 3 Worker Nodes (or Fargate Pods) are distributed across `us-west-2a`, `us-west-2b`, and `us-west-2c`. This ensures that even if an entire AWS Data Center fails, 66% of your application capacity remains online.
+*   **Multi-AZ Strategy:** The 3 Worker Nodes (or Fargate Pods) are distributed across `us-east-1a`, `us-east-1b`, and `us-east-1c`. This ensures that even if an entire AWS Data Center fails, 66% of your application capacity remains online.
 *   **DNS Resolution (Route53):** Provides global traffic routing and failover between regions using health checks.
 *   **Storage (EBS/EFS):** EC2 nodes use GP3 EBS. Fargate pods utilize **Amazon EFS** for cross-node persistent storage.
 *   **Database Resilience:** The RDS instance uses **Multi-AZ Replication**, providing a synchronous standby in a different subnet for automatic failover.
@@ -274,8 +274,8 @@ To ensure high-availability and build performance, we utilize the following comp
   ```bash
   aws configure get region
   ```
-  **Expected Output:** `us-west-2`
-  **Troubleshooting:** Set region with `export AWS_DEFAULT_REGION=us-west-2`
+  **Expected Output:** `us-east-1`
+  **Troubleshooting:** Set region with `export AWS_DEFAULT_REGION=us-east-1`
 
 - [ ] **Test AWS permissions**
   ```bash
@@ -566,7 +566,7 @@ A reliable "Source of Truth" for Terraform is critical. This setup ensures **Con
   export ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
   export ECR_REGISTRY="${ACCOUNT_ID}.dkr.ecr.us-east-1.amazonaws.com"
   ```
-  *   **💡 Pro-Tip:** Add `export ECR_REGISTRY=${ACCOUNT_ID}.dkr.ecr.us-west-2.amazonaws.com` to your `~/.bashrc` or `~/.zshrc` to ensure it persists across terminal sessions.
+  *   **💡 Pro-Tip:** Add `export ECR_REGISTRY=${ACCOUNT_ID}.dkr.ecr.us-east-1.amazonaws.com` to your `~/.bashrc` or `~/.zshrc` to ensure it persists across terminal sessions.
 
 ### 2.6 Deploy RDS Module
 
