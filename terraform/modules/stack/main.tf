@@ -29,3 +29,12 @@ module "rds" {
   environment          = var.environment
   project_name         = var.project_name
 }
+
+module "bastion" {
+  source = "../ec2"
+
+  instance_name    = "${var.project_name}-${var.environment}-bastion"
+  vpc_id           = module.networking.vpc_id
+  public_subnet_id = module.networking.public_subnet_ids[0]
+  environment      = var.environment
+}

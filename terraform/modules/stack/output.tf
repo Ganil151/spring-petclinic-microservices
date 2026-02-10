@@ -21,3 +21,7 @@ output "eks_cluster_endpoint" {
 output "rds_endpoint" {
   value = module.rds.db_instance_endpoint
 }
+
+output "bastion_public_ip" {
+  value = module.bastion.public_ip
+}
