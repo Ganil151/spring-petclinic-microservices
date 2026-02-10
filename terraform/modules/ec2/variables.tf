@@ -61,5 +61,17 @@ variable "root_volume_size" {
 variable "allowed_cidr_blocks" {
   description = "List of CIDR blocks allowed to access the instance via SSH"
   type        = list(string)
-  default     = ["0.0.0.0/0"] # Open by default, but should be restricted in tfvars
+  default     = ["0.0.0.0/0"]
+}
+
+variable "iam_instance_profile" {
+  description = "The IAM Instance Profile to launch the instance with"
+  type        = string
+  default     = null
+}
+
+variable "extra_volume_size" {
+  description = "Size of an additional EBS volume in GB (set to 0 to disable)"
+  type        = number
+  default     = 0
 }
