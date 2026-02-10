@@ -393,8 +393,34 @@ A reliable "Source of Truth" for Terraform is critical. This setup ensures **Con
 - [ ] **Step 6: Inject Configuration into Backend.tf**
   *   **Logic:** Connects the local Terraform code to the remote AWS resources created above.
   ```bash
-  cd /home/gsmash/Documents/Devops/05-labs/play-ground/microservices/spring-petclinic-microservices/terraform/environments/dev
-  sed -i "s/REPLACE_WITH_BUCKET_NAME/${BUCKET_NAME}/" backend.tf
+  cd /home/gsmash/Documents/spring-petclinic-microservices/terraform/environments/dev
+  # Example configuration (ensure bucket name matches Step 1)
+  cat > backend.tf << EOF
+  terraform {
+    backend "s3" {
+      bucket         = "REPLACE_WITH_BUCKET_NAME"
+      key            = "tfstate/dev/terraform.tfstate"
+      region         = "us-east-1"
+      dynamodb_table = "petclinic-terraform-locks"
+      encrypt        = true
+    }
+  }
+  EOF
+  ```
+
+- [ ] **Step 7: Migrate Local State to Remote Backend**
+  *   **Logic:** After configuring the backend, you must "migrate" your existing local `terraform.tfstate` to the S3 bucket. Terraform will detect the change and prompt for migration.
+  ```bash
+  terraform init
+  ```
+  *   **Prompt:** When asked `Do you want to copy existing state to the new backend?`, type **yes**.
+  *   **Verification:** Verify the file now exists in S3:
+  ```bash
+  aws s3 ls s3://REPLACE_WITH_BUCKET_NAME/tfstate/dev/
+  ```
+  *   **Cleanup:** Safely remove the local state files (optional but recommended for security):
+  ```bash
+  rm terraform.tfstate terraform.tfstate.backup
   ```
 
 ---
