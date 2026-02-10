@@ -31,4 +31,4 @@ allowed_cidr_blocks = ["0.0.0.0/0"]
 extra_volume_size = 0
 
 # Jenkins Configuration
-instance_name = "jenkins"
+instance_name = "jenkins_ec2"
