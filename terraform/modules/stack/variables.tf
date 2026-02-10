@@ -22,3 +22,9 @@ variable "environment" {
   type        = string
   description = "The deployment environment"
 }
+
+variable "project_name" {
+  type        = string
+  description = "The project name"
+  default     = "spring-petclinic"
+}
