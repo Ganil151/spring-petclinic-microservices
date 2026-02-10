@@ -4,11 +4,21 @@ output "vpc_id" {
 }
 
 output "public_subnet_ids" {
-  value       = [aws_subnet.public.id]
+  value       = aws_subnet.public[*].id
   description = "List of public subnet IDs"
+}
+
+output "private_subnet_ids" {
+  value       = aws_subnet.private[*].id
+  description = "List of private subnet IDs"
 }
 
 output "vpc_cidr" {
   value       = aws_vpc.main.cidr_block
   description = "The CIDR block of the VPC"
+}
+
+output "nat_gateway_ip" {
+  value       = aws_eip.nat.public_ip
+  description = "The public IP of the NAT Gateway"
 }
