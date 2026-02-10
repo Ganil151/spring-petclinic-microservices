@@ -14,44 +14,18 @@ This repository is architected following the **Separation of Concerns** principl
 ```text
 terraform/
 ├── modules/                              # Reusable, parameterized components (SRE-Grade)
-│   ├── vpc/                              # Networking Foundation (L3/L4)
-│   │   ├── main.tf                       # VPC, Subnets, IGW, NATGW, Route Tables
-│   │   ├── variables.tf                  # CIDR ranges, AZ distribution logic
-│   │   ├── outputs.tf                    # Subnet IDs (EKS/RDS/ALB discovery)
-│   │   └── README.md                     # Documentation on EKS-specific tagging
-│   ├── eks/                              # Container Orchestration (Control Plane)
-│   │   ├── main.tf                       # EKS Cluster + Managed Node Groups (MNG)
-│   │   ├── addons.tf                     # Amazon VPC CNI, CoreDNS, Kube-Proxy
-│   │   ├── irsa.tf                       # IAM Roles for Service Accounts (OIDC)
-│   │   ├── variables.tf                  # Cluster version (v1.31), Instance types
-│   │   ├── outputs.tf                    # Cluster CA, Endpoint, Auth token
-│   │   └── README.md
-│   ├── rds/                              # Persistence Layer (Managed MySQL)
-│   │   ├── main.tf                       # Multi-AZ RDS Instance, Subnet Groups
-│   │   ├── security-group.tf             # DB-specific ingress (Post 3306)
-│   │   ├── variables.tf                  # Encryption, Storage, Credentials
-│   │   ├── outputs.tf                    # RDS Endpoint, VPC Security Group ID
-│   │   └── README.md
-│   ├── alb/                              # Traffic Ingress (L7 Load Balancing)
-│   │   ├── main.tf                       # ALB, Target Groups (TG), Listeners (HTTPS)
-│   │   ├── variables.tf                  # Subnet IDs, SG IDs, ACM Certs
-│   │   └── outputs.tf                    # LB DNS Name, Zone ID (Route53 Alias)
+│   ├── networking/                       # Connectivity & Traffic Control
+│   │   ├── vpc/                          # Networking Foundation (L3/L4)
+│   │   ├── sg/                           # Firewall Rules (Security Groups)
+│   │   └── alb/                          # Traffic Ingress (L7 Load Balancing)
+│   ├── compute/                          # Processing & Orchestration
+│   │   ├── eks/                          # Container Orchestration (Control Plane)
+│   │   └── ec2/                          # Compute Layer (DevOps Tooling)
+│   ├── database/                         # Persistence & Data Storage
+│   │   └── rds/                          # Managed MySQL (RDS)
 │   ├── ecr/                              # Container Artifact Storage
-│   │   ├── main.tf                       # Private Repos for each Microservice
-│   │   ├── variables.tf                  # Image scanning, Lifecycle policies
-│   │   └── outputs.tf                    # Registry URLs for CI/CD pipelines
-│   ├── ec2/                              # Compute Layer (DevOps Tooling)
-│   │   ├── main.tf                       # Standalone nodes (Jenkins, SonarQube)
-│   │   ├── variables.tf                  # Instance types, IAM profiles
-│   │   ├── outputs.tf                    # Public/Private IPs
-│   │   └── README.md                     # Topology allocation details
 │   ├── waf/                              # Perimeter Security (Web Application Firewall)
-│   │   ├── main.tf                       # Web ACLs: SQLi, XSS, Bot Control
-│   │   ├── variables.tf                  # Scope (Regional), Rule priorities
-│   │   └── outputs.tf                    # WAF Web ACL ARN for ALB attachment
 │   └── monitoring/                       # Observability (Health & Performance)
-│       ├── main.tf                       # CloudWatch Dashboards, Log Groups, Alarms
-│       └── variables.tf
 ├── environments/                         # Environment-Specific Workspaces
 │   ├── dev/                              # Sandbox: Cost-Optimized settings
 │   │   ├── main.tf                       # Composes modules (Low-Scale)
