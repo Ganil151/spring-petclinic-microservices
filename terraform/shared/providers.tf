@@ -5,7 +5,7 @@ provider "aws" {
     tags = {
       Environment = var.Environment
       Project = "spring-petclinic"
-      ManageBy = "Te"
+      ManageBy = "Terraform"
     }
   }
 }
