@@ -41,6 +41,8 @@ module "jenkins_master" {
 | vpc_id | The VPC ID for the instance | `string` | n/a | yes |
 | subnet_id | The Subnet ID for the instance | `string` | n/a | yes |
 | key_name | SSH key pair name | `string` | `null` | no |
+| iam_instance_profile | IAM role to attach to the instance | `string` | `null` | no |
+| extra_volume_size | Size of secondary volume (GB) | `number` | `0` | no |
 | associate_public_ip | Associate a public IP | `bool` | `false` | no |
 | user_data | Startup script | `string` | `""` | no |
 | root_volume_size | Size of root volume (GB) | `number` | `20` | no |

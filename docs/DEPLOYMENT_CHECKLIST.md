@@ -40,6 +40,11 @@ terraform/
 │   │   ├── main.tf                       # Private Repos for each Microservice
 │   │   ├── variables.tf                  # Image scanning, Lifecycle policies
 │   │   └── outputs.tf                    # Registry URLs for CI/CD pipelines
+│   ├── ec2/                              # Compute Layer (DevOps Tooling)
+│   │   ├── main.tf                       # Standalone nodes (Jenkins, SonarQube)
+│   │   ├── variables.tf                  # Instance types, IAM profiles
+│   │   ├── outputs.tf                    # Public/Private IPs
+│   │   └── README.md                     # Topology allocation details
 │   ├── waf/                              # Perimeter Security (Web Application Firewall)
 │   │   ├── main.tf                       # Web ACLs: SQLi, XSS, Bot Control
 │   │   ├── variables.tf                  # Scope (Regional), Rule priorities
