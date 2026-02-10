@@ -8,3 +8,4 @@ module "vpc" {
   private_subnet_cidrs = var.private_subnet_cidrs
   availability_zones   = var.data_availability_zone
 }
+
