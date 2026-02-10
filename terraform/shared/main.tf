@@ -1,5 +1,5 @@
 module "networking" {
-  source = "../networking"
+  source = "../../modules/networking"
 
   vpc_cidr             = var.vpc_cidr
   public_subnet_cidrs  = var.public_subnet_cidrs
@@ -9,7 +9,7 @@ module "networking" {
 }
 
 module "eks" {
-  source = "../eks"
+  source = "../../modules/eks"
 
   cluster_name       = "${var.project_name}-${var.environment}-cluster"
   vpc_id             = module.networking.vpc_id
@@ -19,19 +19,19 @@ module "eks" {
 }
 
 module "rds" {
-  source = "../rds"
+  source = "../../modules/rds"
 
-  db_name              = var.db_name
-  db_user              = var.db_user
-  db_password          = var.db_password
-  vpc_id               = module.networking.vpc_id
-  private_subnet_ids   = module.networking.private_subnet_ids
-  environment          = var.environment
-  project_name         = var.project_name
+  db_name            = var.db_name
+  db_user            = var.db_user
+  db_password        = var.db_password
+  vpc_id             = module.networking.vpc_id
+  private_subnet_ids = module.networking.private_subnet_ids
+  environment        = var.environment
+  project_name       = var.project_name
 }
 
 module "bastion" {
-  source = "../ec2"
+  source = "../../modules/ec2"
 
   instance_name    = "${var.project_name}-${var.environment}-bastion"
   vpc_id           = module.networking.vpc_id
