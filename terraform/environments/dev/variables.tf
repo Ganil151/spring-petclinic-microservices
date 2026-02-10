@@ -18,17 +18,17 @@ variable "vpc_cidr" {
   type        = string
 }
 
-variable "public_subnets_cidrs" {
+variable "public_subnet_cidrs" {
   description = "Public subnets CIDR blocks"
   type        = list(string)
 }
 
-variable "private_subnets_cidrs" {
+variable "private_subnet_cidrs" {
   description = "Private subnets CIDR blocks"
   type        = list(string)
 }
 
-variable "availability_zones" {
+variable "data_availability_zone" {
   description = "Availability zones"
   type        = list(string)
   default     = ["us-east-1a", "us-east-1b"]
