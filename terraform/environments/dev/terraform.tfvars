@@ -21,3 +21,4 @@ db_username          = "petclinic"
 ami = "ami-0c55b159cbfafe1f0"
 
 # S3 Backend Configuration
+b
