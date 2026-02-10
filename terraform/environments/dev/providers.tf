@@ -4,6 +4,7 @@ provider "aws" {
     tags = {
       Environment = var.environment
       Project = "PetClinic"
+      Manage
     }
   }
 }
