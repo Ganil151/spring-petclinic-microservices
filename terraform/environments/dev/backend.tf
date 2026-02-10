@@ -4,7 +4,7 @@ terraform {
   backend "s3" {
     bucket         = "petclinic-terraform-state-dev"
     key            = "dev/terraform.tfstate"
-    region         = "us-west-2"
+    region         = "us-east-"
     dynamodb_table = "petclinic-terraform-locks"
     encrypt        = true
   }
