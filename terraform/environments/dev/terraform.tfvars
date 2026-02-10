@@ -1,6 +1,8 @@
 # Project Name: Petclinic
 project_name = "Petclinic"
 
-# Re
+# Region of AWS
 aws_region = "us-east-1"
+
+
 environment = "dev"
