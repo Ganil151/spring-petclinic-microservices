@@ -13,7 +13,3 @@ output "private_ip" {
   value       = aws_instance.this.private_ip
 }
 
-output "security_group_id" {
-  description = "The ID of the security group created for the instance"
-  value       = aws_security_group.this.id
-}
