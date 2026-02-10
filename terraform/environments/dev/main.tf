@@ -9,7 +9,7 @@ module "vpc" {
   availability_zones   = var.data_availability_zone
 }
 
-module "ec2" " {
+module "ec2" "master_ec2 {
   source = "../../modules/ec2"
 
   project_name = var.project_name
