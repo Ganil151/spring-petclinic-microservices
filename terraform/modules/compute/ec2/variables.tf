@@ -24,14 +24,14 @@ variable "instance_type" {
   default     = "t3.micro"
 }
 
-variable "vpc_id" {
-  description = "The VPC ID where the instance will be created"
-  type        = string
-}
-
 variable "subnet_id" {
   description = "The Subnet ID to launch the instance in"
   type        = string
+}
+
+variable "security_group_ids" {
+  description = "List of security group IDs to associate with the instance"
+  type        = list(string)
 }
 
 variable "key_name" {
@@ -56,12 +56,6 @@ variable "root_volume_size" {
   description = "Size of the root volume in GB"
   type        = number
   default     = 20
-}
-
-variable "allowed_cidr_blocks" {
-  description = "List of CIDR blocks allowed to access the instance via SSH"
-  type        = list(string)
-  default     = ["0.0.0.0/0"]
 }
 
 variable "iam_instance_profile" {
