@@ -11,7 +11,7 @@ environment = "dev"
 vpc_cidr = "10.0.0.0/16"
 
 # Public Subnet Cidr
-public_subnet_cidrs = "10.0.0.0/24"
+public_subnet_cidrs = 
 
 
 # Private Subnet Cidr
