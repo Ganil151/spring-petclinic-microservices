@@ -20,15 +20,19 @@ db_username          = "petclinic"
 # Infrastructure Configuration
 ami = "ami-0c1fe732b5494dc14"
 
-# EC2 Configuration
-instance_type = "t3.micro"
-key_name      = "petclinic-key"
-associate_public_ip = true
-user_data     = ""
-iam_instance_profile = ""
-root_volume_size = 20
-allowed_cidr_blocks = ["0.0.0.0/0"]
-extra_volume_size = 0
+# Jenkins Configuration (Master)
+jenkins_instance_name = "jenkins-master"
+jenkins_instance_type = "t3.large"
 
-# Jenkins Configuration
-instance_name = "jenkins_ec2"
+# SonarQube Configuration (Audit)
+sonarqube_instance_name = "sonarqube-server"
+sonarqube_instance_type = "t2.medium"
+
+# Common EC2 Configuration
+key_name            = "petclinic-key"
+associate_public_ip = true
+user_data           = ""
+iam_instance_profile = ""
+root_volume_size    = 20
+allowed_cidr_blocks = ["0.0.0.0/0"]
+extra_volume_size   = 0
