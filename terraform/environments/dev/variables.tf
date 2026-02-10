@@ -57,3 +57,8 @@ variable "db_username" {
   type        = string
   default     = "petclinic"
 }
+
+variable "ami" {
+  description = "AMI ID for EC2 instances"
+  type        = string
+}
