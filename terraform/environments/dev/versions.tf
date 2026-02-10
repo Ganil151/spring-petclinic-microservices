@@ -1,3 +1,3 @@
 terraform {
-  required_version = "=>"
+  required_version = "="
 }
