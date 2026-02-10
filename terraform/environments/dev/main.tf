@@ -18,15 +18,16 @@ module "sg" {
   allowed_cidr_blocks = var.allowed_cidr_blocks
 }
 
-module "master_ec2" {
+module "jenkins_master" {
   source = "../../modules/compute/ec2"
 
   project_name         = var.project_name
   environment          = var.environment
-  instance_name        = var.instance_name
+  instance_name        = var.jenkins_instance_name
+  role                 = "master"
   ami_id               = var.ami
-  instance_type        = var.instance_type
-  subnet_id            = module.vpc.private_subnet_ids[0]
+  instance_type        = var.jenkins_instance_type
+  subnet_id            = module.vpc.public_subnet_ids[0]
   security_group_ids   = [module.sg.ec2_sg_id]
   key_name             = var.key_name
   associate_public_ip  = var.associate_public_ip
@@ -34,4 +35,21 @@ module "master_ec2" {
   iam_instance_profile = var.iam_instance_profile
   root_volume_size     = var.root_volume_size
   extra_volume_size    = var.extra_volume_size
+}
+
+module "sonarqube_server" {
+  source = "../../modules/compute/ec2"
+
+  project_name         = var.project_name
+  environment          = var.environment
+  instance_name        = var.sonarqube_instance_name
+  role                 = "sonarqube"
+  ami_id               = var.ami
+  instance_type        = var.sonarqube_instance_type
+  subnet_id            = module.vpc.private_subnet_ids[0]
+  security_group_ids   = [module.sg.ec2_sg_id]
+  key_name             = var.key_name
+  associate_public_ip  = var.associate_public_ip
+  user_data            = var.user_data
+  root_volume_size     = var.root_volume_size
 }
