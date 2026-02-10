@@ -33,7 +33,6 @@ variable "data_availability_zone" {
   type        = list(string)
 }
 
-  
 variable "cluster_version" {
   description = "EKS Cluster version"
   type        = string
@@ -61,4 +60,58 @@ variable "db_username" {
 variable "ami" {
   description = "AMI ID for EC2 instances"
   type        = string
+}
+
+# EC2 / Compute Variables
+variable "instance_name" {
+  description = "Name for the EC2 instance"
+  type        = string
+}
+
+variable "instance_type" {
+  description = "EC2 instance type"
+  type        = string
+  default     = "t3.micro"
+}
+
+variable "key_name" {
+  description = "SSH key pair name"
+  type        = string
+  default     = null
+}
+
+variable "associate_public_ip" {
+  description = "Associate public IP"
+  type        = bool
+  default     = false
+}
+
+variable "user_data" {
+  description = "Startup script"
+  type        = string
+  default     = ""
+}
+
+variable "iam_instance_profile" {
+  description = "IAM profile"
+  type        = string
+  default     = null
+}
+
+variable "root_volume_size" {
+  description = "Root volume size"
+  type        = number
+  default     = 20
+}
+
+variable "allowed_cidr_blocks" {
+  description = "Allowed CIDR blocks for SSH"
+  type        = list(string)
+  default     = ["0.0.0.0/0"]
+}
+
+variable "extra_volume_size" {
+  description = "Extra volume size"
+  type        = number
+  default     = 0
 }
