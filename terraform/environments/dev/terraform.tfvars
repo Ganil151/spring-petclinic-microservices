@@ -1,2 +1,2 @@
-project_name = "Petcli"
+project_name = "Petclinic"
 aws_region = "us-east-1"
