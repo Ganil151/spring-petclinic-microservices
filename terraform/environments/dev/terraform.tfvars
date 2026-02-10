@@ -21,5 +21,5 @@ db_username          = "petclinic"
 ami = "ami-0c55b159cbfafe1f0"
 
 # S3 Backend Configuration
-bucket_name = "petclinic-terraform-state-"
-dynamodb_table = "petclinic-terraform-locks"
+bucket_name = "petclinic-terraform-state-17a538b3"
+dynamodb_table = "petclinic-terraform-locks-17a538b3"
