@@ -42,7 +42,7 @@ variable "dynamodb_table" {
   description = "DynamoDB table name for Terraform locks"
   type        = string
 }
-
+  
 variable "cluster_version" {
   description = "EKS Cluster version"
   type        = string
