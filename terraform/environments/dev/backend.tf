@@ -2,7 +2,7 @@
 # To enable this, replace the bucket name with your actual S3 bucket name
 # and run 'terraform init' to migrate your local state.
 
-# terraform {
+terraform {
 #   backend "s3" {
 #     bucket         = var.bucket_name
 #     key            = "tfstate/dev/terraform.tfstate"
