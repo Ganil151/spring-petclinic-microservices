@@ -1,29 +1,31 @@
 # EC2 Instance Module
 
-This module provisions a standalone EC2 instance with an associated security group. It is designed for simple compute needs like Bastion hosts, Jenkins masters, or SonarQube servers.
+This module provisions a standalone EC2 instance with an associated security group. It is specifically designed to host DevOps tools mentioned in the `DEPLOYMENT_CHECKLIST.md`, such as **Jenkins Masters** and **SonarQube Servers**.
 
 ## Features
-- Standard EC2 instance with custom AMIs and instance types.
-- Automatic creation of a security group with SSH (port 22) access.
-- Root volume configuration (GP3, encryption enabled).
-- Support for User Data scripts.
-- Optional public IP association.
+- Standard EC2 instance using **Amazon Linux 2023 (AL2023)** by default (via AMI selection).
+- Support for **IAM Instance Profiles** to grant permissions to Jenkins/SonarQube.
+- **Secondary EBS Volumes** (GP3) for persistent application data (e.g., `/var/lib/jenkins`).
+- Automatic security group creation with configurable SSH access.
+- Encrypted GP3 root volumes.
 
 ## Usage
 
 ```hcl
+# Example: Provisioning a Jenkins Master as per Topology Allocation
 module "jenkins_master" {
   source = "../../modules/ec2"
 
-  project_name        = "petclinic"
-  environment         = "dev"
-  instance_name       = "jenkins-master"
-  ami_id              = "ami-0c1fe732b5494dc14"
-  instance_type       = "t3.medium"
-  vpc_id              = module.vpc.vpc_id
-  subnet_id           = module.vpc.public_subnet_ids[0]
-  associate_public_ip = true
-  allowed_cidr_blocks = ["203.0.113.0/24"] # Restrict to your office IP
+  project_name         = "petclinic"
+  environment          = "dev"
+  instance_name        = "jenkins-master"
+  ami_id               = "ami-0c1fe732b5494dc14" # AL2023 
+  instance_type        = "t3.large"              # Jenkins Master requirement
+  vpc_id               = module.vpc.vpc_id
+  subnet_id            = module.vpc.public_subnet_ids[0]
+  iam_instance_profile = "JenkinsAdminRole"      # Grants access to ECR/EKS
+  extra_volume_size    = 50                      # For Jenkins home directory
+  associate_public_ip  = true
 }
 ```
 
