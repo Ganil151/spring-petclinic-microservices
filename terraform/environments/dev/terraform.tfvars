@@ -29,7 +29,7 @@ sonarqube_instance_name = "sonarqube-server"
 sonarqube_instance_type = "t2.medium"
 
 # Common EC2 Configuration
-key_name            = "petclinic-key"
+key_name            = "spms-pro"
 associate_public_ip = true
 user_data           = ""
 iam_instance_profile = ""
