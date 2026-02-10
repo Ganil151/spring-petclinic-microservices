@@ -289,7 +289,7 @@ To ensure high-availability and build performance, we utilize the following comp
 
 - [ ] **Check Terraform version**
   ```bash
-  cd /home/gsmash/Documents/Devops/05-labs/play-ground/microservices/spring-petclinic-microservices/terraform
+  cd /home/gsmash/Documents/spring-petclinic-microservices/terraform
   cat .terraform-version
   terraform version
   ```
@@ -315,7 +315,7 @@ To ensure high-availability and build performance, we utilize the following comp
   java -version
   ```
   **Expected Output:** `openjdk version "21.0.x"`
-  **Troubleshooting:** Follow `/home/gsmash/Documents/Devops/05-labs/play-ground/microservices/spring-petclinic-microservices/JAVA21_MIGRATION.md`
+  **Troubleshooting:** Follow `/home/gsmash/Documents/spring-petclinic-microservices/JAVA21_MIGRATION.md`
 
 - [ ] **Check Maven version**
   ```bash
@@ -340,7 +340,7 @@ A reliable "Source of Truth" for Terraform is critical. This setup ensures **Con
   ```bash
   export RANDOM_SUFFIX=$(openssl rand -hex 4)
   export BUCKET_NAME="petclinic-terraform-state-${RANDOM_SUFFIX}"
-  aws s3 mb s3://${BUCKET_NAME} --region us-west-2
+  aws s3 mb s3://${BUCKET_NAME} --region us-east-1
   ```
   *   **Expected Outcome:** `make_bucket: petclinic-terraform-state-xxxx`
   *   **Troubleshooting:** If `BucketAlreadyExists`, change the suffix and try again. Bucket names are shared across all of AWS.
@@ -449,7 +449,7 @@ A reliable "Source of Truth" for Terraform is critical. This setup ensures **Con
 
 - [ ] **Navigate to dev environment**
   ```bash
-  cd /home/gsmash/Documents/Devops/05-labs/play-ground/microservices/spring-petclinic-microservices/terraform/environments/dev
+  cd /home/gsmash/Documents/spring-petclinic-microservices/terraform/environments/dev
   ```
 
 - [ ] **Initialize Terraform**
@@ -564,7 +564,7 @@ A reliable "Source of Truth" for Terraform is critical. This setup ensures **Con
   ```bash
   terraform output ecr_repository_urls > /tmp/ecr_urls.json
   export ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
-  export ECR_REGISTRY="${ACCOUNT_ID}.dkr.ecr.us-west-2.amazonaws.com"
+  export ECR_REGISTRY="${ACCOUNT_ID}.dkr.ecr.us-east-1.amazonaws.com"
   ```
   *   **💡 Pro-Tip:** Add `export ECR_REGISTRY=${ACCOUNT_ID}.dkr.ecr.us-west-2.amazonaws.com` to your `~/.bashrc` or `~/.zshrc` to ensure it persists across terminal sessions.
 
@@ -625,7 +625,7 @@ A reliable "Source of Truth" for Terraform is critical. This setup ensures **Con
 - [ ] **Configure kubectl**
   ```bash
   aws eks update-kubeconfig \
-    --region us-west-2 \
+    --region us-east-1 \
     --name $(terraform output -raw eks_cluster_name)
   ```
 
@@ -807,7 +807,7 @@ A reliable "Source of Truth" for Terraform is critical. This setup ensures **Con
 
 - [ ] **Create Ansible inventory**
   ```bash
-  cd /home/gsmash/Documents/Devops/05-labs/play-ground/microservices/spring-petclinic-microservices/ansible
+  cd /home/gsmash/Documents/spring-petclinic-microservices/ansible
   cat > inventory/dynamic_hosts << EOF
   [eks_nodes]
   $(cat /tmp/node_ips.txt | xargs -I {} echo "{} ansible_user=ec2-user")
@@ -912,8 +912,8 @@ A reliable "Source of Truth" for Terraform is critical. This setup ensures **Con
   pipeline {
       agent any
       environment {
-          ECR_REGISTRY = "${AWS_ACCOUNT_ID}.dkr.ecr.us-west-2.amazonaws.com"
-          AWS_DEFAULT_REGION = "us-west-2"
+          ECR_REGISTRY = "${AWS_ACCOUNT_ID}.dkr.ecr.us-east-1.amazonaws.com"
+          AWS_DEFAULT_REGION = "us-east-1"
           ALB_DNS = "replace-with-actual-alb-dns" // Or retrieve via script
           APP_NAMESPACE = "petclinic"
       }
@@ -983,7 +983,7 @@ A reliable "Source of Truth" for Terraform is critical. This setup ensures **Con
 
 - [ ] **Navigate to project root**
   ```bash
-  cd /home/gsmash/Documents/Devops/05-labs/play-ground/microservices/spring-petclinic-microservices
+  cd /home/gsmash/Documents/spring-petclinic-microservices
   ```
 
 - [ ] **Clean previous builds**
@@ -1015,7 +1015,7 @@ A reliable "Source of Truth" for Terraform is critical. This setup ensures **Con
 
 - [ ] **Authenticate to ECR**
   ```bash
-  aws ecr get-login-password --region us-west-2 | \
+  aws ecr get-login-password --region us-east-1 | \
     docker login --username AWS --password-stdin ${ECR_REGISTRY}
   ```
 
@@ -1250,7 +1250,7 @@ A reliable "Source of Truth" for Terraform is critical. This setup ensures **Con
 kubectl delete namespace petclinic
 
 # Destroy Terraform infrastructure
-cd /home/gsmash/Documents/Devops/05-labs/play-ground/microservices/spring-petclinic-microservices/terraform/environments/dev
+cd /home/gsmash/Documents/spring-petclinic-microservices/terraform/environments/dev
 terraform destroy -auto-approve
 ```
 
