@@ -4,8 +4,8 @@ provider "aws" {
   default_tags {
     tags = {
       Environment = var.Environment
-      Project = "spring-petclinic"
-      ManageBy = "Terraform"
+      Project     = "spring-petclinic"
+      ManageBy    = "Terraform"
     }
   }
 }
