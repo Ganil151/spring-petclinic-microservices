@@ -24,7 +24,7 @@ module "master_ec2" {
   project_name         = var.project_name
   environment          = var.environment
   instance_name        = var.instance_name
-  ami_id               = var.ami_id
+  ami_id               = var.ami
   instance_type        = var.instance_type
   subnet_id            = module.vpc.private_subnet_ids[0]
   security_group_ids   = [module.sg.ec2_sg_id]
