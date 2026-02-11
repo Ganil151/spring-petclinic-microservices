@@ -75,6 +75,18 @@ variable "jenkins_instance_type" {
   default     = "t3.large"
 }
 
+variable "jenkins_root_volume_size" {
+  description = "Root volume size for Jenkins instance"
+  type        = number
+  default     = 20
+}
+
+variable "jenkins_extra_volume_size" {
+  description = "Extra volume size for Jenkins instance"
+  type        = number
+  default     = 0
+}
+
 # SonarQube Configuration
 variable "sonarqube_instance_name" {
   description = "Name for the SonarQube EC2 instance"
@@ -86,6 +98,12 @@ variable "sonarqube_instance_type" {
   description = "EC2 instance type for SonarQube"
   type        = string
   default     = "t2.medium"
+}
+
+variable "sonarqube_root_volume_size" {
+  description = "Root volume size for SonarQube instance"
+  type        = number
+  default     = 20
 }
 
 # Common EC2 Variables
