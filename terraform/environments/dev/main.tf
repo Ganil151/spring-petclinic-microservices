@@ -33,8 +33,8 @@ module "jenkins_master" {
   associate_public_ip  = var.associate_public_ip
   user_data            = var.user_data
   iam_instance_profile = var.iam_instance_profile
-  root_volume_size     = var.root_volume_size
-  extra_volume_size    = var.extra_volume_size
+  root_volume_size     = var.jenkins_root_volume_size
+  extra_volume_size    = var.jenkins_extra_volume_size
 }
 
 module "sonarqube_server" {
