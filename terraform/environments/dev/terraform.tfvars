@@ -23,10 +23,13 @@ ami = "ami-0c1fe732b5494dc14"
 # Jenkins Configuration (Master)
 jenkins_instance_name = "jenkins-master"
 jenkins_instance_type = "t3.large"
+jenkins_root_volume_size = 20
+jenkins_extra_volume_size = 10
 
 # SonarQube Configuration (Audit)
 sonarqube_instance_name = "sonarqube-server"
 sonarqube_instance_type = "t2.medium"
+sonarqube_root_volume_size = 20
 
 # Common EC2 Configuration
 key_name            = "spms-pro"

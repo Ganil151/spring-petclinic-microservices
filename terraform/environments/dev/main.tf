@@ -51,5 +51,5 @@ module "sonarqube_server" {
   key_name             = var.key_name
   associate_public_ip  = var.associate_public_ip
   user_data            = var.user_data
-  root_volume_size     = var.root_volume_size
+  root_volume_size     = var.sonarqube_root_volume_size
 }
