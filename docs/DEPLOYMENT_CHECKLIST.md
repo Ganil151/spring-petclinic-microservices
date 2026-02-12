@@ -273,37 +273,13 @@ To ensure high-availability and build performance, we utilize the following comp
   ```
   **Troubleshooting:** If permission denied, verify IAM policies attached to your user/role
 
-### 1.2 SSH Key Generation & EC2 Linking
-*   **Logic:** Secure communication between the Ansible control node (Jenkins Master) and worker nodes requires SSH keys. We generate a dedicated key pair for this purpose.
-
-- [ ] **Generate SSH Key Pair**
-  ```bash
-  mkdir -p ~/.ssh
-  ssh-keygen -t rsa -b 4096 -f ~/.ssh/spms-dev -N "" -C "jenkins-master-key"
-  chmod 400 ~/.ssh/spms-dev
-  ```
-  *   **Expected Outcome:** Two files created: `~/.ssh/spms-dev` (private) and `~/.ssh/spms-dev.pub` (public).
-
-- [ ] **Import Public Key to AWS**
-  *   **Logic:** AWS needs the public key to inject it into EC2 instances during creation.
-  ```bash
-  aws ec2 import-key-pair \
-    --key-name "spms-dev" \
-    --public-key-material fileb://~/.ssh/spms-dev.pub
-  ```
-  *   **Verification:** `aws ec2 describe-key-pairs --key-names spms-dev`
-
-- [ ] **Distribute Private Key to Jenkins Master**
-  *   **Logic:** For the Master to configure Worker nodes via Ansible, it needs the private key.
-  *   *Note: This step is typically handled via User Data or Secrets Manager in automation, but for manual verification:*
-  ```bash
-  # Get Jenkins Master IP
-  export MASTER_IP=$(aws ec2 describe-instances --filters "Name=tag:Name,Values=jenkins-master" --query "Reservations[0].Instances[0].PublicIpAddress" --output text)
-  
-  # Copy private key to Master
-  scp -i ~/.ssh/spms-dev ~/.ssh/spms-dev ec2-user@${MASTER_IP}:/home/ec2-user/.ssh/id_rsa
-  ssh -i ~/.ssh/spms-dev ec2-user@${MASTER_IP} "chmod 600 /home/ec2-user/.ssh/id_rsa"
-  ```
+### 1.2 SSH Key Strategy
+*   **Logic:** Secure communication between the Ansible control node (Jenkins Master) and worker nodes requires SSH keys.
+*   **Automation:** The Terraform `keys` module will automatically:
+    1.  Generate a 4096-bit RSA key pair (`spms-dev`).
+    2.  Save the private key locally to `terraform/modules/keys/spms-dev.pem` (with 0400 permissions).
+    3.  Import the public key to AWS as `spms-dev`.
+*   **Action Required:** None at this stage. You will verify the key generation after running `terraform apply`.
 
 ### 1.3 Tool Version Verification
 
@@ -352,7 +328,7 @@ To ensure high-availability and build performance, we utilize the following comp
   **Expected Output:** `Docker version 24.x.x`
   **Troubleshooting:** Ensure Docker daemon is running with `sudo systemctl start docker`
 
-### 1.3 State Backend Preparation: Procedural Deep-Dive
+### 1.4 State Backend Preparation: Procedural Deep-Dive
 A reliable "Source of Truth" for Terraform is critical. This setup ensures **Consistency** (locking), **Durability** (versioning), and **Security** (encryption).
 
 - [ ] **Step 1: Create S3 Bucket (Storage Layer)**
@@ -396,17 +372,9 @@ A reliable "Source of Truth" for Terraform is critical. This setup ensures **Con
     --public-access-block-configuration "BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true"
   ```
 
-- [ ] **Step 5: Create DynamoDB Table (Locking Layer)**
-  *   **Logic:** Prevents "State Corruption" by ensuring only one person can run `terraform apply` at a time. Terraform writes a `LockID` to this table before executing.
-  ```bash
-  aws dynamodb create-table \
-    --table-name petclinic-terraform-locks \
-    --attribute-definitions AttributeName=LockID,AttributeType=S \
-    --key-schema AttributeName=LockID,KeyType=HASH \
-    --billing-mode PAY_PER_REQUEST \
-    --region us-east-1
-  ```
-  *   **Verification:** `aws dynamodb describe-table --table-name petclinic-terraform-locks --query "Table.TableStatus"` (Expected: `ACTIVE`)
+- [ ] **Step 5: Configure Native S3 Locking (Locking Layer)**
+  *   **Logic:** As of Terraform 1.10+, S3 supports native state locking via the `use_lockfile` parameter. This eliminates the need for a separate DynamoDB table.
+  *   **Status:** DynamoDB locking is deprecated in favor of this method.
 
 - [ ] **Step 6: Inject Configuration into Backend.tf**
   *   **Logic:** Connects the local Terraform code to the remote AWS resources created above.
@@ -416,11 +384,11 @@ A reliable "Source of Truth" for Terraform is critical. This setup ensures **Con
   cat > backend.tf << EOF
   terraform {
     backend "s3" {
-      bucket         = "REPLACE_WITH_BUCKET_NAME"
-      key            = "tfstate/dev/terraform.tfstate"
-      region         = "us-east-1"
-      dynamodb_table = "petclinic-terraform-locks"
-      encrypt        = true
+      bucket       = "REPLACE_WITH_BUCKET_NAME"
+      key          = "tfstate/dev/terraform.tfstate"
+      region       = "us-east-1"
+      use_lockfile = true
+      encrypt      = true
     }
   }
   EOF
