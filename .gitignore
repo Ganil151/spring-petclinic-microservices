@@ -136,3 +136,7 @@ docker-compose.override.yml
 # Checkov & infracost
 # ==========================================
 .binary
+.checkov
+.infracost
+.tfplan.binary
+.tfplan
