@@ -77,6 +77,7 @@ variable "ingress_rules" {
     description = string
   }))
   default = {}
+}
 
 # ============================================================================
 # JENKINS MASTER CONFIGURATION
