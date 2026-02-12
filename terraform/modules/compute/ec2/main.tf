@@ -6,7 +6,7 @@ resource "aws_instance" "this" {
   vpc_security_group_ids      = var.security_group_ids
   key_name                    = var.key_name
   associate_public_ip_address = var.associate_public_ip
-  user_data                   = var.user_data
+  user_data_base64            = base64encode(var.user_data)
   iam_instance_profile        = var.iam_instance_profile
 
   root_block_device {
