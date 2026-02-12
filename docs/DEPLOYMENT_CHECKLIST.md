@@ -265,7 +265,39 @@ To ensure high-availability and build performance, we utilize the following comp
   ```
   **Troubleshooting:** If permission denied, verify IAM policies attached to your user/role
 
-### 1.2 Tool Version Verification
+### 1.2 SSH Key Generation & EC2 Linking
+*   **Logic:** Secure communication between the Ansible control node (Jenkins Master) and worker nodes requires SSH keys. We generate a dedicated key pair for this purpose.
+
+- [ ] **Generate SSH Key Pair**
+  ```bash
+  mkdir -p ~/.ssh
+  ssh-keygen -t rsa -b 4096 -f ~/.ssh/spms-dev -N "" -C "jenkins-master-key"
+  chmod 400 ~/.ssh/spms-dev
+  ```
+  *   **Expected Outcome:** Two files created: `~/.ssh/spms-dev` (private) and `~/.ssh/spms-dev.pub` (public).
+
+- [ ] **Import Public Key to AWS**
+  *   **Logic:** AWS needs the public key to inject it into EC2 instances during creation.
+  ```bash
+  aws ec2 import-key-pair \
+    --key-name "spms-dev" \
+    --public-key-material fileb://~/.ssh/spms-dev.pub
+  ```
+  *   **Verification:** `aws ec2 describe-key-pairs --key-names spms-dev`
+
+- [ ] **Distribute Private Key to Jenkins Master**
+  *   **Logic:** For the Master to configure Worker nodes via Ansible, it needs the private key.
+  *   *Note: This step is typically handled via User Data or Secrets Manager in automation, but for manual verification:*
+  ```bash
+  # Get Jenkins Master IP
+  export MASTER_IP=$(aws ec2 describe-instances --filters "Name=tag:Name,Values=jenkins-master" --query "Reservations[0].Instances[0].PublicIpAddress" --output text)
+  
+  # Copy private key to Master
+  scp -i ~/.ssh/spms-dev ~/.ssh/spms-dev ec2-user@${MASTER_IP}:/home/ec2-user/.ssh/id_rsa
+  ssh -i ~/.ssh/spms-dev ec2-user@${MASTER_IP} "chmod 600 /home/ec2-user/.ssh/id_rsa"
+  ```
+
+### 1.3 Tool Version Verification
 
 - [ ] **Check Terraform version**
   ```bash
