@@ -19,6 +19,7 @@ module "sg" {
   environment         = var.environment
   vpc_id              = module.vpc.vpc_id
   allowed_cidr_blocks = var.allowed_cidr_blocks
+  ingress_rules       = var.ingress_rules
 }
 
 # Add additional modules as needed:
