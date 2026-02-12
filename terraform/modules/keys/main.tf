@@ -3,7 +3,7 @@ resource "aws_key_pair" "spms_dev" {
   
 
   tags = {
-    Name        = "spms-pro"
+    Name        = "spms-dev"
     Environment = var.environment
     Project     = var.project_name
   }
