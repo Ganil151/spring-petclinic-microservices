@@ -788,8 +788,16 @@ A reliable "Source of Truth" for Terraform is critical. This setup ensures **Con
 
 ### 3.1 Prepare Ansible Inventory
 
-- [ ] **Extract EC2 node IPs**
+- [ ] **Extract Node IPs**
+  *   **Logic:** We need the IPs of both the Jenkins Master (Control Plane) and the EKS Worker Nodes (Data Plane).
   ```bash
+  # Get Jenkins Master IP
+  export MASTER_IP=$(aws ec2 describe-instances \
+    --filters "Name=tag:Name,Values=jenkins-master" \
+    --query "Reservations[0].Instances[0].PublicIpAddress" \
+    --output text)
+
+  # Get EKS Worker IPs
   kubectl get nodes -o wide | awk '{print $6}' | tail -n +2 > /tmp/node_ips.txt
   ```
 
@@ -797,6 +805,9 @@ A reliable "Source of Truth" for Terraform is critical. This setup ensures **Con
   ```bash
   cd /home/gsmash/Documents/spring-petclinic-microservices/ansible
   cat > inventory/dynamic_hosts << EOF
+  [jenkins_master]
+  ${MASTER_IP} ansible_user=ec2-user
+
   [eks_nodes]
   $(cat /tmp/node_ips.txt | xargs -I {} echo "{} ansible_user=ec2-user")
   EOF
@@ -810,9 +821,10 @@ A reliable "Source of Truth" for Terraform is critical. This setup ensures **Con
 ### 3.2 Establish Secure SSH Connectivity
 *   **Logic:** Ansible uses SSH to configure the nodes. Both the **Local Machine** (running the playbook) and the **Jenkins Master** (running future pipelines) must trust the Worker Nodes.
 
-- [ ] **Step 1: Trust Worker Nodes (Local Machine)**
-  *   **Action:** Add worker node fingerprints to your local `known_hosts` to prevent "Host Key Verification" errors during Ansible execution.
+- [ ] **Step 1: Trust All Nodes (Local Machine)**
+  *   **Action:** Add master and worker node fingerprints to your local `known_hosts`.
   ```bash
+  ssh-keyscan -H ${MASTER_IP} >> ~/.ssh/known_hosts 2>/dev/null
   for IP in $(cat /tmp/node_ips.txt); do
     ssh-keyscan -H $IP >> ~/.ssh/known_hosts 2>/dev/null
   done
@@ -821,10 +833,8 @@ A reliable "Source of Truth" for Terraform is critical. This setup ensures **Con
 - [ ] **Step 2: Trust Worker Nodes (Jenkins Master)**
   *   **Action:** The Jenkins Master must also be able to SSH into workers for CI/CD tasks. We execute `ssh-keyscan` *on* the Master.
   ```bash
-  export MASTER_IP=$(aws ec2 describe-instances --filters "Name=tag:Name,Values=jenkins-master" --query "Reservations[0].Instances[0].PublicIpAddress" --output text)
-  
   # Run ssh-keyscan on the Master
-  ssh -i terraform/modules/keys/spms-dev.pem ec2-user@${MASTER_IP} \
+  ssh -i ../terraform/modules/keys/spms-dev.pem ec2-user@${MASTER_IP} \
     "for IP in \$(cat /tmp/node_ips.txt); do ssh-keyscan -H \$IP >> ~/.ssh/known_hosts 2>/dev/null; done"
   ```
 
@@ -832,50 +842,104 @@ A reliable "Source of Truth" for Terraform is critical. This setup ensures **Con
   *   **Action:** Confirm the Master can reach a worker without a password prompt.
   ```bash
   export WORKER_IP=$(head -n 1 /tmp/node_ips.txt)
-  ssh -i terraform/modules/keys/spms-dev.pem ec2-user@${MASTER_IP} \
+  ssh -i ../terraform/modules/keys/spms-dev.pem ec2-user@${MASTER_IP} \
     "ssh -i ~/.ssh/id_rsa -o BatchMode=yes -o ConnectTimeout=5 ec2-user@${WORKER_IP} 'echo Success'"
   ```
   **Expected Output:** `Success`
 
 - [ ] **Test Ansible ping (Local)**
   ```bash
-  ansible -i inventory/dynamic_hosts eks_nodes -m ping --private-key=../terraform/modules/keys/spms-dev.pem
+  ansible -i inventory/dynamic_hosts all -m ping --private-key=../terraform/modules/keys/spms-dev.pem
   ```
-  **Expected Output:** `SUCCESS`
+  **Expected Output:** `SUCCESS` (for both master and nodes)
 
 ### 3.3 Run Ansible Playbooks
 
 - [ ] **Install all tools**
   ```bash
   cd /home/gsmash/Documents/spring-petclinic-microservices/ansible
-  ansible-playbook -i inventory/dynamic_hosts playbooks/install-tools.yml
+  ansible-playbook -i inventory/dynamic_hosts playbooks/install-tools.yml --private-key=../terraform/modules/keys/spms-dev.pem
   ```
   **Expected Duration:** 5-10 minutes
 
 - [ ] **Verify Java installation**
   ```bash
-  ansible -i inventory/dynamic_hosts eks_nodes -m shell -a "java -version"
+  ansible -i inventory/dynamic_hosts eks_nodes -m shell -a "java -version" --private-key=../terraform/modules/keys/spms-dev.pem
   ```
   **Expected:** Java 21
 
 - [ ] **Verify Maven installation**
   ```bash
-  ansible -i inventory/dynamic_hosts eks_nodes -m shell -a "mvn -version"
+  ansible -i inventory/dynamic_hosts eks_nodes -m shell -a "mvn -version" --private-key=../terraform/modules/keys/spms-dev.pem
   ```
 
 - [ ] **Verify Docker installation**
   ```bash
-  ansible -i inventory/dynamic_hosts eks_nodes -m shell -a "docker --version"
+  ansible -i inventory/dynamic_hosts eks_nodes -m shell -a "docker --version" --private-key=../terraform/modules/keys/spms-dev.pem
   ```
 
 - [ ] **Verify kubectl installation**
   ```bash
-  ansible -i inventory/dynamic_hosts eks_nodes -m shell -a "kubectl version --client"
+  ansible -i inventory/dynamic_hosts eks_nodes -m shell -a "kubectl version --client" --private-key=../terraform/modules/keys/spms-dev.pem
   ```
 
 - [ ] **Verify AWS CLI installation**
   ```bash
-  ansible -i inventory/dynamic_hosts eks_nodes -m shell -a "aws --version"
+  ansible -i inventory/dynamic_hosts eks_nodes -m shell -a "aws --version" --private-key=../terraform/modules/keys/spms-dev.pem
+  ```
+
+### 3.4 Secure Jenkins with SSL (Nginx Reverse Proxy)
+*   **Logic:** Jenkins runs on port 8080 (HTTP) by default. To secure credentials and transmission, we deploy Nginx as an SSD termination proxy.
+
+- [ ] **Install Nginx & SSL Utils**
+  ```bash
+  ansible -i inventory/dynamic_hosts jenkins_master -m shell -a "sudo dnf install -y nginx openssl" --private-key=../terraform/modules/keys/spms-dev.pem
+  ```
+
+- [ ] **Generate Self-Signed Certificate**
+  *   **Note:** For production, use AWS ACM or Let's Encrypt.
+  ```bash
+  ansible -i inventory/dynamic_hosts jenkins_master -m shell \
+    -a "sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+    -keyout /etc/nginx/jenkins.key \
+    -out /etc/nginx/jenkins.crt \
+    -subj '/C=US/ST=Dev/L=Cloud/O=PetClinic/CN=jenkins.internal'" \
+    --private-key=../terraform/modules/keys/spms-dev.pem
+  ```
+
+- [ ] **Configure Nginx Proxy**
+  ```bash
+  cat > nginx_jenkins.conf << 'EOF'
+  server {
+      listen 80;
+      return 301 https://$host$request_uri;
+  }
+  server {
+      listen 443 ssl;
+      ssl_certificate /etc/nginx/jenkins.crt;
+      ssl_certificate_key /etc/nginx/jenkins.key;
+      
+      location / {
+          proxy_pass http://localhost:8080;
+          proxy_set_header Host $host;
+          proxy_set_header X-Real-IP $remote_addr;
+          proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+          proxy_set_header X-Forwarded-Proto $scheme;
+      }
+  }
+  EOF
+  
+  # Copy config to Master
+  scp -i ../terraform/modules/keys/spms-dev.pem nginx_jenkins.conf ec2-user@${MASTER_IP}:/tmp/jenkins.conf
+  
+  # Apply config and restart Nginx
+  ssh -i ../terraform/modules/keys/spms-dev.pem ec2-user@${MASTER_IP} \
+    "sudo mv /tmp/jenkins.conf /etc/nginx/conf.d/jenkins.conf && sudo systemctl enable --now nginx && sudo systemctl restart nginx"
+  ```
+
+- [ ] **Verify HTTPS Access**
+  ```bash
+  echo "Jenkins is now available at: https://${MASTER_IP}"
   ```
 
 ---
