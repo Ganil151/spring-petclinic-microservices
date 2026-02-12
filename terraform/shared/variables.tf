@@ -52,6 +52,17 @@ variable "allowed_cidr_blocks" {
   default     = ["0.0.0.0/0"]
 }
 
+variable "ingress_rules" {
+  description = "Map of ingress rules for security groups (ports to allow)"
+  type = map(object({
+    from_port   = number
+    to_port     = number
+    protocol    = string
+    description = string
+  }))
+  default = {}
+}
+
 # ============================================================================
 # EKS CONFIGURATION
 # ============================================================================
