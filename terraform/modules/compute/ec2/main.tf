@@ -23,7 +23,7 @@ resource "aws_instance" "this" {
     }
   }
 
-  lifecycle {
+ # lifecycle {
  #   ignore_changes = [
  #     key_name,
  #     ami,
