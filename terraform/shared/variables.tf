@@ -1,0 +1,169 @@
+# Shared variable definitions
+# This file should be symlinked to each environment
+
+# ============================================================================
+# GENERAL CONFIGURATION
+# ============================================================================
+variable "project_name" {
+  description = "Project name for resource tagging"
+  type        = string
+}
+
+variable "aws_region" {
+  description = "AWS region for resource deployment"
+  type        = string
+}
+
+variable "environment" {
+  description = "Environment name (dev, staging, prod)"
+  type        = string
+  validation {
+    condition     = contains(["dev", "staging", "prod"], var.environment)
+    error_message = "Environment must be dev, staging, or prod."
+  }
+}
+
+# ============================================================================
+# NETWORKING CONFIGURATION
+# ============================================================================
+variable "vpc_cidr" {
+  description = "VPC CIDR block"
+  type        = string
+}
+
+variable "public_subnet_cidrs" {
+  description = "Public subnets CIDR blocks"
+  type        = list(string)
+}
+
+variable "private_subnet_cidrs" {
+  description = "Private subnets CIDR blocks"
+  type        = list(string)
+}
+
+variable "data_availability_zone" {
+  description = "Availability zones for resource distribution"
+  type        = list(string)
+}
+
+variable "allowed_cidr_blocks" {
+  description = "Allowed CIDR blocks for security group access"
+  type        = list(string)
+  default     = ["0.0.0.0/0"]
+}
+
+# ============================================================================
+# EKS CONFIGURATION
+# ============================================================================
+variable "cluster_version" {
+  description = "EKS Cluster version"
+  type        = string
+  default     = "1.31"
+}
+
+# ============================================================================
+# DATABASE CONFIGURATION
+# ============================================================================
+variable "db_instance_class" {
+  description = "RDS instance class"
+  type        = string
+  default     = "db.t3.micro"
+}
+
+variable "db_allocated_storage" {
+  description = "RDS allocated storage in GB"
+  type        = number
+  default     = 20
+}
+
+variable "db_username" {
+  description = "RDS admin username"
+  type        = string
+  default     = "petclinic"
+}
+
+# ============================================================================
+# EC2 INSTANCE CONFIGURATION
+# ============================================================================
+variable "ami" {
+  description = "AMI ID for EC2 instances"
+  type        = string
+}
+
+variable "key_name" {
+  description = "SSH key pair name for EC2 instances"
+  type        = string
+  default     = null
+}
+
+variable "associate_public_ip" {
+  description = "Associate public IP with EC2 instances"
+  type        = bool
+  default     = false
+}
+
+variable "user_data" {
+  description = "User data script for EC2 instances"
+  type        = string
+  default     = ""
+}
+
+variable "iam_instance_profile" {
+  description = "IAM instance profile for EC2 instances"
+  type        = string
+  default     = null
+}
+
+# ============================================================================
+# JENKINS MASTER CONFIGURATION
+# ============================================================================
+variable "jenkins_instance_name" {
+  description = "Name for the Jenkins EC2 instance"
+  type        = string
+  default     = "jenkins-master"
+}
+
+variable "jenkins_instance_type" {
+  description = "EC2 instance type for Jenkins"
+  type        = string
+  default     = "t3.large"
+}
+
+variable "jenkins_root_volume_size" {
+  description = "Root volume size for Jenkins instance in GB"
+  type        = number
+  default     = 20
+}
+
+variable "jenkins_extra_volume_size" {
+  description = "Extra volume size for Jenkins instance in GB (0 to disable)"
+  type        = number
+  default     = 0
+}
+
+# ============================================================================
+# SONARQUBE SERVER CONFIGURATION
+# ============================================================================
+variable "sonarqube_instance_name" {
+  description = "Name for the SonarQube EC2 instance"
+  type        = string
+  default     = "sonarqube-server"
+}
+
+variable "sonarqube_instance_type" {
+  description = "EC2 instance type for SonarQube"
+  type        = string
+  default     = "t2.medium"
+}
+
+variable "sonarqube_root_volume_size" {
+  description = "Root volume size for SonarQube instance in GB"
+  type        = number
+  default     = 20
+}
+
+variable "sonarqube_extra_volume_size" {
+  description = "Extra volume size for SonarQube instance in GB (0 to disable)"
+  type        = number
+  default     = 0
+}
