@@ -52,4 +52,5 @@ module "sonarqube_server" {
   associate_public_ip  = var.associate_public_ip
   user_data            = var.user_data
   root_volume_size     = var.sonarqube_root_volume_size
+  extra_volume_size    = var.sonarqube_extra_volume_size
 }
