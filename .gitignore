@@ -133,5 +133,5 @@ nohup.out
 docker-compose.override.yml
 
 # ==========================================
-# Project Specific
+# Checkov & inf
 # ==========================================
