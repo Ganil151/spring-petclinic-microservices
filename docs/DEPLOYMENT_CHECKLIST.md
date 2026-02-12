@@ -807,21 +807,41 @@ A reliable "Source of Truth" for Terraform is critical. This setup ensures **Con
   cat inventory/dynamic_hosts
   ```
 
-### 3.2 Test SSH Connectivity
+### 3.2 Establish Secure SSH Connectivity
+*   **Logic:** Ansible uses SSH to configure the nodes. Both the **Local Machine** (running the playbook) and the **Jenkins Master** (running future pipelines) must trust the Worker Nodes.
 
-- [ ] **Add SSH keys to known_hosts**
+- [ ] **Step 1: Trust Worker Nodes (Local Machine)**
+  *   **Action:** Add worker node fingerprints to your local `known_hosts` to prevent "Host Key Verification" errors during Ansible execution.
   ```bash
   for IP in $(cat /tmp/node_ips.txt); do
     ssh-keyscan -H $IP >> ~/.ssh/known_hosts 2>/dev/null
   done
   ```
 
-- [ ] **Test Ansible ping**
+- [ ] **Step 2: Trust Worker Nodes (Jenkins Master)**
+  *   **Action:** The Jenkins Master must also be able to SSH into workers for CI/CD tasks. We execute `ssh-keyscan` *on* the Master.
   ```bash
-  ansible -i inventory/dynamic_hosts eks_nodes -m ping
+  export MASTER_IP=$(aws ec2 describe-instances --filters "Name=tag:Name,Values=jenkins-master" --query "Reservations[0].Instances[0].PublicIpAddress" --output text)
+  
+  # Run ssh-keyscan on the Master
+  ssh -i terraform/modules/keys/spms-dev.pem ec2-user@${MASTER_IP} \
+    "for IP in \$(cat /tmp/node_ips.txt); do ssh-keyscan -H \$IP >> ~/.ssh/known_hosts 2>/dev/null; done"
+  ```
+
+- [ ] **Step 3: Verify Master-to-Worker Access**
+  *   **Action:** Confirm the Master can reach a worker without a password prompt.
+  ```bash
+  export WORKER_IP=$(head -n 1 /tmp/node_ips.txt)
+  ssh -i terraform/modules/keys/spms-dev.pem ec2-user@${MASTER_IP} \
+    "ssh -i ~/.ssh/id_rsa -o BatchMode=yes -o ConnectTimeout=5 ec2-user@${WORKER_IP} 'echo Success'"
+  ```
+  **Expected Output:** `Success`
+
+- [ ] **Test Ansible ping (Local)**
+  ```bash
+  ansible -i inventory/dynamic_hosts eks_nodes -m ping --private-key=../terraform/modules/keys/spms-dev.pem
   ```
   **Expected Output:** `SUCCESS`
-  **Troubleshooting:** If connection fails, verify security groups allow SSH from your IP
 
 ### 3.3 Run Ansible Playbooks
 
