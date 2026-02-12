@@ -140,3 +140,4 @@ docker-compose.override.yml
 .infracost
 .tfplan.binary
 .tfplan
+.tfplan.json
