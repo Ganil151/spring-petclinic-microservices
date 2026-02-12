@@ -25,11 +25,13 @@ terraform/
 │   │   └── rds/                          # Managed MySQL (RDS)
 │   ├── ecr/                              # Container Artifact Storage
 │   ├── waf/                              # Perimeter Security (Web Application Firewall)
+│   ├── keys/                             # SSH Key Management (TLS/AWS Key Pair)
 │   └── monitoring/                       # Observability (Health & Performance)
 ├── environments/                         # Environment-Specific Workspaces
 │   ├── dev/                              # Sandbox: Cost-Optimized settings
 │   │   ├── main.tf                       # Composes modules (Low-Scale)
 │   │   ├── backend.tf                    # Remote State: s3://.../tfstate/dev/
+│   │   ├── keypair.tf                    # Key pair instantiation
 │   │   ├── providers.tf                  # Region + Default Tags (CreatedBy: Terraform)
 │   │   ├── terraform.tfvars              # Dev params (Single NAT, t3.small)
 │   │   ├── variables.tf                  # Environment specific variables
@@ -41,15 +43,21 @@ terraform/
 │   └── prod/                             # Production: Mission Critical
 │       ├── main.tf                       # Strict security & HA configuration
 │       ├── backend.tf                    # Remote State: s3://.../tfstate/prod/
-│       └── security.tf                   # Prod-specific hardening (WAF, Shield)
+│       └── ...
 ├── global/                               # Shared Multi-Env Resources
 │   ├── route53/
 │   │   └── main.tf                       # Public Hosted Zones, Shared Records
 │   └── iam/
 │       └── main.tf                       # Cross-account roles, Admin break-glass
+├── shared/                               # DRY Configurations (Symlinked/Copied)
+│   ├── backend.tf                        # Shared Backend Config
+│   ├── providers.tf                      # Shared Provider Config
+│   ├── variables.tf                      # Shared Variables
+│   └── versions.tf                       # Shared Version Constraints
 ├── scripts/
-│   ├── deploy.sh                         # CI/CD wrapper for TF Apply
-│   └── validate.sh                       # Pre-commit: fmt, validate, checkov
+│   ├── check-dry.sh                      # Dry run check script
+│   ├── jenkins_install.sh                # Jenkins User Data Script
+│   └── worker_install.sh                 # Worker Node User Data Script
 └── README.md                             # High-level architecture & SDR Link
 ```
 
