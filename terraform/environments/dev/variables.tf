@@ -62,7 +62,15 @@ variable "ami" {
   type        = string
 }
 
-# Jenkins Configuration
+variable "allowed_cidr_blocks" {
+  description = "Allowed CIDR blocks for SSH"
+  type        = list(string)
+  default     = ["0.0.0.0/0"]
+}
+
+# ============================================================================
+# JENKINS MASTER CONFIGURATION
+# ============================================================================
 variable "jenkins_instance_name" {
   description = "Name for the Jenkins EC2 instance"
   type        = string
@@ -87,7 +95,9 @@ variable "jenkins_extra_volume_size" {
   default     = 0
 }
 
-# SonarQube Configuration
+# ============================================================================
+# SONARQUBE SERVER CONFIGURATION
+# ============================================================================
 variable "sonarqube_instance_name" {
   description = "Name for the SonarQube EC2 instance"
   type        = string
@@ -106,7 +116,15 @@ variable "sonarqube_root_volume_size" {
   default     = 20
 }
 
-# Common EC2 Variables
+variable "sonarqube_extra_volume_size" {
+  description = "Extra volume size for SonarQube instance (0 to disable)"
+  type        = number
+  default     = 0
+}
+
+# ============================================================================
+# COMMON EC2 CONFIGURATION
+# ============================================================================
 variable "key_name" {
   description = "SSH key pair name"
   type        = string
@@ -129,22 +147,4 @@ variable "iam_instance_profile" {
   description = "IAM profile"
   type        = string
   default     = null
-}
-
-variable "root_volume_size" {
-  description = "Root volume size"
-  type        = number
-  default     = 20
-}
-
-variable "allowed_cidr_blocks" {
-  description = "Allowed CIDR blocks for SSH"
-  type        = list(string)
-  default     = ["0.0.0.0/0"]
-}
-
-variable "extra_volume_size" {
-  description = "Extra volume size"
-  type        = number
-  default     = 0
 }
