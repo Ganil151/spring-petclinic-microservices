@@ -178,3 +178,30 @@ variable "sonarqube_extra_volume_size" {
   type        = number
   default     = 0
 }
+
+# ============================================================================
+# WORKER INSTANCE CONFIGURATION
+# ============================================================================
+variable "worker_instance_name" {
+  description = "Name for the Worker EC2 instance"
+  type        = string
+  default     = "worker-node"
+}
+
+variable "worker_instance_type" {
+  description = "EC2 instance type for Worker"
+  type        = string
+  default     = "t3.medium"
+}
+
+variable "worker_root_volume_size" {
+  description = "Root volume size for Worker instance in GB"
+  type        = number
+  default     = 30
+}
+
+variable "worker_extra_volume_size" {
+  description = "Extra volume size for Worker instance in GB (0 to disable)"
+  type        = number
+  default     = 0
+}
