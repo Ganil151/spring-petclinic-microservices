@@ -18,3 +18,10 @@ output "private_key_path" {
   value = local_file.spms_dev.filename
 }
 
+output "private_key_pem" {
+  value = tls_private_key.spms_dev.private_key_pem
+}
+  
+output "private_key_pem_path" {
+  value = local_file.spms_dev.filename
+}
