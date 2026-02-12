@@ -48,7 +48,7 @@ module "worker_node" {
   role                 = "worker"
   ami_id               = var.ami
   instance_type        = var.worker_instance_type
-  subnet_id            = module.vpc.public_subnet_ids[0] 
+  subnet_id            = module.vpc.public_subnet_ids[0]
   security_group_ids   = [module.sg.ec2_sg_id]
   key_name             = var.key_name
   associate_public_ip  = var.associate_public_ip
