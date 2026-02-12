@@ -3,6 +3,9 @@
 
 set -e
 
+echo "Sleeping for 60 seconds..."
+sleep 60
+
 # Update system packages
 echo "Updating system packages..."
 sudo yum update -y
