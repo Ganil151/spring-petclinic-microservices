@@ -5,13 +5,13 @@ resource "aws_security_group" "ec2" {
 
   # Dynamic ingress rules for microservices
   dynamic "ingress" {
-    for_each = var.ingress_rules
+    for_each = var.ingress_ports
     content {
-      from_port   = ingress.value.from_port
-      to_port     = ingress.value.to_port
-      protocol    = ingress.value.protocol
+      from_port   = ingress.value
+      to_port     = ingress.value
+      protocol    = "tcp"
       cidr_blocks = var.allowed_cidr_blocks
-      description = ingress.value.description
+      description = "Allow port ${ingress.value}"
     }
   }
 
