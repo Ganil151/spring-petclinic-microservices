@@ -173,3 +173,9 @@ sonarqube_instance_name     = "sonarqube-server"
 sonarqube_instance_type     = "t2.medium"
 sonarqube_root_volume_size  = 20
 sonarqube_extra_volume_size = 0
+
+# Worker Node Configuration
+worker_instance_name      = "worker-node-1"
+worker_instance_type      = "t3.medium"
+worker_root_volume_size   = 30
+worker_extra_volume_size  = 0
