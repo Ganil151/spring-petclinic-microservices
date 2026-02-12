@@ -1,21 +1,25 @@
-resource "tls_private_key" "spms_dev" {
+resource "tls_private_key" "this" {
   algorithm = "RSA"
   rsa_bits  = 4096
 }
 
-resource "local_file" "spms_dev" {
-  content = tls_private_key.spms_dev.private_key_pem
-  filename = "${path.module}/spms-dev.pem"
+resource "local_file" "private_key" {
+  content         = tls_private_key.this.private_key_pem
+  filename        = "${path.module}/${var.key_name}.pem"
+  file_permission = "0400"
 }
 
-resource "aws_key_pair" "spms_dev" {
-  key_name   = "spms-dev"
-  public_key = local_file.spms_dev.content
+resource "aws_key_pair" "this" {
+  key_name   = var.key_name
+  public_key = tls_private_key.this.public_key_openssh
 
-  tags = {
-    Name        = "spms-dev"
-    Environment = var.environment
-    Project     = var.project_name
-  }
+  tags = merge(
+    {
+      Name        = var.key_name
+      Environment = var.environment
+      Project     = var.project_name
+    },
+    var.tags
+  )
 }
 

@@ -1,19 +1,21 @@
 variable "project_name" {
-  type    = string}
+  description = "The name of the project"
+  type        = string
+}
 
 variable "environment" {
-  type    = string
+  description = "The environment name (e.g., dev, prod)"
+  type        = string
 }
 
 variable "key_name" {
-  type    = string
-}
-
-variable "public_key" {
-  type    = string
+  description = "The name of the key pair"
+  type        = string
 }
 
 variable "tags" {
-  type    = map(string)
+  description = "Additional tags to apply to resources"
+  type        = map(string)
+  default     = {}
 }
 
