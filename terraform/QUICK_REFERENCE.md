@@ -1,0 +1,218 @@
+# Terraform DRY Quick Reference
+
+## 📁 Directory Structure
+```
+terraform/
+├── shared/          # Reference templates (4 files)
+├── environments/    # Environment configs (dev, staging, prod)
+├── modules/         # Reusable infrastructure modules
+├── global/          # Global resources (IAM, Route53)
+└── scripts/         # Maintenance scripts
+```
+
+## 🚀 Common Commands
+
+### Deploy to Environment
+```bash
+cd environments/dev  # or staging, prod
+terraform init
+terraform plan -out=tfplan
+terraform apply tfplan
+```
+
+### Validate DRY Compliance
+```bash
+./scripts/check-dry.sh
+```
+
+### Format All Files
+```bash
+terraform fmt -recursive
+```
+
+### Validate Configuration
+```bash
+cd environments/dev
+terraform validate
+```
+
+## 📝 Variable Organization
+
+### General
+- `project_name`, `environment`, `aws_region`
+
+### Networking
+- `vpc_cidr`, `public_subnet_cidrs`, `private_subnet_cidrs`
+- `data_availability_zone`, `allowed_cidr_blocks`
+
+### Jenkins Master
+- `jenkins_instance_name`, `jenkins_instance_type`
+- `jenkins_root_volume_size`, `jenkins_extra_volume_size`
+
+### SonarQube Server
+- `sonarqube_instance_name`, `sonarqube_instance_type`
+- `sonarqube_root_volume_size`, `sonarqube_extra_volume_size`
+
+### Common EC2
+- `ami`, `key_name`, `associate_public_ip`
+- `user_data`, `iam_instance_profile`
+
+### Database
+- `db_instance_class`, `db_allocated_storage`, `db_username`
+
+### EKS
+- `cluster_version`
+
+## 🎯 Environment Sizing Guide
+
+### Dev (Cost-Optimized)
+- VPC: `10.0.0.0/16`
+- AZs: 2
+- Jenkins: `t3.large`, 20GB root, 10GB extra
+- SonarQube: `t2.medium`, 20GB root
+- Public IPs: Yes
+- Security: `0.0.0.0/0`
+
+### Staging (Balanced)
+- VPC: `10.1.0.0/16`
+- AZs: 2
+- Jenkins: `t3.large`, 30GB root, 20GB extra
+- SonarQube: `t2.medium`, 30GB root, 10GB extra
+- Public IPs: Yes
+- Security: `0.0.0.0/0`
+
+### Prod (High Availability)
+- VPC: `10.2.0.0/16`
+- AZs: 3 (Multi-AZ)
+- Jenkins: `t3.xlarge`, 50GB root, 50GB extra
+- SonarQube: `t3.large`, 50GB root, 30GB extra
+- Public IPs: No (private)
+- Security: `10.0.0.0/8` (restricted)
+- DB: `db.r6g.large`
+
+## ⚙️ Adding New Environment
+
+1. **Create directory:**
+   ```bash
+   mkdir -p environments/new-env
+   ```
+
+2. **Copy base files:**
+   ```bash
+   cd environments/new-env
+   cp ../dev/{backend.tf,providers.tf,versions.tf,variables.tf} .
+   ```
+
+3. **Update backend.tf:**
+   ```hcl
+   key = "tfstate/new-env/terraform.tfstate"
+   ```
+
+4. **Create terraform.tfvars:**
+   ```hcl
+   environment = "new-env"
+   vpc_cidr = "10.X.0.0/16"  # Choose unique CIDR
+   # ... other values
+   ```
+
+5. **Create main.tf** with module composition
+
+6. **Initialize and deploy:**
+   ```bash
+   terraform init
+   terraform plan
+   ```
+
+## 🔍 Troubleshooting
+
+### "No such file or directory"
+- Ensure you're in the correct environment directory
+- Run `terraform init` first
+
+### "Backend configuration changed"
+- Run `terraform init -reconfigure`
+
+### "Variable not defined"
+- Check `variables.tf` has the variable
+- Check `terraform.tfvars` provides a value (if required)
+
+### "Duplicate resource"
+- Check module isn't called multiple times
+- Verify resource names are unique
+
+## ✅ Best Practices Checklist
+
+- [ ] Run `./scripts/check-dry.sh` before committing
+- [ ] Format code with `terraform fmt -recursive`
+- [ ] Validate with `terraform validate`
+- [ ] Use `terraform plan` before `apply`
+- [ ] Review plan output carefully
+- [ ] Tag all resources appropriately
+- [ ] Use appropriate instance sizes per environment
+- [ ] Enable encryption for sensitive data
+- [ ] Use private instances in production
+- [ ] Document any custom changes
+
+## 📚 File Purposes
+
+| File | Purpose |
+|------|---------|
+| `backend.tf` | S3 state backend config (only `key` differs) |
+| `providers.tf` | AWS provider with default tags |
+| `versions.tf` | Terraform & provider versions |
+| `variables.tf` | Variable definitions (same across envs) |
+| `terraform.tfvars` | Environment-specific values |
+| `main.tf` | Infrastructure composition |
+| `keypair.tf` | SSH key pairs |
+
+## 🛠️ Maintenance
+
+### Update All Environments
+```bash
+# Test in dev first
+cd environments/dev
+terraform plan
+terraform apply
+
+# Then staging
+cd ../staging
+terraform plan
+terraform apply
+
+# Finally prod
+cd ../prod
+terraform plan
+terraform apply
+```
+
+### Sync Variable Definitions
+```bash
+# Copy updated variables.tf to all environments
+cp environments/dev/variables.tf environments/staging/
+cp environments/dev/variables.tf environments/prod/
+```
+
+### Validate All Environments
+```bash
+for env in dev staging prod; do
+  echo "Validating $env..."
+  cd environments/$env
+  terraform validate
+  cd ../..
+done
+```
+
+## 🎓 Key Principles
+
+1. **DRY**: Don't repeat variable definitions
+2. **Consistency**: Same structure across all environments
+3. **Clarity**: Organized, well-documented code
+4. **Modularity**: Reusable modules for all resources
+5. **Security**: Environment-appropriate security settings
+6. **Validation**: Automated checks for consistency
+
+## 📞 Support
+
+- **Documentation**: See `README.md` for detailed info
+- **Changes**: See `REFACTORING_SUMMARY.md` for refactoring details
+- **Validation**: Run `./scripts/check-dry.sh` for automated checks
