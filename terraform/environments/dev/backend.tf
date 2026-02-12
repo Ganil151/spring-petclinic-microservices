@@ -1,3 +1,4 @@
+# Backend configuration for dev environment
 terraform {
   backend "s3" {
     bucket         = "petclinic-terraform-state-17a538b3"
