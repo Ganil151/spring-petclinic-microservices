@@ -3,8 +3,6 @@
 
 set -e
 
-
-
 # Hostname
 sudo hostnamectl set-hostname worker-node
 
