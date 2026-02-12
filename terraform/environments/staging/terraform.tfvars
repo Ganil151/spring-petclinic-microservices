@@ -83,7 +83,7 @@ ingress_rules = {
     protocol    = "tcp"
     description = "Admin Server (Spring Boot Admin)"
   }
-  
+
   # PetClinic Microservices (individual services)
   customers_service = {
     from_port   = 8081
@@ -103,7 +103,7 @@ ingress_rules = {
     protocol    = "tcp"
     description = "Visits Service"
   }
-  
+
   # Monitoring & Observability
   prometheus = {
     from_port   = 9091
@@ -154,22 +154,22 @@ db_username          = "petclinic"
 # ============================================================================
 # EC2 INSTANCE CONFIGURATION
 # ============================================================================
-ami = "ami-0c1fe732b5494dc14"  # Update with appropriate AMI for your region
+ami = "ami-0c1fe732b5494dc14" # Update with appropriate AMI for your region
 
 # Common EC2 Settings
-key_name            = "petclinic-staging-key"
-associate_public_ip = true
-user_data           = ""
+key_name             = "petclinic-staging-key"
+associate_public_ip  = true
+user_data            = ""
 iam_instance_profile = ""
 
 # Jenkins Master Configuration
-jenkins_instance_name      = "jenkins-master"
-jenkins_instance_type      = "t3.large"
-jenkins_root_volume_size   = 30
-jenkins_extra_volume_size  = 20
+jenkins_instance_name     = "jenkins-master"
+jenkins_instance_type     = "t3.large"
+jenkins_root_volume_size  = 30
+jenkins_extra_volume_size = 20
 
 # SonarQube Server Configuration
-sonarqube_instance_name       = "sonarqube-server"
-sonarqube_instance_type       = "t2.medium"
-sonarqube_root_volume_size    = 30
-sonarqube_extra_volume_size   = 10
+sonarqube_instance_name     = "sonarqube-server"
+sonarqube_instance_type     = "t2.medium"
+sonarqube_root_volume_size  = 30
+sonarqube_extra_volume_size = 10

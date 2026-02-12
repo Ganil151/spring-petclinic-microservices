@@ -11,7 +11,7 @@ variable "environment" {
 variable "repository_names" {
   description = "List of ECR repository names to create"
   type        = list(string)
-  default     = [
+  default = [
     "api-gateway",
     "customers-service",
     "vets-service",

@@ -111,9 +111,9 @@ resource "aws_eks_node_group" "this" {
   ]
 
   tags = {
-    Name                                                     = "${var.project_name}-${var.environment}-node-group"
-    Environment                                              = var.environment
-    Project                                                  = var.project_name
-    "kubernetes.io/cluster/${aws_eks_cluster.this.name}"     = "owned"
+    Name                                                 = "${var.project_name}-${var.environment}-node-group"
+    Environment                                          = var.environment
+    Project                                              = var.project_name
+    "kubernetes.io/cluster/${aws_eks_cluster.this.name}" = "owned"
   }
 }
