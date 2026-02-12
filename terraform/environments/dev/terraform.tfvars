@@ -51,7 +51,7 @@ db_username          = "petclinic"
 ami = "ami-0c1fe732b5494dc14"
 
 # Common EC2 Settings
-key_name             = "spms-pro"
+key_name             = "spms-dev"
 associate_public_ip  = true
 user_data            = ""
 iam_instance_profile = ""
