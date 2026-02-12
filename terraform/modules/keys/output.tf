@@ -13,4 +13,8 @@ output "private_key" {
 output "tags" {
   value = aws_key_pair.spms_dev.tags
 }
-  
+
+output "private_key_path" {
+  value = local_file.spms_dev.filename
+}
+
