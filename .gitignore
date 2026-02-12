@@ -131,3 +131,7 @@ Thumbs.db
 generated/
 nohup.out
 docker-compose.override.yml
+
+# ==========================================
+# Project Specific
+# ==========================================
