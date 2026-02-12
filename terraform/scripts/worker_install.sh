@@ -7,32 +7,42 @@ set -e
 echo "Sleeping for 60 seconds..."
 sleep 60
 
-# Update system packages
-echo "Updating system packages..."
-sudo yum update -y
+# Hostname
+sudo hostnamectl set-hostname worker-node
+
+# Sleep for 60 seconds as requested to ensure instance is fully ready
+echo "Sleeping for 60 seconds..."
+sleep 60
+
+# Update packages
+echo "Updating packages..."
+sudo dnf update -y
 
 # 1. Install Java 21 (Amazon Corretto)
 echo "Installing Java 21..."
-# Check for dnf (AL2023) or fallback to yum
-if command -v dnf &> /dev/null; then
-    sudo dnf install java-21-amazon-corretto-headless -y
-else
-    # AL2 fallback or direct install
-    sudo yum install java-21-amazon-corretto-headless -y || sudo yum install java-21-openjdk-headless -y
-fi
+sudo dnf install fontconfig java-21-amazon-corretto-devel -y
 
-# Verify Java
-java -version
+# 2. Install Tools (Git, Docker, Python3/Pip, jq)
+echo "Installing tools..."
+sudo dnf install git docker python3 python3-pip unzip jq -y
 
-# 2. Install Ansible
-echo "Installing Ansible..."
-# Ensure pip is installed
-sudo yum install python3-pip -y
+# 3. Install AWS CLI v2
+echo "Installing AWS CLI v2..."
+curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+unzip awscliv2.zip
+sudo ./aws/install
+rm -rf aws awscliv2.zip
 
-# Install Ansible via pip to get a reasonably recent version
+# 4. Configure Docker
+echo "Configuring Docker..."
+sudo systemctl enable --now docker
+sudo usermod -aG docker ec2-user
+
+# 5. Install Ansible (via pip)
 sudo pip3 install ansible
 
-# Verify Ansible
+echo "Worker Node installation complete!"
+java -version
+docker --version
 ansible --version
-
-echo "Worker node installation complete!"
+aws --version
