@@ -57,3 +57,22 @@ module "sonarqube_server" {
   root_volume_size    = var.sonarqube_root_volume_size
   extra_volume_size   = var.sonarqube_extra_volume_size
 }
+
+module "worker_node" {
+  source = "../../modules/compute/ec2"
+
+  project_name         = var.project_name
+  environment          = var.environment
+  instance_name        = var.worker_instance_name
+  role                 = "worker"
+  ami_id               = var.ami
+  instance_type        = var.worker_instance_type
+  subnet_id            = module.vpc.public_subnet_ids[0] # Workers often need public access for pulling images/updates if not using NAT carefully, or usually private if behind NAT. Assuming public for dev simplicity based on previous pattern.
+  security_group_ids   = [module.sg.ec2_sg_id]
+  key_name             = var.key_name
+  associate_public_ip  = var.associate_public_ip
+  user_data            = var.user_data
+  iam_instance_profile = var.iam_instance_profile
+  root_volume_size     = var.worker_root_volume_size
+  extra_volume_size    = var.worker_extra_volume_size
+}
