@@ -1,6 +1,6 @@
 resource "aws_key_pair" "spms_pro" {
   key_name   = "spms-pro"
-  public_key = file("${path.module}/../../../keys/spms-pro.pub")
+  public_key = file("${path.module}/../../modules/keys/spms-pro.pub")
 
   tags = {
     Name        = "spms-pro"
