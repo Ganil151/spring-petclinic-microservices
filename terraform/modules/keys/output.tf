@@ -9,3 +9,8 @@ output "public_key" {
 output "private_key" {
   value = local_file.spms_dev.content
 }
+
+output "tags" {
+  value = aws_key_pair.spms_dev.tags
+}
+  
