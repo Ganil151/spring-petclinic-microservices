@@ -67,7 +67,7 @@ module "worker_node" {
   role                 = "worker"
   ami_id               = var.ami
   instance_type        = var.worker_instance_type
-  subnet_id            = module.vpc.public_subnet_ids[0] # Workers often need public access for pulling images/updates if not using NAT carefully, or usually private if behind NAT. Assuming public for dev simplicity based on previous pattern.
+  subnet_id            = module.vpc.public_subnet_ids[0] #
   security_group_ids   = [module.sg.ec2_sg_id]
   key_name             = var.key_name
   associate_public_ip  = var.associate_public_ip
