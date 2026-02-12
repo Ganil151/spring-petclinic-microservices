@@ -3,6 +3,8 @@
 
 set -e
 
+# 
+
 # Sleep for 60 seconds as requested to ensure instance is fully ready
 echo "Sleeping for 60 seconds..."
 sleep 60
