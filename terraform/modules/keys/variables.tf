@@ -1,7 +1,5 @@
 variable "project_name" {
-  type    = string
-  default = "Petclinic"
-}
+  type    = string}
 
 variable "environment" {
   type    = string
