@@ -21,7 +21,7 @@ resource "aws_instance" "this" {
     Project     = var.project_name
     Role        = var.role
     }
-  }
+}
 
 # Optional Additional EBS Volume
 resource "aws_ebs_volume" "extra" {
