@@ -27,7 +27,7 @@ resource "aws_instance" "this" {
     ignore_changes = [
       key_name,
       ami    
-      ]
+    ]
  }
 
 # Optional Additional EBS Volume
