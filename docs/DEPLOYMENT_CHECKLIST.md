@@ -784,6 +784,34 @@ A reliable "Source of Truth" for Terraform is critical. This setup ensures **Con
 
 ---
 
+## Phase 2.5: Jenkins CI/CD Controller Setup
+
+### 2.5.1 Jenkins Plugin Installation Checklist
+Ensure the following plugins are installed to support the pipeline:
+
+| Plugin Name | DevOps Purpose |
+| :--- | :--- |
+| Pipeline (workflow-aggregator) | Orchestrates Jenkinsfile as code. |
+| Eclipse Temurin Installer | Managed JDK installation for Spring Boot. |
+| Maven Integration | Handles mvnw builds and reporting. |
+| Credentials Binding | Securely injects AWS & Docker Hub secrets. |
+
+### 2.5.2 Jenkins Global Tool Configuration
+*   **Logic:** Map the underlying tools to the names used in your `Jenkinsfile`.
+*   **Navigate to:** `Manage Jenkins` -> `Global Tool Configuration`
+
+- [ ] **Eclipse Temurin JDK**
+  *   **Name:** `jdk-21`
+  *   **Install automatically:** Checked
+  *   **Installer:** Eclipse Temurin 21 (from plugin)
+
+- [ ] **Maven Installation**
+  *   **Name:** `maven-3.9`
+  *   **Install automatically:** Checked
+  *   **Version:** 3.9.6
+
+---
+
 ## PHASE 3: Configuration Management (Ansible)
 
 ### 3.1 Prepare Ansible Inventory
@@ -1097,6 +1125,12 @@ A reliable "Source of Truth" for Terraform is critical. This setup ensures **Con
   ```
   **Expected:** 8 JAR files
 
+### 4.1.1 Shift-Left Security Gates
+- [ ] **Static Code Analysis**
+  *   Configure SonarQube Scanner to break the build if the Quality Gate fails.
+- [ ] **Dependency Vulnerability Scan**
+  *   Integrate OWASP Dependency Check to scan for CVEs in the microservices' pom.xml.
+
 ### 4.2 Build Docker Images
 
 - [ ] **Authenticate to ECR**
@@ -1177,6 +1211,14 @@ A reliable "Source of Truth" for Terraform is critical. This setup ensures **Con
   ```bash
   kubectl get pods -n petclinic
   ```
+
+### 4.5 Container & Cloud Integration Verification
+- [ ] **Docker Pipeline**
+  *   Verify Jenkins can build and push images to ECR.
+- [ ] **AWS Credentials Plugin**
+  *   Ensure the IAM Role/Key is bound for EKS kubectl access.
+- [ ] **GitHub Branch Source**
+  *   Verify Webhook connectivity for "Auto-Trigger on Push."
 
 ---
 
