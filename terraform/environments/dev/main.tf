@@ -54,6 +54,7 @@ module "worker_node" {
   key_name             = var.key_name
   associate_public_ip  = var.associate_public_ip
   user_data            = file("${path.module}/../../scripts/worker_install.sh")
+  us
   iam_instance_profile = var.iam_instance_profile
   root_volume_size     = var.worker_root_volume_size
   extra_volume_size    = var.worker_extra_volume_size
