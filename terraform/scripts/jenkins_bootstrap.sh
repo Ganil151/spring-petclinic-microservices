@@ -62,7 +62,7 @@ fi
 # ==============================================================================
 echo "Starting Remote Installation on Master..."
 
-ssh -i "$PEM_FILE" ${REMOTE_USER}@${MASTER_IP} "bash -s" << 'REMOTEEF'
+sudo ssh -i "$PEM_FILE" ${REMOTE_USER}@${MASTER_IP} "bash -s" << 'REMOTEEF'
     set -e
     
     # 1. System Hostname & Prep
