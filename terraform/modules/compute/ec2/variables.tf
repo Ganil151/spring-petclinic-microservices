@@ -64,6 +64,8 @@ variable "user_data" {
   default     = ""
 }
 
+variable ""
+
 variable "root_volume_size" {
   description = "Size of the root volume in GB"
   type        = number
