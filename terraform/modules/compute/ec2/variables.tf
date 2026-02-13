@@ -67,7 +67,7 @@ variable "user_data" {
 variable "user_data_replace" {
   description = "Whether to replace the user data when launching the instance"
   type        = bool
-  default     = false
+  default     = ""
 }
 
 variable "root_volume_size" {
