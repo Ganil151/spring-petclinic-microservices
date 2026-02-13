@@ -32,7 +32,7 @@ module "jenkins_master" {
   security_group_ids   = [module.sg.ec2_sg_id]
   key_name             = var.key_name
   associate_public_ip  = var.associate_public_ip
-  user_data            = file("${path.module}/../../scripts/jenkins_install.sh")
+  user_data            = file("${path.module}/../../scripts/jenkins_bootstrap.sh")
   iam_instance_profile = var.iam_instance_profile
   root_volume_size     = var.jenkins_root_volume_size
   extra_volume_size    = var.jenkins_extra_volume_size
