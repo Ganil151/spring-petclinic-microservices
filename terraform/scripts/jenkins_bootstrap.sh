@@ -133,7 +133,7 @@ REMOTEEF
 if [ -s "$NODE_IPS_FILE" ]; then
     FIRST_WORKER=$(head -n 1 "$NODE_IPS_FILE")
     echo "Testing Master -> Worker connectivity via: $FIRST_WORKER"
-    ssh -i "$PEM_FILE" ${REMOTE_USER}@${MASTER_IP} "ssh -o BatchMode=yes -o StrictHostKeyChecking=no ${REMOTE_USER}@${FIRST_WORKER} 'echo SSH Connection Success from Master to: \$(hostname)'"
+    sudo ssh -i "$PEM_FILE" ${REMOTE_USER}@${MASTER_IP} "ssh -o BatchMode=yes -o StrictHostKeyChecking=no ${REMOTE_USER}@${FIRST_WORKER} 'echo SSH Connection Success from Master to: \$(hostname)'"
 fi
 
 echo "Full automation script completed successfully."
