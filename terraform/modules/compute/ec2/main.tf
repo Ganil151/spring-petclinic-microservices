@@ -27,8 +27,8 @@ resource "aws_instance" "this" {
     ignore_changes = [
       key_name,
       ami,
-      user_data,
-      user_data_base64
+      # user_data,
+      # user_data_base64
     ]
  }
 
