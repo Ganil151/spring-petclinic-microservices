@@ -94,8 +94,8 @@ ssh -i "$PEM_FILE" ${REMOTE_USER}@${MASTER_IP} "bash -s" << 'REMOTEEF'
     # 4. Configure Services & Permissions
     echo "Configuring permissions and starting services..."
     sudo systemctl enable --now docker
-    sudo usermod -aG docker jenkins
-    sudo usermod -aG docker ec2-user
+    sudo usermod -aG docker ${REMOTE_USER}
+    sudo usermod -aG docker 
     sudo systemctl restart docker
 
     sudo systemctl enable --now jenkins
