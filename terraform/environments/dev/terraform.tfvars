@@ -54,6 +54,7 @@ ami = "ami-0c1fe732b5494dc14"
 key_name             = "spms-dev"
 associate_public_ip  = true
 user_data            = ""
+user_data_base64     = ""
 iam_instance_profile = ""
 
 # Jenkins Master Configuration
