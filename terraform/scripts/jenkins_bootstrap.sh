@@ -125,7 +125,6 @@ ssh -i "$PEM_FILE" ${REMOTE_USER}@${MASTER_IP} "bash -s" << 'REMOTEEF'
     echo "Versions:"
     java -version 2>&1 | head -n 1
     jenkins --version
-    ansible --version | head -n 1
 REMOTEEF
 
 # ==============================================================================
