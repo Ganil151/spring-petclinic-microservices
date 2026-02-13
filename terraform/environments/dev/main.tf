@@ -53,7 +53,7 @@ module "worker_node" {
   security_group_ids   = [module.sg.ec2_sg_id]
   key_name             = var.key_name
   associate_public_ip  = var.associate_public_ip
-  user_data            = file("${path.module}/../../scripts/worker_install.sh")
+  user_data            = file("${path.module}/../../scripts/worker_bootstrap.sh")
   user_data_replace_on_change = var.user_data_replace_on_change
   iam_instance_profile = var.iam_instance_profile
   root_volume_size     = var.worker_root_volume_size
