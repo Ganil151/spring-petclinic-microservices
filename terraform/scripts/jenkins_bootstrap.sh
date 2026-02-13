@@ -103,7 +103,7 @@ ssh -i "$PEM_FILE" ${REMOTE_USER}@${MASTER_IP} "bash -s" << 'REMOTEEF'
     # 5. Install Jenkins Plugins
     echo "Installing Jenkins Plugins..."
     sudo mkdir -p /var/lib/jenkins/plugins
-    sudo chown -R ${REMOTE_USER}:ec2-user /var/lib/jenkins
+    sudo chown -R ${REMOTE_USER}:${REMOTE_USER} /var/lib/jenkins
     
     # Install plugin CLI if not present, then install plugins
     # Note: Plugins might take a moment to be available for the CLI
