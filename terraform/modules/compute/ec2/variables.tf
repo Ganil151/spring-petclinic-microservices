@@ -65,7 +65,7 @@ variable "user_data" {
 }
 
 variable "user_data_replace" {
-  description = ""
+  description = 
   type        = bool
   default     = false
 }
