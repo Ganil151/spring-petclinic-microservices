@@ -36,7 +36,7 @@ if [ ! -s "$NODE_IPS_FILE" ]; then
     echo "Attempting to retrieve Worker IPs via AWS CLI (Tag: role=worker)..."
     aws ec2 describe-instances \
         --region $AWS_REGION \
-        --filters "Name=tag:role,Values=worker" "Name=instance-state-name,Values=running" \
+        --filters "Name=tag:Name,Values=*node-group*" "Name=instance-state-name,Values=running" \
         --query "Reservations[].Instances[].PublicIpAddress" \
         --output text | tr '\t' '\n' > "$NODE_IPS_FILE"
 fi
