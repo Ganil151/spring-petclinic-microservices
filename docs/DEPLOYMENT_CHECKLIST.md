@@ -853,20 +853,26 @@ Ensure the following plugins are installed to support the pipeline:
   ```
 
 ### 3.2 Establish Secure SSH Connectivity
-*   **Logic:** Ansible uses SSH to configure the nodes. Both the **Local Machine** (running the playbook) and the **Jenkins Master** (running future pipelines) must trust the Worker Nodes.
-*   **SSH Key Principle:** To grant the Master node access to the Worker nodes, the **Public Key** is added to the Worker's `authorized_keys` file, while the **Private Key** remains securely on the Master. In this setup, we propagate the `spms-dev` identity.
+*   **Logic:** Automate the exchange of SSH keys between the Local Machine, Jenkins Master, and EKS Worker Nodes.
+*   **Automation:** We use `configure_ssh.sh` to:
+    1.  Clean up local `known_hosts`.
+    2.  Push the project's private key (`spms-dev.pem`) to the Jenkins Master.
+    3.  Configure the Jenkins Master to trust all EKS Worker Nodes.
 
-- [ ] **Step 1: Configure Master Node Identity**
-  *   **Action:** Copy the `spms-dev` Private Key to the Master so it can act as the controller.
+- [ ] **Run SSH Configuration Script**
   ```bash
-  # Copy Private Key to Master
-  scp -i ../terraform/modules/keys/spms-dev.pem \
-      ../terraform/modules/keys/spms-dev.pem \
-      ec2-user@${MASTER_IP}:/home/ec2-user/.ssh/id_rsa
+  cd /home/gsmash/Documents/spring-petclinic-microservices/terraform/scripts
+  chmod +x configure_ssh.sh
+  ./configure_ssh.sh
+  ```
+  **Expected Output:** `SSH Configuration script completed successfully.`
 
-  # Secure the key (Required for SSH to function)
-  ssh -i ../terraform/modules/keys/spms-dev.pem ec2-user@${MASTER_IP} \
-      "chmod 600 /home/ec2-user/.ssh/id_rsa"
+- [ ] **Verify Ansible Connectivity**
+  ```bash
+  cd /home/gsmash/Documents/spring-petclinic-microservices/ansible
+  ansible -i inventory/dynamic_hosts all -m ping --private-key=../terraform/environments/dev/spms-dev.pem
+  ```
+  **Expected Output:** `SUCCESS` for all nodes.
   ```
 
 - [ ] **Step 2: Trust All Nodes (Local Machine)**
