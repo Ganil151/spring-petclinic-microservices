@@ -51,11 +51,11 @@ db_username          = "petclinic"
 ami = "ami-0c1fe732b5494dc14"
 
 # Common EC2 Settings
-key_name             = "spms-dev"
-associate_public_ip  = true
-user_data            = ""
-user_data_replaceuser_data_replace_on_change     = true
-iam_instance_profile = ""
+key_name                                     = "spms-dev"
+associate_public_ip                          = true
+user_data                                    = ""
+user_data_replaceuser_data_replace_on_change = true
+iam_instance_profile                         = ""
 
 # Jenkins Master Configuration
 jenkins_instance_name     = "jenkins-master"
