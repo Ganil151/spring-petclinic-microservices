@@ -65,7 +65,9 @@ variable "user_data" {
 }
 
 variable "user_data_replace" {
-  
+  description = ""
+  type        = bool
+  default     = false
 }
 
 variable "root_volume_size" {
