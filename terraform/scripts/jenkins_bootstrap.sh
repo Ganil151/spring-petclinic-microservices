@@ -72,6 +72,8 @@ sudo systemctl start jenkins
 
 
 
+
+
 echo "Jenkins Master installation complete!"
 java -version
 jenkins --version
