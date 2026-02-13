@@ -58,12 +58,15 @@ sudo systemctl start jenkins
 # 8. Generate SSH Key for Ansible Communication
 echo "Generating SSH key for ec2-user..."
 sudo -u ec2-user mkdir -p /home/ec2-user/.ssh
-if [ ! -f /home/ec2-user/.ssh/id_rsa ]; then
-    sudo -u ec2-user ssh-keygen -t rsa -b 4096 -f /home/ec2-user/.ssh/id_rsa -N "" -q
+if [ ! -f /home/ec2-user/.ssh/id_rsa.pem ]; then
+    # Generate PEM formatted key with .pem extension
+    sudo -u ec2-user ssh-keygen -m PEM -t rsa -b 4096 -f /home/ec2-user/.ssh/id_rsa.pem -N "" -q
+    # Create id_rsa symlink for default usage
+    sudo -u ec2-user ln -sf /home/ec2-user/.ssh/id_rsa.pem /home/ec2-user/.ssh/id_rsa
 fi
 sudo chmod 700 /home/ec2-user/.ssh
-sudo chmod 600 /home/ec2-user/.ssh/id_rsa
-sudo chmod 644 /home/ec2-user/.ssh/id_rsa.pub
+sudo chmod 600 /home/ec2-user/.ssh/id_rsa.pem
+sudo chmod 644 /home/ec2-user/.ssh/id_rsa.pem.pub
 
 echo "Jenkins Master installation complete!"
 java -version
