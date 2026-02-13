@@ -45,8 +45,8 @@ if [ ! -s "$NODE_IPS_FILE" ]; then
 fi
 
 # 3. Handle SSH Known Hosts locally
-ssh-keygen -R "$MASTER_IP" 2>/dev/null || true
-ssh-keyscan -H "$MASTER_IP" >> ~/.ssh/known_hosts 2>/dev/null
+sudo ssh-keygen -R "$MASTER_IP" 2>/dev/null || true
+sudo ssh-keyscan -H "$MASTER_IP" >> ~/.ssh/known_hosts 2>/dev/null
 
 # 4. Copy Private Key to Master (for Master -> Worker communication)
 echo "Copying private key to Jenkins Master..."
