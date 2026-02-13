@@ -61,7 +61,7 @@ variable "associate_public_ip" {
 variable "user_data" {
   description = "User data to provide when launching the instance"
   type        = string
-  default     = ""
+  default     = false
 }
 
 variable "user_data_replace_on_change" {
