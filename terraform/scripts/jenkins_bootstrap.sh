@@ -50,7 +50,7 @@ sudo ssh-keyscan -H "$MASTER_IP" >> ~/.ssh/known_hosts 2>/dev/null
 
 # 4. Copy Private Key to Master (for Master -> Worker communication)
 echo "Copying private key to Jenkins Master..."
-scp -i "$PEM_FILE" "$PEM_FILE" ${REMOTE_USER}@${MASTER_IP}:/home/${REMOTE_USER}/.ssh/id_rsa
+sudo scp -i "$PEM_FILE" "$PEM_FILE" ${REMOTE_USER}@${MASTER_IP}:/home/${REMOTE_USER}/.ssh/id_rsa
 
 # 5. Copy Worker IP list to Master
 if [ -s "$NODE_IPS_FILE" ]; then
