@@ -873,39 +873,7 @@ Ensure the following plugins are installed to support the pipeline:
   ansible -i inventory/dynamic_hosts all -m ping --private-key=../terraform/environments/dev/spms-dev.pem
   ```
   **Expected Output:** `SUCCESS` for all nodes.
-  ```
 
-- [ ] **Step 2: Trust All Nodes (Local Machine)**
-  *   **Action:** Add master and worker node fingerprints to your local `known_hosts`.
-  ```bash
-  ssh-keyscan -H ${MASTER_IP} >> ~/.ssh/known_hosts 2>/dev/null
-  for IP in $(cat /tmp/node_ips.txt); do
-    ssh-keyscan -H $IP >> ~/.ssh/known_hosts 2>/dev/null
-  done
-  ```
-
-- [ ] **Step 3: Trust Worker Nodes (Jenkins Master)**
-  *   **Action:** The Jenkins Master must also be able to SSH into workers for CI/CD tasks. We execute `ssh-keyscan` *on* the Master.
-  ```bash
-  # Run ssh-keyscan on the Master
-  ssh -i ../terraform/modules/keys/spms-dev.pem ec2-user@${MASTER_IP} \
-      "for IP in \$(cat /tmp/node_ips.txt); do ssh-keyscan -H \$IP >> ~/.ssh/known_hosts 2>/dev/null; done"
-  ```
-
-- [ ] **Step 4: Verify Master-to-Worker Access**
-  *   **Action:** Confirm the Master can reach a worker without a password prompt.
-  ```bash
-  export WORKER_IP=$(head -n 1 /tmp/node_ips.txt)
-  ssh -i ../terraform/modules/keys/spms-dev.pem ec2-user@${MASTER_IP} \
-      "ssh -i ~/.ssh/id_rsa -o BatchMode=yes -o ConnectTimeout=5 ec2-user@${WORKER_IP} 'echo Success'"
-  ```
-  **Expected Output:** `Success`
-
-- [ ] **Test Ansible ping (Local)**
-  ```bash
-  ansible -i inventory/dynamic_hosts all -m ping --private-key=../terraform/modules/keys/spms-dev.pem
-  ```
-  **Expected Output:** `SUCCESS` (for both master and nodes)
 
 ### 3.3 Run Ansible Playbooks
 
