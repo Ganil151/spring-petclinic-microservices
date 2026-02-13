@@ -820,8 +820,22 @@ A reliable "Source of Truth" for Terraform is critical. This setup ensures **Con
 
 ### 3.2 Establish Secure SSH Connectivity
 *   **Logic:** Ansible uses SSH to configure the nodes. Both the **Local Machine** (running the playbook) and the **Jenkins Master** (running future pipelines) must trust the Worker Nodes.
+*   **SSH Key Principle:** To grant the Master node access to the Worker nodes, the **Public Key** is added to the Worker's `authorized_keys` file, while the **Private Key** remains securely on the Master. In this setup, we propagate the `spms-dev` identity.
 
-- [ ] **Step 1: Trust All Nodes (Local Machine)**
+- [ ] **Step 1: Configure Master Node Identity**
+  *   **Action:** Copy the `spms-dev` Private Key to the Master so it can act as the controller.
+  ```bash
+  # Copy Private Key to Master
+  scp -i ../terraform/modules/keys/spms-dev.pem \
+      ../terraform/modules/keys/spms-dev.pem \
+      ec2-user@${MASTER_IP}:/home/ec2-user/.ssh/id_rsa
+
+  # Secure the key (Required for SSH to function)
+  ssh -i ../terraform/modules/keys/spms-dev.pem ec2-user@${MASTER_IP} \
+      "chmod 600 /home/ec2-user/.ssh/id_rsa"
+  ```
+
+- [ ] **Step 2: Trust All Nodes (Local Machine)**
   *   **Action:** Add master and worker node fingerprints to your local `known_hosts`.
   ```bash
   ssh-keyscan -H ${MASTER_IP} >> ~/.ssh/known_hosts 2>/dev/null
@@ -830,20 +844,20 @@ A reliable "Source of Truth" for Terraform is critical. This setup ensures **Con
   done
   ```
 
-- [ ] **Step 2: Trust Worker Nodes (Jenkins Master)**
+- [ ] **Step 3: Trust Worker Nodes (Jenkins Master)**
   *   **Action:** The Jenkins Master must also be able to SSH into workers for CI/CD tasks. We execute `ssh-keyscan` *on* the Master.
   ```bash
   # Run ssh-keyscan on the Master
   ssh -i ../terraform/modules/keys/spms-dev.pem ec2-user@${MASTER_IP} \
-    "for IP in \$(cat /tmp/node_ips.txt); do ssh-keyscan -H \$IP >> ~/.ssh/known_hosts 2>/dev/null; done"
+      "for IP in \$(cat /tmp/node_ips.txt); do ssh-keyscan -H \$IP >> ~/.ssh/known_hosts 2>/dev/null; done"
   ```
 
-- [ ] **Step 3: Verify Master-to-Worker Access**
+- [ ] **Step 4: Verify Master-to-Worker Access**
   *   **Action:** Confirm the Master can reach a worker without a password prompt.
   ```bash
   export WORKER_IP=$(head -n 1 /tmp/node_ips.txt)
   ssh -i ../terraform/modules/keys/spms-dev.pem ec2-user@${MASTER_IP} \
-    "ssh -i ~/.ssh/id_rsa -o BatchMode=yes -o ConnectTimeout=5 ec2-user@${WORKER_IP} 'echo Success'"
+      "ssh -i ~/.ssh/id_rsa -o BatchMode=yes -o ConnectTimeout=5 ec2-user@${WORKER_IP} 'echo Success'"
   ```
   **Expected Output:** `Success`
 
