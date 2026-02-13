@@ -107,7 +107,7 @@ ssh -i "$PEM_FILE" ${REMOTE_USER}@${MASTER_IP} "bash -s" << 'REMOTEEF'
     
     # Install plugin CLI if not present, then install plugins
     # Note: Plugins might take a moment to be available for the CLI
-    sudo -u jenkins jenkins-plugin-cli --plugins \
+    sudo -u ec2-user jenkins-plugin-cli --plugins \
         workflow-aggregator git github-branch-source docker-workflow sonar \
         maven-plugin eclipse-temurin-installer credentials-binding \
         dependency-check-jenkins-plugin aws-credentials pipeline-utility-steps
