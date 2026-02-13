@@ -101,6 +101,11 @@ variable "jenkins_extra_volume_size" {
   default     = 0
 }
 
+variable "user_data_replace" {
+  description = "Whether to replace the user data when launching the instance"
+  type        = bool
+  default     = false
+}
 
 
 # ============================================================================
