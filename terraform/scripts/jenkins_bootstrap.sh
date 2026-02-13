@@ -70,7 +70,26 @@ echo "Starting Jenkins..."
 sudo systemctl enable jenkins
 sudo systemctl start jenkins
 
+# 7. Install Jenkins Plugins
+echo "Installing Jenkins Plugins..."
+# Ensure the plugin directory exists and has correct permissions
+sudo mkdir -p /var/lib/jenkins/plugins
+sudo chown -R jenkins:jenkins /var/lib/jenkins
 
+# Install plugins using jenkins-plugin-cli
+# Note: Using sudo -u jenkins to ensure file ownership
+sudo -u jenkins jenkins-plugin-cli --plugins \
+    workflow-aggregator \
+    git \
+    github-branch-source \
+    docker-workflow \
+    sonar \
+    maven-plugin \
+    eclipse-temurin-installer \
+    credentials-binding \
+    dependency-check-jenkins-plugin \
+    aws-credentials \
+    pipeline-utility-steps
 
 
 
