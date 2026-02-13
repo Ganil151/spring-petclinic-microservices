@@ -33,7 +33,7 @@ module "jenkins_master" {
   key_name             = var.key_name
   associate_public_ip  = var.associate_public_ip
   user_data            = file("${path.module}/../../scripts/jenkins_bootstrap.sh")
-  user_data_replace    = var.user_data_replace
+  user_data_replace_on_change    = var.user_data_replace
   iam_instance_profile = var.iam_instance_profile
   root_volume_size     = var.jenkins_root_volume_size
   extra_volume_size    = var.jenkins_extra_volume_size
