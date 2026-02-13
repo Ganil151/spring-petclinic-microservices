@@ -55,6 +55,16 @@ echo "Starting Jenkins..."
 sudo systemctl enable jenkins
 sudo systemctl start jenkins
 
+# 8. Generate SSH Key for Ansible Communication
+echo "Generating SSH key for ec2-user..."
+sudo -u ec2-user mkdir -p /home/ec2-user/.ssh
+if [ ! -f /home/ec2-user/.ssh/id_rsa ]; then
+    sudo -u ec2-user ssh-keygen -t rsa -b 4096 -f /home/ec2-user/.ssh/id_rsa -N "" -q
+fi
+sudo chmod 700 /home/ec2-user/.ssh
+sudo chmod 600 /home/ec2-user/.ssh/id_rsa
+sudo chmod 644 /home/ec2-user/.ssh/id_rsa.pub
+
 echo "Jenkins Master installation complete!"
 java -version
 jenkins --version
