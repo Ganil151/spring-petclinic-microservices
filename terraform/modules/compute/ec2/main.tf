@@ -26,10 +26,7 @@ resource "aws_instance" "this" {
   lifecycle {
     ignore_changes = [
       key_name,
-      ami,
-      # user_data,
-      # user_data_base64
-    ]
+      ami    ]
  }
 
 # Optional Additional EBS Volume
