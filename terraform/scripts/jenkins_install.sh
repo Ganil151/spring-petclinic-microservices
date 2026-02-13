@@ -65,8 +65,8 @@ if [ ! -f /home/ec2-user/.ssh/id_rsa.pem ]; then
     sudo -u ec2-user ln -sf /home/ec2-user/.ssh/id_rsa.pem /home/ec2-user/.ssh/id_rsa
 fi
 sudo chmod 700 /home/ec2-user/.ssh
-sudo chmod 600 /home/ec2-user/.ssh/id_rsa.pem
-sudo chmod 644 /home/ec2-user/.ssh/id_rsa.pem.pub
+sudo chmod 600 /home/ec2-user/.ssh/id_rsa
+sudo chmod 644 /home/ec2-user/.ssh/id_rsa.pub
 
 echo "Jenkins Master installation complete!"
 java -version
