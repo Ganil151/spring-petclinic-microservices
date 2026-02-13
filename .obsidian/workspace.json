@@ -185,5 +185,7 @@
     }
   },
   "active": "e8a8bfd7c13c69fd",
-  "lastOpenFiles": []
+  "lastOpenFiles": [
+    "terraform/scripts/configure_ssh.sh"
+  ]
 }
