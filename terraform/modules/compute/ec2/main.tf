@@ -23,13 +23,6 @@ resource "aws_instance" "this" {
     }
   }
 
-  lifecycle {
-    ignore_changes = [
-      key_name,
-      ami    
-    ]
- }
-
 # Optional Additional EBS Volume
 resource "aws_ebs_volume" "extra" {
   count             = var.extra_volume_size > 0 ? var.instance_count : 0
