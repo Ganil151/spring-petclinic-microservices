@@ -186,6 +186,7 @@
   },
   "active": "e8a8bfd7c13c69fd",
   "lastOpenFiles": [
+    "terraform/scripts/worker_bootstrap.sh",
     "spring-petclinic-visits-service/target/test-classes/application-test.yml",
     "spring-petclinic-visits-service/target/classes/logback-spring.xml",
     "spring-petclinic-visits-service/target/classes/db/mysql/schema.sql",
@@ -196,7 +197,6 @@
     "spring-petclinic-visits-service/target/classes/db/hsqldb",
     "spring-petclinic-visits-service/target/classes/db",
     "spring-petclinic-visits-service/target/classes/application.yml",
-    "spring-petclinic-visits-service/target/classes/META-INF/build-info.properties",
     "spring-petclinic-api-gateway/target/classes/static/images/spring-pivotal-logo.png",
     "spring-petclinic-api-gateway/target/classes/static/images/spring-logo-dataflow.png",
     "spring-petclinic-api-gateway/target/classes/static/images/spring-logo-dataflow-mobile.png",
