@@ -41,7 +41,22 @@ unzip awscliv2.zip
 sudo ./aws/install
 rm -rf aws awscliv2.zip
 
-# 6. Configure Permissions
+# 6. Install Kubectl (Latest Stable)
+echo "Installing Kubectl..."
+curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
+rm kubectl
+
+# 7. Install Helm
+echo "Installing Helm..."
+curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+
+# 8. Install Terraform
+echo "Installing Terraform..."
+sudo dnf config-manager --add-repo https://rpm.releases.hashicorp.com/AmazonLinux/hashicorp.repo
+sudo dnf -y install terraform
+
+# 9. Configure Permissions
 echo "Configuring permissions..."
 # Add jenkins and ec2-user to docker group
 sudo usermod -aG docker jenkins
