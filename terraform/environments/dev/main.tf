@@ -22,42 +22,42 @@ module "sg" {
 module "jenkins_master" {
   source = "../../modules/compute/ec2"
 
-  project_name         = var.project_name
-  environment          = var.environment
-  instance_name        = var.jenkins_instance_name
-  role                 = "master"
-  ami_id               = var.ami
-  instance_type        = var.jenkins_instance_type
-  subnet_id            = module.vpc.public_subnet_ids[0]
-  security_group_ids   = [module.sg.ec2_sg_id]
-  key_name             = var.key_name
-  associate_public_ip  = var.associate_public_ip
-  user_data            = file("${path.module}/../../scripts/jenkins_bootstrap.sh")
-  user_data_replace_on_change    = var.user_data_replace_on_change
-  iam_instance_profile = var.iam_instance_profile
-  root_volume_size     = var.jenkins_root_volume_size
-  extra_volume_size    = var.jenkins_extra_volume_size
+  project_name                = var.project_name
+  environment                 = var.environment
+  instance_name               = var.jenkins_instance_name
+  role                        = "master"
+  ami_id                      = var.ami
+  instance_type               = var.jenkins_instance_type
+  subnet_id                   = module.vpc.public_subnet_ids[0]
+  security_group_ids          = [module.sg.ec2_sg_id]
+  key_name                    = var.key_name
+  associate_public_ip         = var.associate_public_ip
+  user_data                   = file("${path.module}/../../scripts/jenkins_bootstrap.sh")
+  user_data_replace_on_change = var.user_data_replace_on_change
+  iam_instance_profile        = var.iam_instance_profile
+  root_volume_size            = var.jenkins_root_volume_size
+  extra_volume_size           = var.jenkins_extra_volume_size
 }
 
 
 module "worker_node" {
   source = "../../modules/compute/ec2"
 
-  project_name         = var.project_name
-  environment          = var.environment
-  instance_name        = var.worker_instance_name
-  role                 = "worker"
-  ami_id               = var.ami
-  instance_type        = var.worker_instance_type
-  subnet_id            = module.vpc.public_subnet_ids[0]
-  security_group_ids   = [module.sg.ec2_sg_id]
-  key_name             = var.key_name
-  associate_public_ip  = var.associate_public_ip
-  user_data            = file("${path.module}/../../scripts/worker_bootstrap.sh")
+  project_name                = var.project_name
+  environment                 = var.environment
+  instance_name               = var.worker_instance_name
+  role                        = "worker"
+  ami_id                      = var.ami
+  instance_type               = var.worker_instance_type
+  subnet_id                   = module.vpc.public_subnet_ids[0]
+  security_group_ids          = [module.sg.ec2_sg_id]
+  key_name                    = var.key_name
+  associate_public_ip         = var.associate_public_ip
+  user_data                   = file("${path.module}/../../scripts/worker_bootstrap.sh")
   user_data_replace_on_change = var.user_data_replace_on_change
-  iam_instance_profile = var.iam_instance_profile
-  root_volume_size     = var.worker_root_volume_size
-  extra_volume_size    = var.worker_extra_volume_size
+  iam_instance_profile        = var.iam_instance_profile
+  root_volume_size            = var.worker_root_volume_size
+  extra_volume_size           = var.worker_extra_volume_size
 }
 
 module "sonarqube_server" {
