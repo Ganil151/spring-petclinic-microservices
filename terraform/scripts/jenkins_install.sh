@@ -50,16 +50,7 @@ sudo usermod -aG docker ec2-user
 # Restart Docker to apply group changes
 sudo systemctl restart docker
 
-# 7. Generate SSH Key for Jenkins User
-echo "Generating SSH key for jenkins user..."
-sudo -u jenkins mkdir -p /var/lib/jenkins/.ssh
-sudo -u jenkins chmod 700 /var/lib/jenkins/.ssh
-# Generate RSA key pair with no passphrase
-if [ ! -f /var/lib/jenkins/.ssh/id_rsa ]; then
-    sudo -u jenkins ssh-keygen -t rsa -b 4096 -f /var/lib/jenkins/.ssh/id_rsa -N ""
-fi
-
-# 8. Start Jenkins
+# 7. Start Jenkins
 echo "Starting Jenkins..."
 sudo systemctl enable jenkins
 sudo systemctl start jenkins
