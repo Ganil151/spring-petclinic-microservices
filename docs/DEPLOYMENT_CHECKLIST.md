@@ -789,18 +789,18 @@ A reliable "Source of Truth" for Terraform is critical. This setup ensures **Con
 ### 2.5.1 Jenkins Plugin Installation Checklist
 Ensure the following plugins are installed to support the pipeline:
 
-| Plugin Name | DevOps Purpose |
-| :--- | :--- |
-| **Pipeline (workflow-aggregator)** | Orchestrates Jenkinsfile as code. |
-| **Git Plugin** | Essential for sourcing code from repository managers like GitHub. |
-| **GitHub Branch Source** | Automatically triggers builds based on webhooks. |
-| **Docker Pipeline** | Enables building, testing, and pushing Docker images. |
-| **SonarQube Scanner** | Integrates code quality analysis into the pipeline. |
-| **Maven Integration** | Supports building Java applications using the mvnw wrapper. |
-| **Eclipse Temurin Installer** | Automatically manages and installs necessary JDK versions. |
-| **Credentials Binding** | Manages secrets (Docker Hub, AWS, SonarQube) securely. |
-| **OWASP Dependency Check** | Scans for vulnerabilities in project dependencies. |
-| **AWS Credentials / Pipeline: AWS Steps** | Manages AWS creds for EKS deployments & S3 interactions. |
+| Plugin Name                               | DevOps Purpose                                                    |
+| :---------------------------------------- | :---------------------------------------------------------------- |
+| **Pipeline (workflow-aggregator)**        | Orchestrates Jenkinsfile as code.                                 |
+| **Git Plugin**                            | Essential for sourcing code from repository managers like GitHub. |
+| **GitHub Branch Source**                  | Automatically triggers builds based on webhooks.                  |
+| **Docker Pipeline**                       | Enables building, testing, and pushing Docker images.             |
+| **SonarQube Scanner**                     | Integrates code quality analysis into the pipeline.               |
+| **Maven Integration**                     | Supports building Java applications using the mvnw wrapper.       |
+| **Eclipse Temurin Installer**             | Automatically manages and installs necessary JDK versions.        |
+| **Credentials Binding**                   | Manages secrets (Docker Hub, AWS, SonarQube) securely.            |
+| **OWASP Dependency Check**                | Scans for vulnerabilities in project dependencies.                |
+| **AWS Credentials / Pipeline: AWS Steps** | Manages AWS creds for EKS deployments & S3 interactions.          |
 
 ### 2.5.2 Jenkins Global Tool Configuration
 *   **Logic:** Map the underlying tools to the names used in your `Jenkinsfile`.
