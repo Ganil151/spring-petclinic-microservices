@@ -146,4 +146,5 @@ docker-compose.override.yml
 # Terraform
 # ==========================================
 plan_output.txt 
-tfplan_move_sonar
+tfplan_move_sonar 
+tfplan*
