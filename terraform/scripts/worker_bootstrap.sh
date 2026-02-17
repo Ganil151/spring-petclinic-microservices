@@ -5,8 +5,10 @@ set -e
 
 # 1. Identity & Initialization
 sudo hostnamectl set-hostname worker-node
+
+# Sleep for 60 seconds as requested to ensure instance is fully ready
 echo "Waiting 60s for instance to stabilize..."
-sleep 60
+sleep 65
 
 # 2. Repository & System Updates
 echo "Updating system packages..."
