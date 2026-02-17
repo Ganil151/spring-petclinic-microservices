@@ -76,6 +76,17 @@ sudo chown -R ec2-user:ec2-user /var/log/jenkins
 # Clear specific cache that often fails
 sudo rm -rf /var/cache/jenkins/war/*
 
+# 12. Final Permission Audit & Start
+sudo chown -R ec2-user:ec2-user /var/lib/jenkins
+sudo chown -R ec2-user:ec2-user /var/cache/jenkins
+sudo chown -R ec2-user:ec2-user /var/log/jenkins
+
+echo "Starting Jenkins..."
+sudo systemctl enable jenkins
+sudo systemctl start jenkins
+echo "Waiting 30 seconds for Jenkins to initialize..."
+sleep 30
+
 # 11. Install Jenkins Plugins as ec2-user
 echo "Installing Jenkins Plugins..."
 # Download plugin-cli if not present (AL2023 jenkins package doesn't always have it)
