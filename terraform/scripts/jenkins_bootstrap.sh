@@ -49,6 +49,7 @@ cat <<EOF | sudo tee /etc/systemd/system/jenkins.service.d/override.conf
 [Service]
 User=ec2-user
 Group=ec2-user
+Environment="JENKINS_HOME=/var/lib/jenkins"
 EOF
 sudo systemctl daemon-reload
 
@@ -60,7 +61,10 @@ sudo mkdir -p /var/lib/jenkins/.ssh
 if [ ! -f /var/lib/jenkins/.ssh/id_rsa ]; then
     sudo ssh-keygen -t rsa -b 4096 -f /var/lib/jenkins/.ssh/id_rsa -N "" -q
 fi
+# Fix ownership for all Jenkins-related directories
 sudo chown -R ec2-user:ec2-user /var/lib/jenkins/
+sudo chown -R ec2-user:ec2-user /var/log/jenkins/
+sudo chown -R ec2-user:ec2-user /var/cache/jenkins/
 sudo chmod 700 /var/lib/jenkins/.ssh
 sudo chmod 600 /var/lib/jenkins/.ssh/id_rsa
 sudo chmod 644 /var/lib/jenkins/.ssh/id_rsa.pub
