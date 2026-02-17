@@ -36,12 +36,7 @@ sudo dnf install git docker python3 python3-pip unzip jq -y
 sudo systemctl enable --now docker
 sudo pip3 install ansible
 
-# 5. Install AWS CLI v2
-echo "Installing AWS CLI v2..."
-curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-unzip -q awscliv2.zip
-sudo ./aws/install --update
-rm -rf aws awscliv2.zip
+
 
 # 6. Install Kubectl & Helm
 echo "Installing Kubectl & Helm..."
