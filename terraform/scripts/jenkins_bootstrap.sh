@@ -7,10 +7,12 @@ set -e
 
 # 1. Identity & Initialization
 sudo hostnamectl set-hostname jenkins-master
+
+# 2. Wait for instance to stabilize
 echo "Waiting 60 seconds for instance to stabilize..."
 sleep 60
 
-# 2. Install Baseline Dependencies
+# 3. Install Baseline Dependencies
 echo "Installing Python and Ansible dependencies..."
 sudo dnf update -y
 sudo dnf install -y python3 python3-pip git jq unzip
