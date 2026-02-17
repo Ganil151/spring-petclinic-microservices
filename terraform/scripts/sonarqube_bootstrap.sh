@@ -32,7 +32,7 @@ EOF
 echo "Updating system packages..."
 sudo dnf update -y
 # Install core dependencies: Java (required for scanner), Docker, Git, etc.
-sudo dnf install -y git docker python3 python3-pip unzip jq fontconfig java-17-amazon-corretto-devel
+sudo dnf install -y git docker python3 python3-pip unzip jq fontconfig java-21-amazon-corretto-devel
 
 # 4. AWS CLI v2 Installation
 echo "Installing/Updating AWS CLI v2..."
