@@ -1210,6 +1210,11 @@ Ensure the following plugins are installed to support the pipeline:
 - [ ] **GitHub Branch Source**
   *   Verify Webhook connectivity for "Auto-Trigger on Push."
 
+- [ ] **Verify Webhook Endpoint**
+  ```bash
+  curl -I http://localhost:8080/github-webhook/
+  ```
+
 ---
 
 ## PHASE 5: Validation & Health Checks
