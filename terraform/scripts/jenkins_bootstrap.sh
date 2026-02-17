@@ -8,7 +8,7 @@ sudo hostnamectl set-hostname jenkins-master
 
 # Sleep for 60 seconds as requested to ensure instance is fully ready
 echo "Sleeping for 60 seconds..."
-sleep 40
+sleep 30
 
 # Update system packages
 echo "Updating system packages..."
