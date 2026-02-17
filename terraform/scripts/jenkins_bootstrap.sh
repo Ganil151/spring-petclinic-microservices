@@ -104,3 +104,12 @@ jenkins --version
 aws --version
 printf "Admin Password:  %s\n" "$(sudo cat /var/lib/jenkins/secrets/initialAdminPassword)"
 printf "Jenkins Public SSH Key: %s\n" "$(sudo cat /home/ec2-user/.ssh/id_rsa.pub)"
+
+
+# Create known_hosts file
+sudo touch /var/lib/jenkins/.ssh/known_hosts
+sudo chmod 644 /var/lib/jenkins/.ssh/known_hosts
+
+# Increase /tmp file
+echo "tmpfs /tmp tmpfs defaults,size=1500M 0 0" | sudo tee -a /etc/fstab
+sudo mount -o remount /tmp
