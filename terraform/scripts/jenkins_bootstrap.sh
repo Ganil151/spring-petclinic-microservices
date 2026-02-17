@@ -72,10 +72,6 @@ if [ ! -f /home/ec2-user/.ssh/id_rsa ]; then
     sudo -u ec2-user ssh-keygen -t rsa -b 4096 -f /home/ec2-user/.ssh/id_rsa -N "" -q
 fi
 
-# 6. 
-
-
-
 # Restart Docker to apply group changes
 sudo systemctl restart docker
 echo "Waiting 10 seconds for Docker to restart..."
