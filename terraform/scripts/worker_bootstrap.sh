@@ -59,6 +59,8 @@ fi
 
 sudo systemctl enable --now docker
 sudo usermod -aG docker ec2-user
+echo "Waiting 10 seconds for Docker to initialize..."
+sleep 10
 
 # 5. Tooling: AWS CLI v2, Kubectl, Helm
 echo "Installing AWS CLI v2..."
