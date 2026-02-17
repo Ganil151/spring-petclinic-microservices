@@ -46,6 +46,16 @@ echo "export JAVA_HOME=$JAVA_HOME" | sudo tee -a /var/lib/jenkins/.bash_profile
 echo "export PATH=$PATH:$HOME/bin:$JAVA_HOME" | sudo tee -a /var/lib/jenkins/.bash_profile
 source /var/lib/jenkins/.bash_profile
 
+# 4. Prepare Jenkins Directories & Clear Cache
+echo "Preparing Jenkins directories for ec2-user..."
+sudo mkdir -p /var/lib/jenkins/plugins /var/cache/jenkins /var/log/jenkins
+# CRITICAL: Re-chown everything to ec2-user
+sudo chown -R ec2-user:ec2-user /var/lib/jenkins
+sudo chown -R ec2-user:ec2-user /var/cache/jenkins
+sudo chown -R ec2-user:ec2-user /var/log/jenkins
+# Clear specific cache that often fails
+sudo rm -rf /var/cache/jenkins/war/*
+
 # 4. Install Kubectl & Helm
 echo "Installing Kubectl & Helm..."
 curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
