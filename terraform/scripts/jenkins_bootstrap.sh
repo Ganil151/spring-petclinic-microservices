@@ -38,8 +38,13 @@ sudo systemctl start jenkins
 echo "Waiting 30 seconds for Jenkins to initialize..."
 sleep 30
 
-
-
+# Configure Java in Jenkins
+echo "Configure Java"
+sudo touch /var/lib/jenkins/.bash_profile
+sudo chown -R jenkins:jenkins /var/lib/jenkins/.bash_profile
+echo "export JAVA_HOME=$JAVA_HOME" | sudo tee -a /var/lib/jenkins/.bash_profile
+echo "export PATH=$PATH:$HOME/bin:$JAVA_HOME" | sudo tee -a /var/lib/jenkins/.bash_profile
+source /var/lib/jenkins/.bash_profile
 
 # 4. Install Component Tools
 echo "Installing Git, Docker, Python3, Ansible, jq..."
