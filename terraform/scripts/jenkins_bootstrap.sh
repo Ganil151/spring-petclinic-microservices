@@ -30,8 +30,6 @@ sudo dnf install -y jenkins
 
 # 5. Configure Jenkins to run as ec2-user (Critical for Permissions)
 echo "Configuring Jenkins service override for ec2-user..."
-# Force cleanup of old service state
-sudo systemctl stop jenkins || true
 
 # Re-create the override carefully
 sudo mkdir -p /etc/systemd/system/jenkins.service.d/
