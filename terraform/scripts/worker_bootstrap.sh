@@ -5,8 +5,8 @@ set -e
 
 # 1. Initialization
 sudo hostnamectl set-hostname worker-node
-echo "Stabilizing instance..."
-sleep 30
+echo "Stabilizing instance for 60 seconds..."
+sleep 60
 
 # 2. Advanced Disk Management (AL2023 / NVMe Aware)
 echo "Configuring Extra Storage..."

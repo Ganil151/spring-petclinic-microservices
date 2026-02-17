@@ -89,6 +89,8 @@ sudo chown -R ec2-user:ec2-user "$SONAR_DIR"
 # 6. Start Stack (Using AL2023 Docker Compose Plugin)
 cd "$SONAR_DIR"
 sudo docker compose up -d
+echo "Waiting 30 seconds for containers to start..."
+sleep 30
 
 # 7. Security Tooling (DevSecOps)
 echo "Installing Security Scanners..."
