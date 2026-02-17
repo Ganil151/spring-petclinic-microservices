@@ -6,7 +6,7 @@
 set -e
 
 # 1. Identity & Initialization
-sudo hostnamectl set-hostname sonarqube-server
+sudo hostnamectl set-hostname sonarQube-server
 echo "Waiting 60 seconds for instance to stabilize..."
 sleep 60
 
