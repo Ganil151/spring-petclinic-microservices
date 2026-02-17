@@ -53,20 +53,6 @@ sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
 rm kubectl
 curl -s https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
 
-# 8. Configure Jenkins to run as ec2-user (Fixes Permission Denied errors)
-echo "Configuring Jenkins service override for ec2-user..."
-sudo mkdir -p /etc/systemd/system/jenkins.service.d/
-cat <<EOF | sudo tee /etc/systemd/system/jenkins.service.d/override.conf
-[Service]
-User=ec2-user
-Group=ec2-user
-Environment="JENKINS_HOME=/var/lib/jenkins"
-EOF
-sudo systemctl daemon-reload
-
-# 9. Configure Permissions and SSH
-echo "Configuring permissions and SSH..."
-sudo usermod -aG docker ec2-user
 
 # Generate SSH key for ec2-user (RSA 4096)
 echo "Generating SSH key for ec2-user..."
