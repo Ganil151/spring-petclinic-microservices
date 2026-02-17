@@ -56,13 +56,21 @@ echo "Installing Terraform..."
 sudo dnf config-manager --add-repo https://rpm.releases.hashicorp.com/AmazonLinux/hashicorp.repo
 sudo dnf -y install terraform
 
-# 9. Configure Permissions
-echo "Configuring permissions..."
+# 9. Configure Permissions and SSH
+echo "Configuring permissions and SSH..."
 # Add jenkins and ec2-user to docker group
 sudo usermod -aG docker jenkins
 sudo usermod -aG docker ec2-user
 
-# 7. Install Jenkins Plugins
+# Generate SSH key for ec2-user (RSA 4096)
+echo "Generating SSH key for ec2-user..."
+sudo -u ec2-user mkdir -p /home/ec2-user/.ssh
+sudo -u ec2-user chmod 700 /home/ec2-user/.ssh
+if [ ! -f /home/ec2-user/.ssh/id_rsa ]; then
+    sudo -u ec2-user ssh-keygen -t rsa -b 4096 -f /home/ec2-user/.ssh/id_rsa -N "" -q
+fi
+
+# 10. Install Jenkins Plugins
 echo "Installing Jenkins Plugins..."
 
 # Ensure the plugin directory exists and has correct permissions
@@ -84,7 +92,7 @@ sudo -u jenkins jenkins-plugin-cli --plugins \
     aws-credentials \
     pipeline-utility-steps
 
-# 8. Start Jenkins
+# 11. Start Jenkins
 echo "Starting Jenkins..."
 sudo systemctl enable jenkins
 sudo systemctl start jenkins
