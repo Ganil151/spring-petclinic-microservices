@@ -64,6 +64,7 @@ sudo usermod -aG docker ec2-user
 
 # 7. Install Jenkins Plugins
 echo "Installing Jenkins Plugins..."
+
 # Ensure the plugin directory exists and has correct permissions
 sudo mkdir -p /var/lib/jenkins/plugins
 sudo chown -R jenkins:jenkins /var/lib/jenkins
