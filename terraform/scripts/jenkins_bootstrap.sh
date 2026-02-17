@@ -12,16 +12,18 @@ echo "Updating system and installing Java 21..."
 sudo dnf update -y
 sudo dnf install fontconfig java-21-amazon-corretto-devel -y
 
+echo "Configure Java"
+JAVA_HOME="/usr/lib/jvm/java-21-amazon-corretto"
+echo "export JAVA_HOME=$JAVA_HOME" | sudo tee -a ~/.bashrc
+echo "export PATH=$PATH:$HOME/bin:$JAVA_HOME" | sudo tee -a ~/.bashrc
+
 # 3. Install Jenkins
 echo "Installing Jenkins..."
 sudo wget -O /etc/yum.repos.d/jenkins.repo https://pkg.jenkins.io/redhat-stable/jenkins.repo
 sudo rpm --import https://pkg.jenkins.io/redhat-stable/jenkins.io-2023.key
 sudo dnf install jenkins -y
 
-echo "Configure Java"
-JAVA_HOME="/usr/lib/jvm/java-21-amazon-corretto"
-echo "export JAVA_HOME=$JAVA_HOME" | sudo tee -a ~/.bashrc
-echo "export PATH=$PATH:$HOME/bin:$JAVA_HOME" | sudo tee -a ~/.bashrc
+
 
 # 4. Install Component Tools
 echo "Installing Git, Docker, Python3, Ansible, jq..."
