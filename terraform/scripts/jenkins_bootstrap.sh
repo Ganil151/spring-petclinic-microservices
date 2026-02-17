@@ -24,7 +24,11 @@ sudo curl -L -o /etc/yum.repos.d/corretto.repo https://yum.corretto.aws/corretto
 # Now Install Jenkins
 sudo yum install -y jenkins
 
-
+echo "Starting Jenkins..."
+sudo systemctl enable jenkins
+sudo systemctl start jenkins
+echo "Waiting 30 seconds for Jenkins to initialize..."
+sleep 30
 
 # 4. Install Component Tools
 echo "Installing Git, Docker, Python3, Ansible, jq..."
