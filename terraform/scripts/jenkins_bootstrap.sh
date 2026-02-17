@@ -62,15 +62,7 @@ if [ ! -f /home/ec2-user/.ssh/id_rsa ]; then
     sudo -u ec2-user ssh-keygen -t rsa -b 4096 -f /home/ec2-user/.ssh/id_rsa -N "" -q
 fi
 
-# 6. Prepare Jenkins Directories & Clear Cache
-echo "Preparing Jenkins directories for ec2-user..."
-sudo mkdir -p /var/lib/jenkins/plugins /var/cache/jenkins /var/log/jenkins
-# CRITICAL: Re-chown everything to ec2-user
-sudo chown -R ec2-user:ec2-user /var/lib/jenkins
-sudo chown -R ec2-user:ec2-user /var/cache/jenkins
-sudo chown -R ec2-user:ec2-user /var/log/jenkins
-# Clear specific cache that often fails
-sudo rm -rf /var/cache/jenkins/war/*
+# 6. 
 
 
 
