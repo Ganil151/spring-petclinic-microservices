@@ -62,9 +62,6 @@ echo "Configuring permissions..."
 sudo usermod -aG docker jenkins
 sudo usermod -aG docker ec2-user
 
-# Restart Docker to apply group changes
-sudo systemctl restart docker
-
 # 7. Install Jenkins Plugins
 echo "Installing Jenkins Plugins..."
 # Ensure the plugin directory exists and has correct permissions
