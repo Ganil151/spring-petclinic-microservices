@@ -30,15 +30,22 @@ sudo dnf install -y jenkins
 
 # 5. Configure Jenkins to run as ec2-user (Critical for Permissions)
 echo "Configuring Jenkins service override for ec2-user..."
+
+# Re-create the override carefully
 sudo mkdir -p /etc/systemd/system/jenkins.service.d/
 cat <<EOF | sudo tee /etc/systemd/system/jenkins.service.d/override.conf
 [Service]
 User=ec2-user
 Group=ec2-user
 Environment="JENKINS_HOME=/var/lib/jenkins"
+# This ensures Java is found even if PATH is weird
 ExecStart=
 ExecStart=/usr/bin/jenkins
 EOF
+
+# Wipe any lingering permissions from the default install
+sudo chown -R ec2-user:ec2-user /var/lib/jenkins /var/log/jenkins /var/cache/jenkins
+
 sudo systemctl daemon-reload
 
 # 6. Configure Java Environment for ec2-user & Jenkins
@@ -54,71 +61,60 @@ sudo chown -R ec2-user:ec2-user /var/lib/jenkins
 sudo chown -R ec2-user:ec2-user /var/cache/jenkins
 sudo chown -R ec2-user:ec2-user /var/log/jenkins
 
-# 8. Install Kubectl & Helm
+# 8. Install Jenkins Plugins (before starting service)
+echo "Installing Jenkins Plugins..."
+# Install using the CLI tool as the service user
+sudo -u ec2-user jenkins-plugin-cli --plugins \
+    workflow-aggregator \
+    git \
+    github-branch-source \
+    docker-workflow \
+    sonar \
+    maven-plugin \
+    temurin-installer \
+    credentials-binding \
+    dependency-check-jenkins-plugin \
+    aws-credentials \
+    pipeline-utility-steps
+
+# 9. Install Kubectl & Helm
 echo "Installing Kubectl & Helm..."
 curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
 sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
 rm kubectl
 curl -s https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
 
-# 9. Generate SSH key for ec2-user
+# 10. Generate SSH key for ec2-user
 echo "Generating SSH key for ec2-user..."
-if id "ec2-user" &>/dev/null; then
-    sudo -u ec2-user mkdir -p /home/ec2-user/.ssh
-    sudo -u ec2-user chmod 700 /home/ec2-user/.ssh
-    if [ ! -f /home/ec2-user/.ssh/id_rsa ]; then
-        sudo -u ec2-user ssh-keygen -t rsa -b 4096 -f /home/ec2-user/.ssh/id_rsa -N "" -q
-    fi
-    sudo -u ec2-user touch /home/ec2-user/.ssh/known_hosts
-    sudo -u ec2-user chmod 600 /home/ec2-user/.ssh/known_hosts
-else
-    echo "Warning: ec2-user does not exist. Skipping SSH key generation."
+sudo -u ec2-user mkdir -p /home/ec2-user/.ssh
+sudo -u ec2-user chmod 700 /home/ec2-user/.ssh
+if [ ! -f /home/ec2-user/.ssh/id_rsa ]; then
+    sudo -u ec2-user ssh-keygen -t rsa -b 4096 -f /home/ec2-user/.ssh/id_rsa -N "" -q
 fi
+# Ensure known_hosts exists
+sudo -u ec2-user touch /home/ec2-user/.ssh/known_hosts
+sudo -u ec2-user chmod 600 /home/ec2-user/.ssh/known_hosts
 
-# 10. Increase /tmp size (useful for large builds) - Idempotent check
-echo "Configuring /tmp..."
-if ! grep -q "/tmp tmpfs" /etc/fstab; then
-    echo "tmpfs /tmp tmpfs defaults,size=1500M 0 0" | sudo tee -a /etc/fstab
-    sudo mount -o remount /tmp
-else
-    echo "/tmp already configured in fstab."
-fi
-
-# 11. Install Jenkins Plugins (as ec2-user)
-echo "Installing Jenkins Plugins..."
-if command -v jenkins-plugin-cli &> /dev/null; then
-    sudo -u ec2-user jenkins-plugin-cli --plugins \
-        workflow-aggregator \
-        git \
-        github-branch-source \
-        docker-workflow \
-        sonar \
-        maven-plugin \
-        temurin-installer \
-        credentials-binding \
-        dependency-check-jenkins-plugin \
-        aws-credentials \
-        pipeline-utility-steps
-else
-    echo "Warning: jenkins-plugin-cli not found. Plugins will be skipped."
-fi
-
-# 12. Start Jenkins Service
+# 11. Final Start & Optimization
 echo "Starting Jenkins..."
+# Increase /tmp size (useful for large builds)
+echo "tmpfs /tmp tmpfs defaults,size=1500M 0 0" | sudo tee -a /etc/fstab
+sudo mount -o remount /tmp
+
+# Start Service
 sudo systemctl enable jenkins
 sudo systemctl start jenkins
 
-# Wait for initialization
 echo "Waiting 30 seconds for Jenkins to initialize..."
 sleep 30
 
 # Restart Docker to ensure group permissions apply
 sudo systemctl restart docker
 
-# 13. Output
 echo "✅ Jenkins Master installation complete!"
 java -version
 jenkins --version
 docker --version
 aws --version
-echo "Jenkins setup complete. Retrieve admin password securely via: sudo cat /var/lib/jenkins/secrets/initialAdminPassword"
+printf "Admin Password:  %s\n" "$(sudo cat /var/lib/jenkins/secrets/initialAdminPassword)"
+printf "Jenkins Public SSH Key: %s\n" "$(sudo cat /home/ec2-user/.ssh/id_rsa.pub)"
