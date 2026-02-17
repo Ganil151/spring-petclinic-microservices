@@ -17,12 +17,12 @@ echo "Installing Python and Ansible dependencies..."
 sudo dnf update -y
 sudo dnf install -y python3 python3-pip git jq unzip
 
-# 3. Install Ansible
+# 4. Install Ansible
 echo "Installing Ansible via Pip..."
 sudo pip3 install --upgrade pip
 sudo pip3 install ansible
 
-# 4. Create local Ansible structure
+# 5. Create local Ansible structure
 # Instead of cloning the whole repo, we recreate what we need for a fast boot
 echo "Creating local Ansible configuration..."
 mkdir -p /tmp/ansible-setup/roles/jenkins/tasks
