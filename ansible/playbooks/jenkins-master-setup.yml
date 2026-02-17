@@ -1,0 +1,13 @@
+---
+- name: Setup Jenkins Master
+  hosts: localhost
+  connection: local
+  become: yes
+  vars:
+    java_home: /usr/lib/jvm/java-21-amazon-corretto
+  roles:
+    - java
+    - docker
+    - awscli
+    - kubectl
+    - jenkins

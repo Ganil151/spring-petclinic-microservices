@@ -205,6 +205,7 @@
   },
   "active": "e8a8bfd7c13c69fd",
   "lastOpenFiles": [
+    "ansible/playbooks/jenkins-master-setup.yml",
     "ansible/roles/jenkins/defaults/main.yml",
     "ansible/roles/jenkins/defaults",
     "ansible/roles/jenkins/handlers/main.yml",
@@ -215,7 +216,6 @@
     "terraform/modules/keys/spms-dev.pem",
     "terraform/environments/dev/plan_output.txt",
     "terraform/environments/dev/keypair.tf",
-    "terraform/modules/keys/output.tf",
     "spring-petclinic-api-gateway/target/classes/static/images/spring-pivotal-logo.png",
     "spring-petclinic-api-gateway/target/classes/static/images/spring-logo-dataflow.png",
     "spring-petclinic-api-gateway/target/classes/static/images/spring-logo-dataflow-mobile.png",
