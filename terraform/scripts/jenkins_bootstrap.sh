@@ -38,6 +38,9 @@ sudo systemctl start jenkins
 echo "Waiting 30 seconds for Jenkins to initialize..."
 sleep 30
 
+
+
+
 # 4. Install Component Tools
 echo "Installing Git, Docker, Python3, Ansible, jq..."
 sudo dnf install git docker python3 python3-pip unzip jq -y
