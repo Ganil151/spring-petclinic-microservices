@@ -205,6 +205,8 @@
   },
   "active": "e8a8bfd7c13c69fd",
   "lastOpenFiles": [
+    "ansible/roles/jenkins/tasks",
+    "ansible/roles/jenkins",
     "terraform/modules/keys/spms-dev.pem",
     "terraform/environments/dev/plan_output.txt",
     "terraform/environments/dev/keypair.tf",
@@ -214,8 +216,6 @@
     "terraform/modules/keys",
     "terraform/environments/dev/tfplan_move_sonar",
     "terraform/scripts/sonarqube_bootstrap.sh",
-    "terraform/scripts/worker_bootstrap.sh",
-    "spring-petclinic-visits-service/target/test-classes/application-test.yml",
     "spring-petclinic-api-gateway/target/classes/static/images/spring-pivotal-logo.png",
     "spring-petclinic-api-gateway/target/classes/static/images/spring-logo-dataflow.png",
     "spring-petclinic-api-gateway/target/classes/static/images/spring-logo-dataflow-mobile.png",
