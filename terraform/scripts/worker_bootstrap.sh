@@ -22,7 +22,6 @@ sudo dnf install -y docker
 sudo mkdir -p /etc/docker
 
 
-
 sudo systemctl enable --now docker
 sudo usermod -aG docker ec2-user
 echo "Waiting 10 seconds for Docker to initialize..."
