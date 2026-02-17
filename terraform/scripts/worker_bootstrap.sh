@@ -12,6 +12,8 @@ sleep 60
 echo "Updating system and installing dependencies..."
 sudo dnf update -y
 sudo dnf install -y fontconfig java-21-amazon-corretto-devel git docker python3 python3-pip unzip jq maven
+
+# 3. Install Ansible
 sudo pip3 install ansible
 
 # 3. Configure Java Environment
