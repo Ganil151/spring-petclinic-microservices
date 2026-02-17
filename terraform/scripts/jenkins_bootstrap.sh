@@ -30,13 +30,24 @@ sudo dnf install -y jenkins
 
 # 5. Configure Jenkins to run as ec2-user (Critical for Permissions)
 echo "Configuring Jenkins service override for ec2-user..."
+# Force cleanup of old service state
+sudo systemctl stop jenkins || true
+
+# Re-create the override carefully
 sudo mkdir -p /etc/systemd/system/jenkins.service.d/
 cat <<EOF | sudo tee /etc/systemd/system/jenkins.service.d/override.conf
 [Service]
 User=ec2-user
 Group=ec2-user
 Environment="JENKINS_HOME=/var/lib/jenkins"
+# This ensures Java is found even if PATH is weird
+ExecStart=
+ExecStart=/usr/bin/jenkins
 EOF
+
+# Wipe any lingering permissions from the default install
+sudo chown -R ec2-user:ec2-user /var/lib/jenkins /var/log/jenkins /var/cache/jenkins
+
 sudo systemctl daemon-reload
 
 # 6. Configure Java Environment for ec2-user & Jenkins
