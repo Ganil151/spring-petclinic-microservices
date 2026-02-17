@@ -1,5 +1,5 @@
 #!/bin/bash
-# Hybrid Jenkins Master Bootstrap Script (Bash + Ansible)
+# Pure Bash Jenkins Master Bootstrap Script for Spring Petclinic Microservices
 # Target OS: Amazon Linux 2023
 # Path: terraform/scripts/jenkins_bootstrap.sh
 
@@ -8,167 +8,76 @@ set -e
 # 1. Identity & Initialization
 sudo hostnamectl set-hostname jenkins-master
 
-# 2. Wait for instance to stabilize
 echo "Waiting 60 seconds for instance to stabilize..."
 sleep 60
 
-# 3. Install Baseline Dependencies
-echo "Installing Python and Ansible dependencies..."
+# 2. System Updates & Core Dependencies
+echo "Updating system packages..."
 sudo dnf update -y
-sudo dnf install -y python3 python3-pip git jq unzip
+sudo dnf install -y fontconfig wget git docker python3 python3-pip unzip jq
 
-# 4. Install Ansible
-echo "Installing Ansible via Pip..."
-sudo pip3 install ansible
+# 3. Install Java 21 (Required for modern Jenkins)
+echo "Installing Amazon Corretto 21..."
+sudo dnf install -y java-21-amazon-corretto-devel
 
-# 5. Create local Ansible structure
-# Instead of cloning the whole repo, we recreate what we need for a fast boot
-echo "Creating local Ansible configuration..."
-mkdir -p /tmp/ansible-setup/roles/jenkins/tasks
-mkdir -p /tmp/ansible-setup/roles/jenkins/handlers
-mkdir -p /tmp/ansible-setup/roles/jenkins/defaults
+# 4. Install Jenkins
+echo "Installing Jenkins..."
+sudo wget -O /etc/yum.repos.d/jenkins.repo https://pkg.jenkins.io/redhat-stable/jenkins.repo
+sudo rpm --import https://pkg.jenkins.io/redhat-stable/jenkins.io-2023.key
+sudo dnf install -y jenkins
 
-# --- Create Jenkins Role Tasks ---
-cat <<'EOF' > /tmp/ansible-setup/roles/jenkins/tasks/main.yml
----
-- name: Add Jenkins repository
-  get_url:
-    url: https://pkg.jenkins.io/redhat-stable/jenkins.repo
-    dest: /etc/yum.repos.d/jenkins.repo
+# 5. Install DevOps Tools
+echo "Installing AWS CLI v2..."
+curl -s "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+unzip -q awscliv2.zip
+sudo ./aws/install --update
+rm -rf aws awscliv2.zip
 
-- name: Import Jenkins GPG key
-  rpm_key:
-    state: present
-    key: https://pkg.jenkins.io/redhat-stable/jenkins.io-2023.key
+echo "Installing Kubectl..."
+K8S_VERSION=$(curl -L -s https://dl.k8s.io/release/stable.txt)
+curl -LO "https://dl.k8s.io/release/${K8S_VERSION}/bin/linux/amd64/kubectl"
+sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
+rm kubectl
 
-- name: Install Jenkins
-  dnf:
-    name: jenkins
-    state: present
+# 6. Services & Permissions
+echo "Configuring services..."
+sudo systemctl enable --now docker
+sudo usermod -aG docker ec2-user
+sudo usermod -aG docker jenkins
 
-- name: Start and enable Jenkins
-  systemd:
-    name: jenkins
-    state: started
-    enabled: yes
+# Start Jenkins
+sudo systemctl enable --now jenkins
 
-- name: Ensure Jenkins plugin directory exists
-  file:
-    path: /var/lib/jenkins/plugins
-    state: directory
-    owner: jenkins
-    group: jenkins
-    mode: '0755'
+# 7. Jenkins Plugin Installation
+echo "Installing Jenkins Plugins..."
+# Download the plugin manager tool
+PN_VERSION="2.13.0"
+wget -q "https://github.com/jenkinsci/plugin-installation-manager-tool/releases/download/$PN_VERSION/jenkins-plugin-manager-$PN_VERSION.jar" -O /opt/jenkins-plugin-manager.jar
 
-- name: Install Jenkins Plugin CLI
-  get_url:
-    url: "https://github.com/jenkinsci/plugin-installation-manager-tool/releases/download/{{ plugin_manager_version }}/jenkins-plugin-manager-{{ plugin_manager_version }}.jar"
-    dest: /opt/jenkins-plugin-manager.jar
+# Define plugins
+PLUGINS="workflow-aggregator git github-branch-source docker-workflow sonar maven-plugin eclipse-temurin-installer credentials-binding dependency-check-jenkins-plugin aws-credentials pipeline-utility-steps"
 
-- name: Install recommended Jenkins plugins
-  command: >
-    java -jar /opt/jenkins-plugin-manager.jar
-    --war /usr/share/java/jenkins.war
-    --plugin-download-directory /var/lib/jenkins/plugins
-    --plugins {{ jenkins_plugins | join(' ') }}
-  become: yes
-  become_user: jenkins
-  notify: Restart Jenkins
-  register: plugin_install
-  changed_when: "'Downloaded' in plugin_install.stdout"
+# Ensure plugin directory exists
+sudo mkdir -p /var/lib/jenkins/plugins
+sudo chown -R jenkins:jenkins /var/lib/jenkins/plugins
 
-- name: Add users to docker group
-  user:
-    name: "{{ item }}"
-    groups: docker
-    append: yes
-  loop:
-    - ec2-user
-    - jenkins
-EOF
+# Run the manager tool (Note: this downloads .hpi files into the plugin directory)
+sudo java -jar /opt/jenkins-plugin-manager.jar \
+    --war /usr/share/java/jenkins.war \
+    --plugin-download-directory /var/lib/jenkins/plugins \
+    --plugins $PLUGINS
 
-# --- Create Jenkins Role Handlers ---
-cat <<'EOF' > /tmp/ansible-setup/roles/jenkins/handlers/main.yml
----
-- name: Restart Jenkins
-  systemd:
-    name: jenkins
-    state: restarted
-EOF
+# Fix permissions again after download
+sudo chown -R jenkins:jenkins /var/lib/jenkins/plugins
 
-# --- Create Jenkins Role Defaults ---
-cat <<'EOF' > /tmp/ansible-setup/roles/jenkins/defaults/main.yml
----
-plugin_manager_version: "2.13.0"
-jenkins_plugins:
-  - workflow-aggregator
-  - git
-  - github-branch-source
-  - docker-workflow
-  - sonar
-  - maven-plugin
-  - eclipse-temurin-installer
-  - credentials-binding
-  - dependency-check-jenkins-plugin
-  - aws-credentials
-  - pipeline-utility-steps
-EOF
+# Restart to load plugins
+sudo systemctl restart jenkins
 
-# --- Create Master Playbook ---
-cat <<'EOF' > /tmp/ansible-setup/main.yml
----
-- name: Setup Jenkins Master
-  hosts: localhost
-  connection: local
-  become: yes
-  tasks:
-    - name: Install Java 21
-      dnf:
-        name: java-21-amazon-corretto-devel
-        state: present
-
-    - name: Install Docker
-      dnf:
-        name: docker
-        state: present
-
-    - name: Start Docker
-      systemd:
-        name: docker
-        state: started
-        enabled: yes
-
-    - name: Install DevOps Tools (AWS CLI)
-      shell: |
-        curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-        unzip -o awscliv2.zip
-        ./aws/install --update
-        rm -rf aws awscliv2.zip
-      args:
-        creates: /usr/local/bin/aws
-
-    - name: Install Kubectl
-      get_url:
-        url: "https://dl.k8s.io/release/v1.31.0/bin/linux/amd64/kubectl"
-        dest: /usr/local/bin/kubectl
-        mode: '0755'
-
-  roles:
-    - jenkins
-EOF
-
-# 5. Run Ansible Playbook
-echo "Running Ansible Playbook..."
-cd /tmp/ansible-setup
-ansible-playbook main.yml
-
-# 6. Final Verification
+# 8. Final Verification
 echo "------------------------------------------------"
-echo "✅ Jenkins Master Hybrid Setup Complete!"
+echo "✅ Jenkins Master Pure Bash Setup Complete!"
 echo "------------------------------------------------"
-java -version 2>&1 | head -n 1
-docker --version
-jenkins --version || echo "Jenkins service is active"
-aws --version
-kubectl version --client
+printf "Java Version:    %s\n" "$(java -version 2>&1 | head -n 1)"
+printf "Jenkins Status:  %s\n" "$(systemctl is-active jenkins)"
+printf "Docker Version:  %s\n" "$(docker --version)"
 echo "------------------------------------------------"
