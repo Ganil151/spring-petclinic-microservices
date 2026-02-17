@@ -141,4 +141,8 @@ docker-compose.override.yml
 .tfplan.binary
 .tfplan
 .tfplan.json
+
+# ==========================================
+# Terraform
+# ==========================================
 plan_output.txt 
