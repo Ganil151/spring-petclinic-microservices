@@ -14,9 +14,10 @@ sudo dnf update -y
 sudo dnf install -y fontconfig java-21-amazon-corretto-devel git docker python3 python3-pip unzip jq maven
 
 # 3. Install Ansible
+echo "Installing Ansible..."
 sudo pip3 install ansible
 
-# 3. Configure Java Environment
+# 4. Configure Java Environment
 echo "Configuring Java Environment..."
 JAVA_HOME="/usr/lib/jvm/java-21-amazon-corretto"
 echo "export JAVA_HOME=$JAVA_HOME" | sudo tee -a /home/ec2-user/.bashrc
@@ -24,14 +25,14 @@ echo "export PATH=\$PATH:\$HOME/bin:\$JAVA_HOME/bin" | sudo tee -a /home/ec2-use
 # Also apply to root for sudo operations if needed, though less critical
 echo "export JAVA_HOME=$JAVA_HOME" | sudo tee -a /root/.bashrc
 
-# 4. Docker Configuration
+# 5. Docker Configuration
 echo "Installing and Configuring Docker..."
 sudo systemctl enable --now docker
 sudo usermod -aG docker ec2-user
 echo "Waiting 10 seconds for Docker to initialize..."
 sleep 10
 
-# 5. Tooling: AWS CLI v2, Kubectl, Helm
+# 6. Tooling: AWS CLI v2, Kubectl, Helm
 echo "Installing AWS CLI v2..."
 curl -s "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "/tmp/awscliv2.zip"
 unzip -q /tmp/awscliv2.zip -d /tmp/
