@@ -79,11 +79,12 @@ sudo chown -R jenkins:jenkins /var/lib/jenkins/plugins
 echo "Starting Jenkins..."
 sudo systemctl enable --now jenkins
 
-# 8. Verification
+# 9. Verification
 echo "------------------------------------------------"
 echo "✅ Jenkins Master Setup Complete!"
 echo "------------------------------------------------"
 printf "Java Version:    %s\n" "$(java -version 2>&1 | head -n 1)"
 printf "Jenkins Status:  %s\n" "$(systemctl is-active jenkins)"
 printf "Admin Password:  %s\n" "$(sudo cat /var/lib/jenkins/secrets/initialAdminPassword)"
+printf "Jenkins SSH Pub: %s\n" "$(sudo cat /var/lib/jenkins/.ssh/id_rsa.pub)"
 echo "------------------------------------------------"
