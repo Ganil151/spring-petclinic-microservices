@@ -141,3 +141,4 @@ docker-compose.override.yml
 .tfplan.binary
 .tfplan
 .tfplan.json
+plan_output.txt 
