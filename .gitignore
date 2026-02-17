@@ -146,3 +146,4 @@ docker-compose.override.yml
 # Terraform
 # ==========================================
 plan_output.txt 
+tfplan*
