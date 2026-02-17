@@ -54,7 +54,7 @@ rm kubectl
 curl -s https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
 
 
-# Generate SSH key for ec2-user (RSA 4096)
+# 5. Generate SSH key for ec2-user (RSA 4096)
 echo "Generating SSH key for ec2-user..."
 sudo -u ec2-user mkdir -p /home/ec2-user/.ssh
 sudo -u ec2-user chmod 700 /home/ec2-user/.ssh
@@ -62,7 +62,7 @@ if [ ! -f /home/ec2-user/.ssh/id_rsa ]; then
     sudo -u ec2-user ssh-keygen -t rsa -b 4096 -f /home/ec2-user/.ssh/id_rsa -N "" -q
 fi
 
-# 10. Prepare Jenkins Directories & Clear Cache
+# 6. Prepare Jenkins Directories & Clear Cache
 echo "Preparing Jenkins directories for ec2-user..."
 sudo mkdir -p /var/lib/jenkins/plugins /var/cache/jenkins /var/log/jenkins
 # CRITICAL: Re-chown everything to ec2-user
