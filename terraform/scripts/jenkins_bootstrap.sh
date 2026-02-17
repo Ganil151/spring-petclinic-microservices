@@ -43,7 +43,18 @@ sudo systemctl enable --now docker
 sudo usermod -aG docker ec2-user
 sudo usermod -aG docker jenkins
 
-# 7. Jenkins Plugin Installation Manager
+# 7. SSH Key Generation for Jenkins
+echo "Generating RSA 4096 SSH key for Jenkins..."
+sudo mkdir -p /var/lib/jenkins/.ssh
+if [ ! -f /var/lib/jenkins/.ssh/id_rsa ]; then
+    sudo ssh-keygen -t rsa -b 4096 -f /var/lib/jenkins/.ssh/id_rsa -N "" -q
+fi
+sudo chown -R jenkins:jenkins /var/lib/jenkins/.ssh
+sudo chmod 700 /var/lib/jenkins/.ssh
+sudo chmod 600 /var/lib/jenkins/.ssh/id_rsa
+sudo chmod 644 /var/lib/jenkins/.ssh/id_rsa.pub
+
+# 8. Jenkins Plugin Installation Manager
 echo "Downloading Jenkins Plugin Manager..."
 PM_VERSION="2.13.0"
 sudo mkdir -p /opt/jenkins-tools
