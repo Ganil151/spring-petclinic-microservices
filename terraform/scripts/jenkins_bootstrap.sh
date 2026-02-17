@@ -46,7 +46,7 @@ echo "export JAVA_HOME=$JAVA_HOME" | sudo tee -a /var/lib/jenkins/.bash_profile
 echo "export PATH=$PATH:$HOME/bin:$JAVA_HOME" | sudo tee -a /var/lib/jenkins/.bash_profile
 source /var/lib/jenkins/.bash_profile
 
-# 6. Install Kubectl & Helm
+# 4. Install Kubectl & Helm
 echo "Installing Kubectl & Helm..."
 curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
 sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
