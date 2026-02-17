@@ -8,20 +8,22 @@ sudo hostnamectl set-hostname worker-node
 echo "Stabilizing instance for 60 seconds..."
 sleep 60
 
-
-
-# 3. System Updates & Dependencies
-echo "Installing Build Tools..."
+# 2. Update System & Install Application Dependencies
+echo "Updating system and installing dependencies..."
 sudo dnf update -y
-sudo dnf install -y python3 python3-pip git jq unzip wget fontconfig java-21-amazon-corretto-devel maven
+sudo dnf install -y fontconfig java-21-amazon-corretto-devel git docker python3 python3-pip unzip jq maven
 sudo pip3 install ansible
 
-# 4. Docker Configuration (With Mount Check)
-echo "Installing Docker..."
-sudo dnf install -y docker
-sudo mkdir -p /etc/docker
+# 3. Configure Java Environment
+echo "Configuring Java Environment..."
+JAVA_HOME="/usr/lib/jvm/java-21-amazon-corretto"
+echo "export JAVA_HOME=$JAVA_HOME" | sudo tee -a /home/ec2-user/.bashrc
+echo "export PATH=\$PATH:\$HOME/bin:\$JAVA_HOME/bin" | sudo tee -a /home/ec2-user/.bashrc
+# Also apply to root for sudo operations if needed, though less critical
+echo "export JAVA_HOME=$JAVA_HOME" | sudo tee -a /root/.bashrc
 
-
+# 4. Docker Configuration
+echo "Installing and Configuring Docker..."
 sudo systemctl enable --now docker
 sudo usermod -aG docker ec2-user
 echo "Waiting 10 seconds for Docker to initialize..."
@@ -50,5 +52,7 @@ echo "------------------------------------------------"
 printf "Storage:         %s\n" "$(df -h / | tail -1)"
 printf "Docker Root:     %s\n" "$(sudo docker info -f '{{.DockerRootDir}}')"
 printf "Java:            %s\n" "$(java -version 2>&1 | head -n 1)"
+printf "Maven:           %s\n" "$(mvn -version | head -n 1)"
 printf "Helm:            %s\n" "$(helm version --short)"
+printf "Ansible:         %s\n" "$(ansible --version | head -n 1)"
 echo "------------------------------------------------"
