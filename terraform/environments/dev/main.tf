@@ -63,18 +63,18 @@ module "worker_node" {
 module "sonarqube_server" {
   source = "../../modules/compute/ec2"
 
-  project_name        = var.project_name
-  environment         = var.environment
-  instance_name       = var.sonarqube_instance_name
-  role                = "sonarqube"
-  ami_id              = var.ami
-  instance_type       = var.sonarqube_instance_type
-  subnet_id           = module.vpc.private_subnet_ids[0]
-  security_group_ids  = [module.sg.ec2_sg_id]
-  key_name            = var.key_name
-  associate_public_ip = var.associate_public_ip
+  project_name                = var.project_name
+  environment                 = var.environment
+  instance_name               = var.sonarqube_instance_name
+  role                        = "sonarqube"
+  ami_id                      = var.ami
+  instance_type               = var.sonarqube_instance_type
+  subnet_id                   = module.vpc.private_subnet_ids[0]
+  security_group_ids          = [module.sg.ec2_sg_id]
+  key_name                    = var.key_name
+  associate_public_ip         = var.associate_public_ip
   user_data                   = file("${path.module}/../../scripts/sonarqube_bootstrap.sh")
   user_data_replace_on_change = true
-  root_volume_size    = var.sonarqube_root_volume_size
-  extra_volume_size   = var.sonarqube_extra_volume_size
+  root_volume_size            = var.sonarqube_root_volume_size
+  extra_volume_size           = var.sonarqube_extra_volume_size
 }
