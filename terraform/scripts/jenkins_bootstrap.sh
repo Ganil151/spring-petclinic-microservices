@@ -41,15 +41,15 @@ rm kubectl
 echo "Configuring Docker and Permissions..."
 sudo systemctl enable --now docker
 sudo usermod -aG docker ec2-user
-sudo usermod -aG docker jenkins
+sudo usermod -aG docker ec2-user
 
-# 7. SSH Key Generation for Jenkins
-echo "Generating RSA 4096 SSH key for Jenkins..."
+# 7. SSH Key Generation for ec2-user
+echo "Generating RSA 4096 SSH key for ec2-user..."
 sudo mkdir -p /var/lib/jenkins/.ssh
 if [ ! -f /var/lib/jenkins/.ssh/id_rsa ]; then
     sudo ssh-keygen -t rsa -b 4096 -f /var/lib/jenkins/.ssh/id_rsa -N "" -q
 fi
-sudo chown -R jenkins:jenkins /var/lib/jenkins/.ssh
+sudo chown -R ec2-user:ec2-user /var/lib/jenkins/.ssh
 sudo chmod 700 /var/lib/jenkins/.ssh
 sudo chmod 600 /var/lib/jenkins/.ssh/id_rsa
 sudo chmod 644 /var/lib/jenkins/.ssh/id_rsa.pub
@@ -64,16 +64,16 @@ sudo wget -q "https://github.com/jenkinsci/plugin-installation-manager-tool/rele
 PLUGINS="workflow-aggregator git github-branch-source docker-workflow sonar maven-plugin temurin-installer credentials-binding dependency-check-jenkins-plugin aws-credentials pipeline-utility-steps"
 
 sudo mkdir -p /var/lib/jenkins/plugins
-sudo chown -R jenkins:jenkins /var/lib/jenkins/
+sudo chown -R ec2-user:ec2-user /var/lib/jenkins/
 
-# Run plugin manager as the jenkins user to preserve permissions
+# Run plugin manager as the ec2-user user to preserve permissions
 sudo java -jar /opt/jenkins-tools/jenkins-plugin-manager.jar \
     --war /usr/share/java/jenkins.war \
     --plugin-download-directory /var/lib/jenkins/plugins \
     --plugins $PLUGINS
 
 # Ensure permissions are correct before first start
-sudo chown -R jenkins:jenkins /var/lib/jenkins/plugins
+sudo chown -R ec2-user:ec2-user /var/lib/jenkins/plugins
 
 # Start Jenkins
 echo "Starting Jenkins..."
