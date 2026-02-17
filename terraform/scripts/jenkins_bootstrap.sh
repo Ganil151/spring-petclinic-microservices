@@ -41,20 +41,31 @@ rm kubectl
 echo "Configuring Docker and Permissions..."
 sudo systemctl enable --now docker
 sudo usermod -aG docker ec2-user
-sudo usermod -aG docker ec2-user
 
-# 7. SSH Key Generation for ec2-user
+# 7. Configure Jenkins to run as ec2-user
+echo "Overriding Jenkins service to run as ec2-user..."
+sudo mkdir -p /etc/systemd/system/jenkins.service.d/
+cat <<EOF | sudo tee /etc/systemd/system/jenkins.service.d/override.conf
+[Service]
+User=ec2-user
+Group=ec2-user
+EOF
+sudo systemctl daemon-reload
+
+# 8. SSH Key Generation for ec2-user
 echo "Generating RSA 4096 SSH key for ec2-user..."
+# We keep the Jenkins home directory path for consistency with standard Jenkins installs
+# but change ownership to ec2-user
 sudo mkdir -p /var/lib/jenkins/.ssh
 if [ ! -f /var/lib/jenkins/.ssh/id_rsa ]; then
     sudo ssh-keygen -t rsa -b 4096 -f /var/lib/jenkins/.ssh/id_rsa -N "" -q
 fi
-sudo chown -R ec2-user:ec2-user /var/lib/jenkins/.ssh
+sudo chown -R ec2-user:ec2-user /var/lib/jenkins/
 sudo chmod 700 /var/lib/jenkins/.ssh
 sudo chmod 600 /var/lib/jenkins/.ssh/id_rsa
 sudo chmod 644 /var/lib/jenkins/.ssh/id_rsa.pub
 
-# 8. Jenkins Plugin Installation Manager
+# 9. Jenkins Plugin Installation Manager
 echo "Downloading Jenkins Plugin Manager..."
 PM_VERSION="2.13.0"
 sudo mkdir -p /opt/jenkins-tools
@@ -64,27 +75,27 @@ sudo wget -q "https://github.com/jenkinsci/plugin-installation-manager-tool/rele
 PLUGINS="workflow-aggregator git github-branch-source docker-workflow sonar maven-plugin temurin-installer credentials-binding dependency-check-jenkins-plugin aws-credentials pipeline-utility-steps"
 
 sudo mkdir -p /var/lib/jenkins/plugins
-sudo chown -R ec2-user:ec2-user /var/lib/jenkins/
 
-# Run plugin manager as the ec2-user user to preserve permissions
+# Run plugin manager as ec2-user
 sudo java -jar /opt/jenkins-tools/jenkins-plugin-manager.jar \
     --war /usr/share/java/jenkins.war \
     --plugin-download-directory /var/lib/jenkins/plugins \
     --plugins $PLUGINS
 
-# Ensure permissions are correct before first start
-sudo chown -R ec2-user:ec2-user /var/lib/jenkins/plugins
+# Ensure permissions are correct
+sudo chown -R ec2-user:ec2-user /var/lib/jenkins/
 
 # Start Jenkins
 echo "Starting Jenkins..."
 sudo systemctl enable --now jenkins
 
-# 9. Verification
+# 10. Verification
 echo "------------------------------------------------"
 echo "✅ Jenkins Master Setup Complete!"
 echo "------------------------------------------------"
-printf "Java Version:    %s\n" "$(java -version 2>&1 | head -n 1)"
-printf "Jenkins Status:  %s\n" "$(systemctl is-active jenkins)"
-printf "Admin Password:  %s\n" "$(sudo cat /var/lib/jenkins/secrets/initialAdminPassword)"
-printf "Jenkins SSH Pub: %s\n" "$(sudo cat /var/lib/jenkins/.ssh/id_rsa.pub)"
+printf "Java Version:     %s\n" "$(java -version 2>&1 | head -n 1)"
+printf "Jenkins Status:   %s\n" "$(systemctl is-active jenkins)"
+printf "Jenkins User:     %s\n" "$(ps -ef | grep [j]enkins | awk '{print $1}' | head -n 1)"
+printf "Admin Password:   %s\n" "$(sudo cat /var/lib/jenkins/secrets/initialAdminPassword)"
+printf "ec2-user SSH Pub: %s\n" "$(sudo cat /var/lib/jenkins/.ssh/id_rsa.pub)"
 echo "------------------------------------------------"
