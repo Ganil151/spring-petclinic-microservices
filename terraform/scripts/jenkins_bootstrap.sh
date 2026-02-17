@@ -115,3 +115,4 @@ ansible --version
 docker --version
 aws --version
 printf "Admin Password:  %s\n" "$(sudo cat /var/lib/jenkins/secrets/initialAdminPassword)"
+printf "Jenkins Public SSH Key: %s\n" "$(sudo cat /home/ec2-user/.ssh/id_rsa.pub)"
