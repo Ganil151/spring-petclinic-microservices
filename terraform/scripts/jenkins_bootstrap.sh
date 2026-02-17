@@ -53,11 +53,6 @@ sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
 rm kubectl
 curl -s https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
 
-# 7. Install Terraform
-echo "Installing Terraform..."
-sudo dnf config-manager --add-repo https://rpm.releases.hashicorp.com/AmazonLinux/hashicorp.repo
-sudo dnf -y install terraform
-
 # 8. Configure Jenkins to run as ec2-user (Fixes Permission Denied errors)
 echo "Configuring Jenkins service override for ec2-user..."
 sudo mkdir -p /etc/systemd/system/jenkins.service.d/
