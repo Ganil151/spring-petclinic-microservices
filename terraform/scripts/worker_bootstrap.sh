@@ -48,7 +48,7 @@ rm kubectl
 echo "Installing Helm..."
 curl -s https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
 
-# 6. Final Verification
+# 7. Final Verification
 echo "------------------------------------------------"
 echo "✅ Worker Node Setup Complete!"
 echo "------------------------------------------------"
