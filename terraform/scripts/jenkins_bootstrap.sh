@@ -88,7 +88,8 @@ echo "Starting Jenkins..."
 sudo systemctl enable jenkins
 sudo systemctl start jenkins
 
-
+# Restart Docker to apply group changes
+sudo systemctl restart docker
 
 echo "Jenkins Master installation complete!"
 java -version
