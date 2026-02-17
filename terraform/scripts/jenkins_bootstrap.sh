@@ -74,7 +74,7 @@ sudo rm -rf /var/cache/jenkins/war/*
 
 
 
-# 11. Install Jenkins Plugins as ec2-user
+# 7. Install Jenkins Plugins as ec2-user
 echo "Installing Jenkins Plugins..."
 # Download plugin-cli if not present (AL2023 jenkins package doesn't always have it)
 sudo -u ec2-user jenkins-plugin-cli --plugins \
