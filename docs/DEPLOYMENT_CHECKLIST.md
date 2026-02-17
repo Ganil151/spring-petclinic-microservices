@@ -872,6 +872,11 @@ Ensure the following plugins are installed to support the pipeline:
   ssh-keyscan -H <mysql-server-ip> >> ~/.ssh/known_hosts
   ```
 
+- [ ] **Copy SSH Key to Remote Host**
+  ```bash
+  ssh-copy-id -i ~/.ssh/id_rsa.pub <user>@<remote-host>
+  ```
+
 - [ ] **Verify Ansible Connectivity**
   ```bash
   cd /home/gsmash/Documents/spring-petclinic-microservices/ansible
