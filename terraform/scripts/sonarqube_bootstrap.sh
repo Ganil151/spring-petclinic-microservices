@@ -5,8 +5,8 @@ set -e
 
 # 1. Identity & Initialization
 sudo hostnamectl set-hostname sonarqube-server
-echo "Stabilizing instance..."
-sleep 30
+echo "Stabilizing instance for 60 seconds..."
+sleep 60
 
 # 2. System Updates & Baseline
 sudo dnf update -y

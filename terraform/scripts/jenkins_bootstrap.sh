@@ -94,9 +94,13 @@ sudo -u jenkins jenkins-plugin-cli --plugins \
 echo "Starting Jenkins..."
 sudo systemctl enable jenkins
 sudo systemctl start jenkins
+echo "Waiting 30 seconds for Jenkins to initialize..."
+sleep 30
 
 # Restart Docker to apply group changes
 sudo systemctl restart docker
+echo "Waiting 10 seconds for Docker to restart..."
+sleep 10
 
 echo "Jenkins Master installation complete!"
 java -version
