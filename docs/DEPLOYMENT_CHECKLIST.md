@@ -867,6 +867,11 @@ Ensure the following plugins are installed to support the pipeline:
   ```
   **Expected Output:** `SSH Configuration script completed successfully.`
 
+- [ ] **Add host to known_hosts**
+  ```bash
+  ssh-keyscan -H <mysql-server-ip> >> ~/.ssh/known_hosts
+  ```
+
 - [ ] **Verify Ansible Connectivity**
   ```bash
   cd /home/gsmash/Documents/spring-petclinic-microservices/ansible
