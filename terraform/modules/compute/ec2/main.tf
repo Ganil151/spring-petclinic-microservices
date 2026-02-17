@@ -20,7 +20,7 @@ resource "aws_instance" "this" {
     Environment = var.environment
     Project     = var.project_name
     Role        = var.role
-    }
+  }
 }
 
 # Optional Additional EBS Volume
