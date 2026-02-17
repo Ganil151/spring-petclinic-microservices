@@ -4,4 +4,5 @@ module "key_pair" {
   project_name = var.project_name
   environment  = var.environment
   key_name     = "spms-dev"
+  output_path  = path.module
 }
