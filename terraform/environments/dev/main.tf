@@ -73,7 +73,7 @@ module "sonarqube_server" {
   security_group_ids  = [module.sg.ec2_sg_id]
   key_name            = var.key_name
   associate_public_ip = var.associate_public_ip
-  user_data           = var.user_data
+  user_data           = file
   root_volume_size    = var.sonarqube_root_volume_size
   extra_volume_size   = var.sonarqube_extra_volume_size
 }
