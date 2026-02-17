@@ -107,11 +107,7 @@ sudo chown -R ec2-user:ec2-user /var/lib/jenkins
 sudo chown -R ec2-user:ec2-user /var/cache/jenkins
 sudo chown -R ec2-user:ec2-user /var/log/jenkins
 
-echo "Starting Jenkins..."
-sudo systemctl enable jenkins
-sudo systemctl start jenkins
-echo "Waiting 30 seconds for Jenkins to initialize..."
-sleep 30
+
 
 
 
