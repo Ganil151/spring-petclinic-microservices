@@ -10,6 +10,14 @@ sleep 60
 # 2. Update System & Install Java 21
 echo "Updating system and installing Java 21..."
 sudo dnf update -y
+
+# 5. Install AWS CLI v2
+echo "Installing AWS CLI v2..."
+curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+unzip -q awscliv2.zip
+sudo ./aws/install --update
+rm -rf aws awscliv2.zip
+
 sudo dnf install fontconfig java-21-amazon-corretto-devel -y
 
 echo "Configure Java"
