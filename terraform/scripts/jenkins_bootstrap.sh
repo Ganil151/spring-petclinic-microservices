@@ -17,11 +17,12 @@ JAVA_HOME="/usr/lib/jvm/java-21-amazon-corretto"
 echo "export JAVA_HOME=$JAVA_HOME" | sudo tee -a ~/.bashrc
 echo "export PATH=$PATH:$HOME/bin:$JAVA_HOME" | sudo tee -a ~/.bashrc
 
-# 3. Install Jenkins
-echo "Installing Jenkins..."
-sudo wget -O /etc/yum.repos.d/jenkins.repo https://pkg.jenkins.io/redhat-stable/jenkins.repo
+#Then Import Key:
 sudo rpm --import https://pkg.jenkins.io/redhat-stable/jenkins.io-2023.key
-sudo dnf install jenkins -y
+sudo curl -L -o /etc/yum.repos.d/corretto.repo https://yum.corretto.aws/corretto.repo
+
+# Now Install Jenkins
+sudo yum install -y jenkins
 
 
 
