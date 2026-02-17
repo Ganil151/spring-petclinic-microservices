@@ -19,7 +19,6 @@ sudo dnf install -y python3 python3-pip git jq unzip
 
 # 4. Install Ansible
 echo "Installing Ansible via Pip..."
-sudo pip3 install --upgrade pip
 sudo pip3 install ansible
 
 # 5. Create local Ansible structure
