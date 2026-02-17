@@ -61,7 +61,7 @@ sudo mkdir -p /opt/jenkins-tools
 sudo wget -q "https://github.com/jenkinsci/plugin-installation-manager-tool/releases/download/$PM_VERSION/jenkins-plugin-manager-$PM_VERSION.jar" -O /opt/jenkins-tools/jenkins-plugin-manager.jar
 
 # Define modern microservices plugin set
-PLUGINS="workflow-aggregator git github-branch-source docker-workflow sonar maven-plugin eclipse-temurin-installer credentials-binding dependency-check-jenkins-plugin aws-credentials pipeline-utility-steps"
+PLUGINS="workflow-aggregator git github-branch-source docker-workflow sonar maven-plugin temurin-installer credentials-binding dependency-check-jenkins-plugin aws-credentials pipeline-utility-steps"
 
 sudo mkdir -p /var/lib/jenkins/plugins
 sudo chown -R jenkins:jenkins /var/lib/jenkins/
