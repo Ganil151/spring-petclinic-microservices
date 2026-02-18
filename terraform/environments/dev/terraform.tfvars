@@ -53,23 +53,25 @@ ami = "ami-0c1fe732b5494dc14"
 # Common EC2 Settings
 key_name                    = "spms-dev"
 associate_public_ip         = true
-user_data                   = ""
 user_data_replace_on_change = true
-iam_instance_profile        = ""
+# iam_instance_profile      = "your-iam-profile-name"  # Uncomment when IAM role is ready
 
 # Jenkins Master Configuration
+# Ansible Roles: java, docker, awscli, jenkins, security_tools
 jenkins_instance_name     = "jenkins-master"
 jenkins_instance_type     = "t3.large"
 jenkins_root_volume_size  = 20
 jenkins_extra_volume_size = 10
 
 # SonarQube Server Configuration
+# Ansible Roles: java, docker, awscli, sonarqube, security_tools
 sonarqube_instance_name     = "sonarqube-server"
 sonarqube_instance_type     = "t2.medium"
 sonarqube_root_volume_size  = 20
 sonarqube_extra_volume_size = 0
 
 # Worker Node Configuration
+# Ansible Roles: java, docker, awscli, maven, kubectl, helm
 worker_instance_name     = "worker-node-1"
 worker_instance_type     = "t3.medium"
 worker_root_volume_size  = 50
