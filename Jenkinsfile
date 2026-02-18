@@ -31,7 +31,7 @@ pipeline {
         stage('Checkout') {
             steps {
                 git branch: 'main',
-                    credentialsId: 'github-credentials',
+                    credentialsId: G,
                     url: 'https://github.com/Ganil151/spring-petclinic-microservices.git'
             }
         }
