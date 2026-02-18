@@ -20,8 +20,7 @@ pipeline {
 
     parameters {
         string(name: 'NODE_LABEL', defaultValue: 'worker-node', description: 'Node label to run the build on')
-        string(name: 'ECR_REGISTRY', defaultValue: 'REPLACE_WITH_YOUR_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com', description: 'ECR Registry URL (e.g., 123456789012.dkr.ecr.us-east-1.amazonaws.com)')
-        string(name: 'DOCKER_CREDENTIALS_ID', defaultValue: 'dockerhub-credentials', description: 'Docker Hub credentials ID')
+        string(name: 'ECR_REGISTRY', defaultValue: '', description: 'ECR Registry URL (Leave blank to auto-detect)')
         string(name: 'GITHUB_CREDENTIALS_ID', defaultValue: 'github-credentials', description: 'GitHub credentials ID')
     }
 
