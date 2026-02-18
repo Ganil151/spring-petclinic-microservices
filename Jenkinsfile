@@ -21,7 +21,7 @@ pipeline {
     parameters {
         string(name: 'NODE_LABEL', defaultValue: 'worker-node', description: 'Node label to run the build on')
         string(name: 'DOCKER_CREDENTIALS_ID', defaultValue: 'dockerhub-credentials', description: 'dockerhub-credentials')
-        string(name: 'GITHUB_CREDENTIALS_ID', defaultValue: 'github-credentials', description: 'github-credentials id')
+        string(name: 'GITHUB_CREDENTIALS_ID', defaultValue: 'github-credentials', description: 'github-credentials')
     }
 
     stages {
