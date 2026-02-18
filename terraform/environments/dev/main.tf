@@ -19,6 +19,30 @@ module "sg" {
   ingress_ports       = var.ingress_ports
 }
 
+module "iam" {
+  source = "../../global/iam"
+
+  project_name = var.project_name
+  environment  = var.environment
+}
+
+module "ecr" {
+  source = "../../modules/ecr"
+
+  project_name = var.project_name
+  environment  = var.environment
+  repository_names = [
+    "config-server",
+    "discovery-server",
+    "api-gateway",
+    "customers-service",
+    "vets-service",
+    "visits-service",
+    "admin-server",
+    "genai-service"
+  ]
+}
+
 module "jenkins_master" {
   source = "../../modules/compute/ec2"
 
@@ -34,7 +58,7 @@ module "jenkins_master" {
   associate_public_ip         = var.associate_public_ip
   user_data                   = file("${path.module}/../../scripts/jenkins_bootstrap.sh")
   user_data_replace_on_change = true
-  iam_instance_profile        = var.iam_instance_profile
+  iam_instance_profile        = module.iam.ec2_profile_name
   root_volume_size            = var.jenkins_root_volume_size
   extra_volume_size           = var.jenkins_extra_volume_size
 }
@@ -55,7 +79,7 @@ module "worker_node" {
   associate_public_ip         = var.associate_public_ip
   user_data                   = file("${path.module}/../../scripts/worker_bootstrap.sh")
   user_data_replace_on_change = true
-  iam_instance_profile        = var.iam_instance_profile
+  iam_instance_profile        = module.iam.ec2_profile_name
   root_volume_size            = var.worker_root_volume_size
   extra_volume_size           = var.worker_extra_volume_size
 }
