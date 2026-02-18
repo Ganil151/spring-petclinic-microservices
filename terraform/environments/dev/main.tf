@@ -78,3 +78,51 @@ module "sonarqube_server" {
   root_volume_size            = var.sonarqube_root_volume_size
   extra_volume_size           = var.sonarqube_extra_volume_size
 }
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Terraform → Ansible Integration: Auto-Generated Inventory
+# ─────────────────────────────────────────────────────────────────────────────
+# This resource creates the Ansible inventory file from live Terraform outputs.
+# Every `terraform apply` keeps the inventory in sync with actual infrastructure.
+
+resource "local_file" "ansible_inventory" {
+  filename        = "${path.module}/../../../ansible/inventory/dynamic_hosts"
+  file_permission = "0644"
+
+  content = templatefile("${path.module}/templates/ansible_inventory.tftpl", {
+    jenkins_master_ip = module.jenkins_master.public_ips[0]
+    worker_node_ips   = module.worker_node.public_ips
+    sonarqube_ip      = module.sonarqube_server.public_ips[0]
+    ssh_user          = "ec2-user"
+    ssh_key_file      = "../terraform/environments/dev/spms-dev.pem"
+  })
+
+  depends_on = [
+    module.jenkins_master,
+    module.worker_node,
+    module.sonarqube_server
+  ]
+}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Optional: Auto-Trigger Ansible After Provisioning
+# ─────────────────────────────────────────────────────────────────────────────
+# Uncomment this block to automatically run the Ansible playbook after
+# Terraform provisions the infrastructure. Requires ansible-playbook on PATH.
+
+# resource "null_resource" "run_ansible" {
+#   depends_on = [local_file.ansible_inventory]
+#
+#   triggers = {
+#     inventory_id = local_file.ansible_inventory.id
+#   }
+#
+#   provisioner "local-exec" {
+#     working_dir = "${path.module}/../../../ansible"
+#     command     = <<-EOT
+#       echo "Waiting 60s for EC2 instances to initialize..."
+#       sleep 60
+#       ansible-playbook -i inventory/dynamic_hosts playbooks/install-tools.yml
+#     EOT
+#   }
+# }
