@@ -8,7 +8,7 @@ pipeline {
         DOCKER_HUB_USERNAME = params.DOCKER_HUB_USERNAME
         DOCKER_HUB_PASSWORD = params.DOCKER_HUB_PASSWORD
         GITHUB_CREDENTIALS_ID = params.GITHUB_CREDENTIALS_ID
-        
+
         
     }
 
@@ -17,6 +17,13 @@ pipeline {
         buildDiscarder(logRotator(numToKeepStr: '5'))
         timestamps()
         disableConcurrentBuilds()
+    }
+
+    parameters {
+        string(name: 'NODE_LABEL', defaultValue: 'master', description: 'Node label to run the build on')
+        string(name: 'DOCKER_HUB_USERNAME', defaultValue: '', description: 'Docker Hub username')
+        string(name: 'DOCKER_HUB_PASSWORD', defaultValue: '', description: 'Docker Hub password')
+        string(name: 'GITHUB_CREDENTIALS_ID', defaultValue: '', description: 'GitHub credentials ID')
     }
 
     stages {
