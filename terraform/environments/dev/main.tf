@@ -7,7 +7,7 @@
 # ─────────────────────────────────────────────────────────────────────────────
 # VPC (Virtual Private Cloud)
 # ─────────────────────────────────────────────────────────────────────────────
-
+# This module creates a VPC with public and private subnets in multiple availability zones.
 
 module "vpc" {
   source = "../../modules/networking/vpc"
@@ -23,6 +23,7 @@ module "vpc" {
 # ─────────────────────────────────────────────────────────────────────────────
 # Security Groups
 # ─────────────────────────────────────────────────────────────────────────────
+# This module creates security groups for the VPC.
 
 module "sg" {
   source = "../../modules/networking/sg"
