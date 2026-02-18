@@ -1,0 +1,88 @@
+---
+# ───────────────────────────────────────────────────────────────────
+# Role: SonarQube — Deploy via Docker Compose with Kernel Tuning
+# ───────────────────────────────────────────────────────────────────
+
+# ─── 1. Kernel & System Limits (Critical for Elasticsearch) ─────
+- name: Apply SonarQube Kernel Parameters
+  sysctl:
+    name: "{{ item.key }}"
+    value: "{{ item.value }}"
+    sysctl_file: /etc/sysctl.d/99-sonarqube.conf
+    reload: yes
+  loop:
+    - { key: 'vm.max_map_count', value: '524288' }
+    - { key: 'fs.file-max', value: '131072' }
+
+- name: Set System File/Process Limits for SonarQube
+  copy:
+    dest: /etc/security/limits.d/99-sonarqube.conf
+    content: |
+      * soft    nofile   131072
+      * hard    nofile   131072
+      * soft    nproc    8192
+      * hard    nproc    8192
+    mode: '0644'
+
+# ─── 2. Prepare SonarQube Directory ─────────────────────────────
+- name: Create SonarQube Directory
+  file:
+    path: /home/ec2-user/sonarqube
+    state: directory
+    owner: ec2-user
+    group: ec2-user
+    mode: '0755'
+
+# ─── 3. Generate Database Password ──────────────────────────────
+- name: Generate SonarQube DB Password
+  shell: openssl rand -hex 4
+  register: sonar_db_password_raw
+  changed_when: false
+  args:
+    creates: /home/ec2-user/sonarqube/.db_password
+
+- name: Save DB Password to File
+  copy:
+    dest: /home/ec2-user/sonarqube/.db_password
+    content: "sonar_{{ sonar_db_password_raw.stdout }}"
+    owner: ec2-user
+    group: ec2-user
+    mode: '0600'
+  when: sonar_db_password_raw.stdout is defined
+
+- name: Read Saved DB Password
+  slurp:
+    src: /home/ec2-user/sonarqube/.db_password
+  register: sonar_db_password
+
+# ─── 4. Deploy Docker Compose Stack ─────────────────────────────
+- name: Deploy SonarQube Docker Compose File
+  template:
+    src: docker-compose.yml.j2
+    dest: /home/ec2-user/sonarqube/docker-compose.yml
+    owner: ec2-user
+    group: ec2-user
+    mode: '0644'
+
+- name: Start SonarQube Stack
+  command: docker compose up -d
+  args:
+    chdir: /home/ec2-user/sonarqube
+
+- name: Wait for SonarQube to Initialize
+  wait_for:
+    port: 9000
+    delay: 15
+    timeout: 180
+
+# ─── 5. Display Connection Info ──────────────────────────────────
+- name: Display SonarQube Setup Info
+  debug:
+    msg:
+      - "════════════════════════════════════════════════"
+      - "✅ SonarQube Stack Deployed Successfully!"
+      - "════════════════════════════════════════════════"
+      - "URL:         http://{{ inventory_hostname }}:9000"
+      - "DB Password: {{ sonar_db_password.content | b64decode | trim }}"
+      - "Default Login: admin / admin (change immediately)"
+      - "════════════════════════════════════════════════"
