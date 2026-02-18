@@ -58,7 +58,19 @@ pipeline {
                     '''
                     
                     echo "Building applications..."
-                    sh "./mvnw clean install -DskipTests=false"
+                    sh """
+                        # 1. Check if we are in the right directory
+                        ls -al
+                        
+                        # 2. Grant execution permissions if the file exists
+                        if [ -f "mvnw" ]; then
+                            chmod +x mvnw
+                            ./mvnw clean install -DskipTests=false
+                        else
+                            echo "ERROR: mvnw not found in current directory"
+                            exit 1
+                        fi
+                    """
                 }
             }
         }
