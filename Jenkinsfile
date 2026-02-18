@@ -29,6 +29,17 @@ pipeline {
     }
 
     stages {
+        stage('🧹 Environment Cleanup') {
+            steps {
+                script {
+                    echo "🧹 Cleaning up disk space..."
+                    sh "df -h"
+                    // Prune dangling images and build cache to free up space
+                    sh "docker system prune -f --filter 'until=24h'"
+                }
+            }
+        }
+
         stage('Checkout') {
             steps {
                 git branch: 'main',
@@ -148,13 +159,17 @@ pipeline {
 
                     def services = ['config-server', 'discovery-server', 'customers-service', 'vets-service', 'visits-service', 'api-gateway', 'admin-server']
                     
+                    // Use the larger data disk for Trivy cache to avoid "No space left on device"
+                    def trivyCacheDir = "/mnt/data/trivy_cache"
+                    sh "mkdir -p ${trivyCacheDir}"
+
                     services.each { serviceShortName ->
                         def repoName = "petclinic-dev-${serviceShortName}"
                         def fullImageName = "${ecrRegistry}/${repoName}:latest"
                         
                         echo "🛡️ Scanning image: ${fullImageName}..."
-                        // We use --exit-code 0 so the build doesn't fail while we are just testing the scans
-                        sh "trivy image --severity HIGH,CRITICAL --no-progress --exit-code 0 ${fullImageName}"
+                        // We use --cache-dir to point to the data disk
+                        sh "trivy image --severity HIGH,CRITICAL --no-progress --exit-code 0 --cache-dir ${trivyCacheDir} ${fullImageName}"
                     }
                 }
             }
