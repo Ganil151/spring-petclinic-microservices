@@ -1,0 +1,5 @@
+[jenkins_master]
+# IP_ADDRESS ansible_user=ec2-user
+
+[eks_nodes]
+# IP_ADDRESS ansible_user=ec2-user
