@@ -30,7 +30,6 @@ pipeline {
                 git branch: 'main', credentialsId: params.GITHUB_CREDENTIALS_ID, url: 'https://github.com/Ganil151/spring-petclinic-microservices.git'
             }
         }
-
         
     }
 
