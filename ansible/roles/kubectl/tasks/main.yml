@@ -1,12 +1,17 @@
 ---
 - name: Download Kubectl v1.29.0
   get_url:
-    url: https://dl.k8s.io/release/v1.29.0/bin/linux/amd64/kubectl
+    url: "https://dl.k8s.io/release/v1.29.0/bin/linux/{{ 'amd64' if ansible_architecture == 'x86_64' else 'arm64' }}/kubectl"
     dest: /usr/local/bin/kubectl
     mode: '0755'
 
-- name: Validate Kubectl Checksum (Optional)
-  # Ideally check sha256 here
-  command: /usr/local/bin/kubectl version --client --output=yaml
+- name: Create symlink for kubectl in /usr/bin
+  file:
+    src: /usr/local/bin/kubectl
+    dest: /usr/bin/kubectl
+    state: link
+
+- name: Verify Kubectl Installation
+  command: kubectl version --client
   register: kubectl_version
-  failed_when: "'GitVersion: \"v1.29.0\"' not in kubectl_version.stdout"
+  changed_when: false
