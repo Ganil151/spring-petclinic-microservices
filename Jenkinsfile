@@ -28,23 +28,7 @@ pipeline {
     }
 
     stages {
-        stage('🛠️ Initialization') {
-            steps {
-                script {
-                    echo "🚀 Starting CI/CD Pipeline for ${PROJECT_NAME}"
-                    sh "git --version"
-                    sh "docker --version"
-                    
-                    if (!commandExists('yq')) {
-                        echo "Installing yq..."
-                        sh '''
-                        sudo wget https://github.com/mikefarah/yq/releases/download/v4.34.1/yq_linux_amd64 -O /usr/local/bin/yq
-                        sudo chmod +x /usr/local/bin/yq
-                        '''
-                    }
-                }
-            }
-        }
+        
 
         stage('📦 Prep & Build') {
             steps {
