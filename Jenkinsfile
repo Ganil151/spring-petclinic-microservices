@@ -106,8 +106,12 @@ pipeline {
                 stage('Deploy to EKS (Staging)') {
                     steps {
                         script {
-                            echo "Deploying to EKS..."
-                            // sh "helm upgrade --install ${PROJECT_NAME} ./helm-charts --namespace staging"
+                            echo "Deploying to EKS via Helm..."
+                            sh "helm upgrade --install ${PROJECT_NAME} ./kubernetes/helm-charts/spring-petclinic \
+                                --namespace staging \
+                                --create-namespace \
+                                --set global.imageRegistry=${ECR_REGISTRY} \
+                                --set Chart.AppVersion=${BUILD_NUMBER}"
                         }
                     }
                 }
