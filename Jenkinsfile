@@ -27,12 +27,7 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                script {
-                    echo "🚀 Starting CI/CD Pipeline for ${PROJECT_NAME}"
-                    sh "${MAVEN_HOME}/bin/mvn -version"
-                    sh "docker --version"
-                    sh "trivy --version"
-                }
+                
             }
         }
 
