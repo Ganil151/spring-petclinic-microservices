@@ -1,4 +1,8 @@
-#==============================
+# ============================================================================
+# Terraform → Ansible Integration: Auto-Generated Inventory
+# ============================================================================
+# This resource creates the Ansible inventory file from live Terraform outputs.
+# Every `terraform apply` keeps the inventory in sync with actual infrastructure.
 
 module "vpc" {
   source = "../../modules/networking/vpc"
