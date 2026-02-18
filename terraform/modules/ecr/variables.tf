@@ -12,13 +12,14 @@ variable "repository_names" {
   description = "List of ECR repository names to create"
   type        = list(string)
   default = [
+    "config-server",
+    "discovery-server",
     "api-gateway",
     "customers-service",
     "vets-service",
     "visits-service",
     "admin-server",
-    "config-server",
-    "discovery-server"
+    "genai-service"
   ]
 }
 
