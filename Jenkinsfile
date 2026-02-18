@@ -24,6 +24,10 @@ pipeline {
         string(name: 'GITHUB_CREDENTIALS_ID', defaultValue: 'github-credentials', description: 'github-credentials')
     }
 
+    triggers {
+        githubPush()
+    }
+
     stages {
         stage('Checkout') {
             steps {
