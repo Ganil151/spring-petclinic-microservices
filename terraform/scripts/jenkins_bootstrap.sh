@@ -17,7 +17,7 @@ sleep 30
 
 # ─── 3. System Update & SSH Dependencies ─────────────────────────
 # Install only what's needed for Ansible to connect and gather facts
-sudo dnf update -y
-sudo dnf install -y python3 python3-pip
+sudo yum update -y
+sudo yum install -y git python3 python3-pip
 
 echo "✅ Bootstrap complete. Ready for Ansible configuration."
