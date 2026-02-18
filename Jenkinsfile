@@ -94,28 +94,31 @@ pipeline {
                     sh "aws ecr get-login-password --region ${env.AWS_REGION} | docker login --username AWS --password-stdin ${params.ECR_REGISTRY}"
 
                     def services = [
-                        'spring-petclinic-config-server': 8888,
-                        'spring-petclinic-discovery-server': 8761,
-                        'spring-petclinic-customers-service': 8081,
-                        'spring-petclinic-vets-service': 8083,
-                        'spring-petclinic-visits-service': 8082,
-                        'spring-petclinic-api-gateway': 8080,
-                        'spring-petclinic-admin-server': 9090
+                        'config-server': 8888,
+                        'discovery-server': 8761,
+                        'customers-service': 8081,
+                        'vets-service': 8083,
+                        'visits-service': 8082,
+                        'api-gateway': 8080,
+                        'admin-server': 9090
                     ]
 
-                    services.each { serviceName, port ->
-                        echo "🏗️ Building Docker image for ${serviceName}..."
-                        def imageTagLatest = "${params.ECR_REGISTRY}/${serviceName}:latest"
-                        def imageTagBuild = "${params.ECR_REGISTRY}/${serviceName}:${env.BUILD_NUMBER}"
+                    services.each { serviceShortName, port ->
+                        def fullModuleName = "spring-petclinic-${serviceShortName}"
+                        def repoName = "petclinic-dev-${serviceShortName}"
+                        
+                        echo "🏗️ Building Docker image for ${fullModuleName}..."
+                        def imageTagLatest = "${params.ECR_REGISTRY}/${repoName}:latest"
+                        def imageTagBuild = "${params.ECR_REGISTRY}/${repoName}:${env.BUILD_NUMBER}"
 
                         sh "docker build -f docker/Dockerfile \
-                            --build-arg ARTIFACT_NAME=${serviceName}/target/${serviceName}-4.0.1 \
+                            --build-arg ARTIFACT_NAME=${fullModuleName}/target/${fullModuleName}-4.0.1 \
                             --build-arg EXPOSED_PORT=${port} \
                             -t ${imageTagLatest} \
                             -t ${imageTagBuild} \
                             ."
                         
-                        echo "📤 Pushing ${serviceName} to ECR..."
+                        echo "📤 Pushing ${repoName} to ECR..."
                         sh "docker push ${imageTagLatest}"
                         sh "docker push ${imageTagBuild}"
                     }
