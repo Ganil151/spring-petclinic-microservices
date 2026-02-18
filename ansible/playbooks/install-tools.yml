@@ -1,11 +1,34 @@
 ---
-- name: Install Development Tools for Spring PetClinic
-  hosts: all
-  become: yes
-  
+# ───────────────────────────────────────────────────────────────────
+# Playbook: Install Development Tools for Spring PetClinic
+# ───────────────────────────────────────────────────────────────────
+# Targets all nodes in the Terraform-generated inventory.
+# Run with: ansible-playbook playbooks/install-tools.yml
+# ───────────────────────────────────────────────────────────────────
+
+- name: Install Core Build Tools on All Nodes
+  hosts: all_nodes
+  gather_facts: yes
+
+  pre_tasks:
+    - name: Display Target Node Info
+      debug:
+        msg: "Configuring {{ inventory_hostname }} ({{ ansible_distribution }} {{ ansible_distribution_version }})"
+
+    - name: Wait for SSH to become available
+      wait_for_connection:
+        delay: 5
+        timeout: 120
+
   roles:
     - java
-    - maven
     - docker
-    - kubectl
     - awscli
+
+- name: Install Build-Specific Tools on Worker Nodes
+  hosts: build_agents
+  gather_facts: no
+
+  roles:
+    - maven
+    - kubectl
