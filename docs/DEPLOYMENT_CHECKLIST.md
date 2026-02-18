@@ -20,7 +20,7 @@ terraform/
 │   │   └── alb/                          # Traffic Ingress (L7 Load Balancing)
 │   ├── compute/                          # Processing & Orchestration
 │   │   ├── eks/                          # Container Orchestration (Control Plane)
-│   │   └── ec2/                          # Compute Layer (DevOps Tooling)
+│   │   └── ec2/                          # Compute Layer (IMDSv2, ManagedBy: terraform)
 │   ├── database/                         # Persistence & Data Storage
 │   │   └── rds/                          # Managed MySQL (RDS)
 │   ├── ecr/                              # Container Artifact Storage
@@ -29,20 +29,19 @@ terraform/
 │   └── monitoring/                       # Observability (Health & Performance)
 ├── environments/                         # Environment-Specific Workspaces
 │   ├── dev/                              # Sandbox: Cost-Optimized settings
-│   │   ├── main.tf                       # Composes modules (Low-Scale)
+│   │   ├── main.tf                       # Composes modules + Ansible inventory generation
+│   │   ├── outputs.tf                    # IPs, URLs, tool_mapping, ansible_command
 │   │   ├── backend.tf                    # Remote State: s3://.../tfstate/dev/
 │   │   ├── keypair.tf                    # Key pair instantiation
 │   │   ├── providers.tf                  # Region + Default Tags (CreatedBy: Terraform)
 │   │   ├── terraform.tfvars              # Dev params (Single NAT, t3.small)
 │   │   ├── variables.tf                  # Environment specific variables
-│   │   └── versions.tf                   # Terraform 1.6+ and AWS Provider 6.0+
+│   │   ├── versions.tf                   # Terraform 1.6+ and AWS Provider 6.0+
+│   │   └── templates/
+│   │       └── ansible_inventory.tftpl   # Jinja template for Ansible inventory
 │   ├── staging/                          # Pre-Prod: Full Scale Mirror
-│   │   ├── main.tf                       # Composes modules (Prod-Scale)
-│   │   ├── backend.tf                    # Remote State: s3://.../tfstate/staging/
 │   │   └── ...
 │   └── prod/                             # Production: Mission Critical
-│       ├── main.tf                       # Strict security & HA configuration
-│       ├── backend.tf                    # Remote State: s3://.../tfstate/prod/
 │       └── ...
 ├── global/                               # Shared Multi-Env Resources
 │   ├── route53/
@@ -54,10 +53,11 @@ terraform/
 │   ├── providers.tf                      # Shared Provider Config
 │   ├── variables.tf                      # Shared Variables
 │   └── versions.tf                       # Shared Version Constraints
-├── scripts/
+├── scripts/                              # Bare-minimum EC2 user_data (hostname + python3)
 │   ├── check-dry.sh                      # Dry run check script
-│   ├── jenkins_install.sh                # Jenkins User Data Script
-│   └── worker_install.sh                 # Worker Node User Data Script
+│   ├── jenkins_bootstrap.sh              # Jenkins: hostname + dnf update + python3
+│   ├── worker_bootstrap.sh               # Worker:  hostname + disk mgmt + python3
+│   └── sonarqube_bootstrap.sh            # Sonar:   hostname + dnf update + python3
 └── README.md                             # High-level architecture & SDR Link
 ```
 
@@ -85,35 +85,67 @@ touch terraform/environments/prod/terraform.tfvars
 
 
 ### Part 2: Layer 2 - Configuration Management (Ansible)
-*The "Last Mile" of server setup, hardening the AL2023 OS and configuring the devops toolbelt.*
+*The "Last Mile" of server setup. ALL tool installations happen here — not in bootstrap scripts.*
+
+> **Architecture Decision:** Bootstrap scripts (user_data) only set the hostname, install Python3,
+> and handle disk management. Every tool installation is managed by Ansible for idempotency,
+> testability, and composability.
 
 ```text
 ansible/
-├── ansible.cfg                   # SSH Multiplexing & Pipelining optimizations
-├── inventory/                    # Target definitions & Environment mapping
-│   ├── dev.ini                   # Target IPs for Development EKS nodes
-│   └── group_vars/               # Global vars (e.g., JAVA_HOME, DOCKER_VERSION)
-├── roles/                        # Self-contained "Configuration Blocks"
-│   ├── security_hardening/       # SELinux config, SSH hardening, Fail2Ban
-│   └── install_tools/            # The core DevOps toolbelt
-│       ├── tasks/java.yml        # Logic for installing OpenJDK 21
-│       ├── tasks/docker.yml      # Container engine setup & group permissions
-│       ├── tasks/kubernetes.yml  # Master/Worker node CLI tools (kubectl)
-│       └── vars/main.yml         # Role-specific constants and download URLs
-└── playbooks/                    # The Execution Mastermind
-    └── site.yml                  # Entry point mapping roles to specific node groups
+├── ansible.cfg                       # SSH Multiplexing, Pipelining, host_key_checking=False
+├── inventory/
+│   └── dynamic_hosts                 # ⚡ Auto-generated by Terraform (local_file resource)
+├── roles/                            # One role per tool — SRP (Single Responsibility)
+│   ├── java/tasks/main.yml           # Amazon Corretto 21 (OpenJDK)
+│   ├── docker/tasks/main.yml         # Docker Engine + Compose Plugin (V2)
+│   ├── awscli/tasks/main.yml         # AWS CLI v2
+│   ├── maven/tasks/main.yml          # Apache Maven 3.9.6
+│   ├── kubectl/tasks/main.yml        # Kubernetes CLI v1.29.0
+│   ├── helm/tasks/main.yml           # Helm v3 (K8s package manager)
+│   ├── jenkins/                      # Jenkins Master (install, config, plugins, SSH)
+│   │   ├── tasks/main.yml
+│   │   └── handlers/main.yml         # systemd daemon-reload handler
+│   ├── sonarqube/                    # SonarQube stack (kernel tuning + docker-compose)
+│   │   ├── tasks/main.yml
+│   │   └── templates/docker-compose.yml.j2
+│   └── security_tools/tasks/main.yml # Trivy + Checkov (DevSecOps scanners)
+└── playbooks/
+    └── install-tools.yml             # 5-play orchestration (see Tool Matrix below)
+```
+
+### 📊 Tool Installation Matrix
+
+| Ansible Play | Target Group | Roles Applied |
+|:---|:---|:---|
+| **Play 1:** Core Tools | `all_nodes` (Jenkins + Workers + SonarQube) | `java`, `docker`, `awscli` |
+| **Play 2:** Jenkins Master | `jenkins_master` | `jenkins` |
+| **Play 3:** Build & Deploy | `build_agents` (Worker Nodes) | `maven`, `kubectl`, `helm` |
+| **Play 4:** SonarQube Stack | `sonarqube` | `sonarqube` |
+| **Play 5:** DevSecOps | `devops_tools` (Jenkins + SonarQube) | `security_tools` |
+
+### 🔗 Terraform → Ansible Integration
+The Ansible inventory is **never edited manually**. Terraform generates it automatically:
+```
+terraform apply
+      │
+      ├─► Provisions EC2 instances (Jenkins, Worker, SonarQube)
+      └─► local_file.ansible_inventory
+              │
+              └─► Writes ansible/inventory/dynamic_hosts
+                       │
+                       └─► ansible-playbook playbooks/install-tools.yml
 ```
 
 ### 🛠️ Bootstrapping the Ansible Structure
-Run the following command to initialize the Ansible directory structure and role skeleton:
+Run the following command to initialize the Ansible directory structure:
 ```bash
-mkdir -p ansible/{inventory/group_vars,roles/security_hardening/tasks,roles/install_tools/{tasks,vars},playbooks} && \
+mkdir -p ansible/{inventory,playbooks} && \
+mkdir -p ansible/roles/{java,docker,awscli,maven,kubectl,helm,security_tools}/tasks && \
+mkdir -p ansible/roles/jenkins/{tasks,handlers} && \
+mkdir -p ansible/roles/sonarqube/{tasks,templates} && \
 touch ansible/ansible.cfg && \
-touch ansible/inventory/dev.ini && \
-touch ansible/roles/security_hardening/tasks/main.yml && \
-touch ansible/roles/install_tools/tasks/{java,docker,kubernetes}.yml && \
-touch ansible/roles/install_tools/vars/main.yml && \
-touch ansible/playbooks/site.yml
+touch ansible/playbooks/install-tools.yml
 ```
 
 ### Part 3: Layer 3 - Container Orchestration (Helm & Microservices)
@@ -193,13 +225,19 @@ To ensure high-availability and build performance, we utilize the following comp
 └────────────────────────┬────────────────────────────────────────┘
                          │
 ┌────────────────────────▼────────────────────────────────────────┐
-│              PHASE 2: INFRASTRUCTURE (Terraform)                │
-│  VPC → ECR → RDS → EKS → ALB → WAF → Route53 → Monitoring       │
+│         PHASE 2: INFRASTRUCTURE (Terraform)                     │
+│  VPC → SG → EC2 (Jenkins/Worker/SonarQube) → EKS → RDS         │
+│  ├─► user_data: hostname + python3 + disk mgmt (bare minimum)  │
+│  └─► local_file: auto-generates ansible/inventory/dynamic_hosts │
 └────────────────────────┬────────────────────────────────────────┘
                          │
 ┌────────────────────────▼────────────────────────────────────────┐
-│           PHASE 3: CONFIGURATION (Ansible)                      │
-│  SSH Wait → Install Java → Maven → Docker → kubectl → AWS CLI  │
+│         PHASE 3: CONFIGURATION (Ansible — 5 Plays)              │
+│  Play 1 (all):     Java 21 → Docker + Compose → AWS CLI v2     │
+│  Play 2 (jenkins): Jenkins install → Plugins → SSH keygen      │
+│  Play 3 (workers): Maven → Kubectl → Helm                      │
+│  Play 4 (sonar):   Kernel tuning → Docker Compose stack        │
+│  Play 5 (devops):  Trivy → Checkov                             │
 └────────────────────────┬────────────────────────────────────────┘
                          │
 ┌────────────────────────▼────────────────────────────────────────┐
