@@ -88,6 +88,7 @@ pipeline {
                     }
                 }
             }
+        }
         stage('🚀 Deployment') {
             steps {
                 node(params.NODE_LABEL ?: 'worker-node') {
