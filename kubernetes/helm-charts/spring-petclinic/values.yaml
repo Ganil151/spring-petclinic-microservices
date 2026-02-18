@@ -1,0 +1,79 @@
+# Global settings
+global:
+  namespace: petclinic
+  imageRegistry: REPLACE_WITH_YOUR_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com
+  imagePullPolicy: IfNotPresent
+  activeProfile: docker
+
+# Environment Variables
+commonEnv:
+  - name: SPRING_PROFILES_ACTIVE
+    value: "docker"
+  - name: CONFIG_SERVER_URL
+    value: "http://config-server:8888"
+  - name: DISCOVERY_SERVER_URL
+    value: "http://discovery-server:8761/eureka/"
+
+services:
+  config-server:
+    name: config-server
+    port: 8888
+    replicaCount: 1
+    imageName: spring-petclinic-config-server
+    livenessProbe:
+      path: /actuator/health
+    readinessProbe:
+      path: /actuator/health
+
+  discovery-server:
+    name: discovery-server
+    port: 8761
+    replicaCount: 1
+    imageName: spring-petclinic-discovery-server
+    dependsOn: config-server
+
+  customers-service:
+    name: customers-service
+    port: 8081
+    replicaCount: 1
+    imageName: spring-petclinic-customers-service
+    dependsOn: discovery-server
+
+  vets-service:
+    name: vets-service
+    port: 8083
+    replicaCount: 1
+    imageName: spring-petclinic-vets-service
+    dependsOn: discovery-server
+
+  visits-service:
+    name: visits-service
+    port: 8082
+    replicaCount: 1
+    imageName: spring-petclinic-visits-service
+    dependsOn: discovery-server
+
+  genai-service:
+    name: genai-service
+    port: 8084
+    replicaCount: 1
+    imageName: spring-petclinic-genai-service
+    dependsOn: discovery-server
+    extraEnv:
+      - name: OPENAI_API_KEY
+        value: "demo"
+
+  api-gateway:
+    name: api-gateway
+    port: 8080
+    replicaCount: 1
+    imageName: spring-petclinic-api-gateway
+    dependsOn: discovery-server
+    serviceType: LoadBalancer
+
+  admin-server:
+    name: admin-server
+    port: 9090
+    replicaCount: 1
+    imageName: spring-petclinic-admin-server
+    dependsOn: discovery-server
