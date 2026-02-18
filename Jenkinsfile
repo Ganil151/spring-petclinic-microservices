@@ -135,6 +135,26 @@ pipeline {
                 }
             }
         }
+
+        stage('🔍 Security Scan (Trivy)') {
+            steps {
+                script {
+                    // Reuse the same service list
+                    def services = ['config-server', 'discovery-server', 'customers-service', 'vets-service', 'visits-service', 'api-gateway', 'admin-server']
+                    
+                    services.each { serviceShortName ->
+                        def repoName = "petclinic-dev-${serviceShortName}"
+                        def imageTagLatest = "${params.ECR_REGISTRY ?: 'auto'}/${repoName}:latest" 
+                        // Note: Using 'auto' as a placeholder since we resolve it dynamically in the previous stage. 
+                        // For a cleaner approach, let's use the resolved registry.
+                        
+                        echo "🛡️ Scanning image: ${repoName}..."
+                        // We use --exit-code 0 so the build doesn't fail while we are just testing the scans
+                        sh "trivy image --severity HIGH,CRITICAL --no-progress --exit-code 0 ${repoName}:latest"
+                    }
+                }
+            }
+        }
     }
 
 
