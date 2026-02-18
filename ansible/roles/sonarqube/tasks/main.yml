@@ -9,7 +9,7 @@
     name: "{{ item.key }}"
     value: "{{ item.value }}"
     sysctl_file: /etc/sysctl.d/99-sonarqube.conf
-    reload: yes
+    reload: true
   loop:
     - { key: 'vm.max_map_count', value: '524288' }
     - { key: 'fs.file-max', value: '131072' }
@@ -72,8 +72,8 @@
 - name: Wait for SonarQube to Initialize
   wait_for:
     port: 9000
-    delay: 15
-    timeout: 180
+    delay: 20
+    timeout: 300
 
 # ─── 5. Display Connection Info ──────────────────────────────────
 - name: Display SonarQube Setup Info
