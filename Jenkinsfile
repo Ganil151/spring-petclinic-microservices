@@ -28,21 +28,42 @@ pipeline {
     }
 
     stages {
-        
 
-        stage('📦 Prep & Build') {
+        stage('Checkout') {
+            steps {
+                git branch: 'main',
+                    credentialsId: 'github-credentials',
+                    url: 'https://github.com/Ganil151/spring-petclinic-microservices.git'
+            }
+        }
+
+        stage('Install yq') {
             steps {
                 script {
-                    echo "🧹 Cleaning up environments..."
                     sh '''
-                    if [ -f docker-compose.yml ]; then
-                        cp docker-compose.yml docker-compose.yml.bak
-                        yq eval 'del(.services.genai-service)' -i docker-compose.yml
+                    if ! command -v yq &> /dev/null; then
+                        echo "Installing yq..."
+                        sudo wget https://github.com/mikefarah/yq/releases/download/v4.34.1/yq_linux_amd64 -O /usr/local/bin/yq
+                        sudo chmod +x /usr/local/bin/yq
                     fi
                     '''
                 }
             }
         }
+
+        stage('Remove genai-service from docker-compose.yml') {
+            steps {
+                script {
+                    sh '''
+                    cp docker-compose.yml docker-compose.yml.bak
+                    yq eval 'del(.services.genai-service)' -i docker-compose.yml
+                    '''
+                }
+            }
+        }
+        
+
+        
 
     }
 
