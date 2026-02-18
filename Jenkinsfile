@@ -33,6 +33,20 @@ pipeline {
             }
         }
 
+        stage('Install yq') {
+            steps {
+                script {
+                    sh '''
+                    if ! command -v yq &> /dev/null; then
+                        echo "Installing yq..."
+                        sudo wget https://github.com/mikefarah/yq/releases/download/v4.34.1/yq_linux_amd64 -O /usr/local/bin/yq
+                        sudo chmod +x /usr/local/bin/yq
+                    fi
+                    '''
+                }
+            }
+        }
+
         stage('🛠️ Initialization') {
             steps {
                 node(params.NODE_LABEL ?: 'worker-node') {
