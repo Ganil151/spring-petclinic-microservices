@@ -1,0 +1,18 @@
+🚀 Spring PetClinic Microservices Deployed!
+
+The following services have been created:
+{{- range $serviceKey, $serviceValue := .Values.services }}
+  - {{ $serviceValue.name }} (port: {{ $serviceValue.port }})
+{{- end }}
+
+Next Steps:
+1. Verify the pods:
+   kubectl get pods -n {{ .Values.global.namespace }}
+
+2. Check service URLs:
+   kubectl get svc -n {{ .Values.global.namespace }}
+
+3. View API Gateway (LoadBalancer):
+   kubectl get svc api-gateway -n {{ .Values.global.namespace }}
+
+Note: Ensure your Config Server and Discovery Server are healthy before starting the business services.
