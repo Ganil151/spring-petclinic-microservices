@@ -205,6 +205,8 @@
   },
   "active": "e8a8bfd7c13c69fd",
   "lastOpenFiles": [
+    "terraform/global/iam/main.tf",
+    "terraform/global/iam/variables.tf",
     "kubernetes/helm-charts/spring-petclinic/templates/NOTES.txt",
     "kubernetes/helm-charts/spring-petclinic/templates/service.yaml",
     "kubernetes/helm-charts/spring-petclinic/templates/deployment.yaml",
@@ -214,8 +216,6 @@
     "kubernetes/helm-charts/spring-petclinic/templates",
     "kubernetes/helm-charts/spring-petclinic",
     "kubernetes/helm-charts",
-    "kubernetes",
-    "Jenkinsfile",
     "spring-petclinic-api-gateway/target/classes/static/images/spring-pivotal-logo.png",
     "spring-petclinic-api-gateway/target/classes/static/images/spring-logo-dataflow.png",
     "spring-petclinic-api-gateway/target/classes/static/images/spring-logo-dataflow-mobile.png",
