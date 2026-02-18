@@ -33,7 +33,7 @@
 # ─── Play 2: Jenkins Master Configuration ────────────────────────
 - name: Configure Jenkins Master
   hosts: jenkins_master
-  gather_facts: no
+  gather_facts: false
 
   roles:
     - jenkins
@@ -41,7 +41,7 @@
 # ─── Play 3: Build & Deploy Tools on Worker Nodes ────────────────
 - name: Install Build & Deploy Tools on Worker Nodes
   hosts: build_agents
-  gather_facts: no
+  gather_facts: false
 
   roles:
     - maven
@@ -51,7 +51,7 @@
 # ─── Play 4: SonarQube Stack Deployment ──────────────────────────
 - name: Deploy SonarQube Stack
   hosts: sonarqube
-  gather_facts: no
+  gather_facts: false
 
   roles:
     - sonarqube
@@ -59,7 +59,7 @@
 # ─── Play 5: DevSecOps Tools on CI/CD Nodes ──────────────────────
 - name: Install DevSecOps Tools
   hosts: devops_tools
-  gather_facts: no
+  gather_facts: false
 
   roles:
     - security_tools
