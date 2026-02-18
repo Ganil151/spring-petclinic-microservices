@@ -68,12 +68,6 @@
     - /var/cache/jenkins
     - /var/log/jenkins
 
-# ─── 4. Configure Jenkins Service ────────────────────────────────
-- name: Ensure Jenkins Service is Reloaded
-  systemd:
-    daemon_reload: true
-  changed_when: false
-
 # ─── 5. Configure Java Environment ──────────────────────────────
 - name: Set JAVA_HOME in ec2-user Profile
   lineinfile:
