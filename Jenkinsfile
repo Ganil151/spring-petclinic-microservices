@@ -20,8 +20,8 @@ pipeline {
 
     parameters {
         string(name: 'NODE_LABEL', defaultValue: 'worker-node', description: 'Node label to run the build on')
-        string(name: 'DOCKER_CREDENTIALS_ID', defaultValue: '', description: 'Docker Hub username')
-        string(name: 'GITHUB_CREDENTIALS_ID', defaultValue: '', description: 'GitHub credentials ID')
+        string(name: 'DOCKER_CREDENTIALS_ID', defaultValue: 'dockerhub-credentials', description: 'Docker Hub username')
+        string(name: 'GITHUB_CREDENTIALS_ID', defaultValue: 'github-credentials', description: 'GitHub credentials ID')
     }
 
     stages {
