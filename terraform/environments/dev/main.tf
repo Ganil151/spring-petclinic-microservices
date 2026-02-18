@@ -44,6 +44,10 @@ module "iam" {
   environment  = var.environment
 }
 
+# ============================================================================
+# ECR (Elastic Container Registry)
+# ============================================================================
+
 module "ecr" {
   source = "../../modules/ecr"
 
@@ -71,6 +75,10 @@ module "ecr" {
   # IAM role must exist before ECR repos are created so Jenkins can push images
   depends_on = [module.iam]
 }
+
+# ============================================================================
+# EC2 Instances (Jenkins, Worker, SonarQube)
+# ============================================================================
 
 module "jenkins_master" {
   source = "../../modules/compute/ec2"
