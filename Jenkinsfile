@@ -159,18 +159,26 @@ pipeline {
 
                     def services = ['config-server', 'discovery-server', 'customers-service', 'vets-service', 'visits-service', 'api-gateway', 'admin-server']
                     
-                    // Use the larger data disk for Trivy cache to avoid "No space left on device"
-                    def trivyCacheDir = "/mnt/data/trivy_cache"
-                    sh "mkdir -p ${trivyCacheDir}"
+                    // Use the larger data disk for Trivy cache AND temporary downloads
+                    def trivyBaseDir = "/mnt/data/trivy"
+                    def trivyCacheDir = "${trivyBaseDir}/cache"
+                    def trivyTmpDir = "${trivyBaseDir}/tmp"
+                    
+                    sh "mkdir -p ${trivyCacheDir} ${trivyTmpDir}"
 
                     services.each { serviceShortName ->
                         def repoName = "petclinic-dev-${serviceShortName}"
                         def fullImageName = "${ecrRegistry}/${repoName}:latest"
                         
                         echo "🛡️ Scanning image: ${fullImageName}..."
-                        // We use --cache-dir to point to the data disk
-                        sh "trivy image --severity HIGH,CRITICAL --no-progress --exit-code 0 --cache-dir ${trivyCacheDir} ${fullImageName}"
+                        // Set TMPDIR to specify where Trivy downloads and extracts temporary files
+                        sh """
+                            export TMPDIR=${trivyTmpDir}
+                            trivy image --severity HIGH,CRITICAL --no-progress --exit-code 0 --cache-dir ${trivyCacheDir} ${fullImageName}
+                        """
                     }
+                    // Optional: Cleanup tmp files after scan to keep disk clean
+                    sh "rm -rf ${trivyTmpDir}/*"
                 }
             }
         }
