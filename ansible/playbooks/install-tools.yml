@@ -1,0 +1,11 @@
+---
+- name: Install Development Tools for Spring PetClinic
+  hosts: all
+  become: yes
+  
+  roles:
+    - java
+    - maven
+    - docker
+    - kubectl
+    - awscli
