@@ -63,41 +63,6 @@ pipeline {
             }
         }
 
-        stage('🐳 Docker Build') {
-            steps {
-                script {
-                    def services = [
-                        'spring-petclinic-config-server': 8888,
-                        'spring-petclinic-discovery-server': 8761,
-                        'spring-petclinic-customers-service': 8081,
-                        'spring-petclinic-vets-service': 8083,
-                        'spring-petclinic-visits-service': 8082,
-                        'spring-petclinic-genai-service': 8090,
-                        'spring-petclinic-api-gateway': 8080,
-                        'spring-petclinic-admin-server': 9090
-                    ]
-
-                    services.each { serviceName, port ->
-                        echo "🏗️ Building Docker image for ${serviceName}..."
-                        sh "docker build -f docker/Dockerfile \
-                            --build-arg ARTIFACT_NAME=${serviceName}/target/${serviceName}-4.0.1 \
-                            --build-arg EXPOSED_PORT=${port} \
-                            -t ${serviceName}:latest \
-                            -t ${serviceName}:${env.BUILD_NUMBER} \
-                            ."
-                    }
-                }
-            }
-        }
-
-        stage('🚀 Deployment') {
-            steps {
-                script {
-                    echo "🚀 Deploying ${PROJECT_NAME} to EKS (Staging)..."
-                    // sh "helm upgrade --install ${PROJECT_NAME} ./kubernetes/helm-charts --namespace staging --set image.tag=${env.BUILD_NUMBER}"
-                }
-            }
-        }
     }
 
     post {
