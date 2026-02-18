@@ -171,6 +171,12 @@ variable "key_name" {
   default     = null
 }
 
+variable "ssh_private_key_path" {
+  description = "Path to the SSH private key file"
+  type        = string
+  default     = "../terraform/environments/dev/spms-dev.pem"
+}
+
 variable "associate_public_ip" {
   description = "Associate public IP"
   type        = bool
