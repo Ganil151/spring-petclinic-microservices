@@ -1,5 +1,5 @@
 pipeline {
-    agent { label params}
+    agent { label params.NODE_LABEL}
 
     environment {
         // AWS & General Config
