@@ -1,7 +1,7 @@
 ---
 - name: Download Kubectl v1.29.0
   get_url:
-    url: "https://dl.k8s.io/release/v1.29.0/bin/linux/{{ 'amd64' if ansible_architecture == 'x86_64' else 'arm64' }}/kubectl"
+    url: "https://dl.k8s.io/release/v1.29.0/bin/linux/{{ 'amd64' if ansible_facts['architecture'] == 'x86_64' else 'arm64' }}/kubectl"
     dest: /usr/local/bin/kubectl
     mode: '0755'
 
