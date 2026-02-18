@@ -83,6 +83,7 @@ module "ecr" {
 # ─────────────────────────────────────────────────────────────────────────────
 # EC2 Instances (Jenkins, Worker, SonarQube)
 # ─────────────────────────────────────────────────────────────────────────────
+# This module creates EC2 instances for Jenkins, Worker, and SonarQube.
 
 module "jenkins_master" {
   source = "../../modules/compute/ec2"
