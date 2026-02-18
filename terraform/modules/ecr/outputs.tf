@@ -12,3 +12,8 @@ output "registry_id" {
   description = "The registry ID where the repositories are created"
   value       = element(values(aws_ecr_repository.this), 0).registry_id
 }
+
+output "repository_names" {
+  description = "List of ECR repository names that were created"
+  value       = keys(aws_ecr_repository.this)
+}
