@@ -45,6 +45,9 @@ pipeline {
                                 -Dsonar.projectKey=${PROJECT_NAME} \
                                 -Dsonar.host.url=${SONAR_URL}"
                         }
+                        timeout(time: 10, unit: 'MINUTES') {
+                            waitForQualityGate abortPipeline: true
+                        }
                     }
                 }
                 stage('IaC & Security Scanning') {
@@ -70,6 +73,9 @@ pipeline {
         stage('🐳 Docker Build & Push') {
             steps {
                 script {
+                    // ECR Login (Using the EC2 Instance Profile)
+                    sh "aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${ECR_REGISTRY}"
+
                     def services = [
                         'spring-petclinic-config-server': 8888,
                         'spring-petclinic-discovery-server': 8761,
@@ -82,19 +88,19 @@ pipeline {
                     ]
 
                     services.each { serviceName, port ->
+                        def ecrRepoName = serviceName.replace('spring-petclinic-', '')
                         stage("Build: ${serviceName}") {
                             echo "Building Docker image for ${serviceName}..."
                             sh "docker build -f docker/Dockerfile \
                                 --build-arg ARTIFACT_NAME=${serviceName}/target/${serviceName}-4.0.1 \
                                 --build-arg EXPOSED_PORT=${port} \
-                                -t ${ECR_REGISTRY}/${serviceName}:latest \
-                                -t ${ECR_REGISTRY}/${serviceName}:${BUILD_NUMBER} \
+                                -t ${ECR_REGISTRY}/${PROJECT_NAME}-dev-${ecrRepoName}:latest \
+                                -t ${ECR_REGISTRY}/${PROJECT_NAME}-dev-${ecrRepoName}:${BUILD_NUMBER} \
                                 ."
                             
                             echo "Pushing ${serviceName} to ECR..."
-                            // sh "aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${ECR_REGISTRY}"
-                            // sh "docker push ${ECR_REGISTRY}/${serviceName}:latest"
-                            // sh "docker push ${ECR_REGISTRY}/${serviceName}:${BUILD_NUMBER}"
+                            sh "docker push ${ECR_REGISTRY}/${PROJECT_NAME}-dev-${ecrRepoName}:latest"
+                            sh "docker push ${ECR_REGISTRY}/${PROJECT_NAME}-dev-${ecrRepoName}:${BUILD_NUMBER}"
                         }
                     }
                 }
