@@ -205,6 +205,7 @@
   },
   "active": "e8a8bfd7c13c69fd",
   "lastOpenFiles": [
+    "terraform/environments/dev/spms-dev.pem",
     "ansible/roles/sonarqube/templates/docker-compose.yml.j2",
     "ansible/roles/sonarqube/tasks/main.yml",
     "ansible/roles/jenkins/handlers/main.yml",
@@ -215,7 +216,6 @@
     "ansible/roles/sonarqube/files",
     "ansible/roles/sonarqube",
     "ansible/roles/jenkins/templates",
-    "ansible/roles/jenkins/tasks",
     "spring-petclinic-api-gateway/target/classes/static/images/spring-pivotal-logo.png",
     "spring-petclinic-api-gateway/target/classes/static/images/spring-logo-dataflow.png",
     "spring-petclinic-api-gateway/target/classes/static/images/spring-logo-dataflow-mobile.png",
