@@ -8,6 +8,7 @@ pipeline {
 
     environment {
         PROJECT_NAME = 'spring-petclinic'
+        AWS_REGION   = 'us-east-1'
     }
 
     options {
@@ -19,6 +20,7 @@ pipeline {
 
     parameters {
         string(name: 'NODE_LABEL', defaultValue: 'worker-node', description: 'Node label to run the build on')
+        string(name: 'ECR_REGISTRY', defaultValue: 'REPLACE_WITH_YOUR_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com', description: 'ECR Registry URL (e.g., 123456789012.dkr.ecr.us-east-1.amazonaws.com)')
         string(name: 'DOCKER_CREDENTIALS_ID', defaultValue: 'dockerhub-credentials', description: 'Docker Hub credentials ID')
         string(name: 'GITHUB_CREDENTIALS_ID', defaultValue: 'github-credentials', description: 'GitHub credentials ID')
     }
@@ -85,9 +87,12 @@ pipeline {
             }
         }
 
-        stage('🐳 Docker Build') {
+        stage('🐳 Docker Build & Push') {
             steps {
                 script {
+                    echo "🔐 Logging into Amazon ECR..."
+                    sh "aws ecr get-login-password --region ${env.AWS_REGION} | docker login --username AWS --password-stdin ${params.ECR_REGISTRY}"
+
                     def services = [
                         'spring-petclinic-config-server': 8888,
                         'spring-petclinic-discovery-server': 8761,
@@ -100,12 +105,19 @@ pipeline {
 
                     services.each { serviceName, port ->
                         echo "🏗️ Building Docker image for ${serviceName}..."
+                        def imageTagLatest = "${params.ECR_REGISTRY}/${serviceName}:latest"
+                        def imageTagBuild = "${params.ECR_REGISTRY}/${serviceName}:${env.BUILD_NUMBER}"
+
                         sh "docker build -f docker/Dockerfile \
                             --build-arg ARTIFACT_NAME=${serviceName}/target/${serviceName}-4.0.1 \
                             --build-arg EXPOSED_PORT=${port} \
-                            -t ${serviceName}:latest \
-                            -t ${serviceName}:${env.BUILD_NUMBER} \
+                            -t ${imageTagLatest} \
+                            -t ${imageTagBuild} \
                             ."
+                        
+                        echo "📤 Pushing ${serviceName} to ECR..."
+                        sh "docker push ${imageTagLatest}"
+                        sh "docker push ${imageTagBuild}"
                     }
                 }
             }
