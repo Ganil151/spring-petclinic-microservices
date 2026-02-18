@@ -1,0 +1,12 @@
+---
+- name: Download Kubectl v1.29.0
+  get_url:
+    url: https://dl.k8s.io/release/v1.29.0/bin/linux/amd64/kubectl
+    dest: /usr/local/bin/kubectl
+    mode: '0755'
+
+- name: Validate Kubectl Checksum (Optional)
+  # Ideally check sha256 here
+  command: /usr/local/bin/kubectl version --client --output=yaml
+  register: kubectl_version
+  failed_when: "'GitVersion: \"v1.29.0\"' not in kubectl_version.stdout"

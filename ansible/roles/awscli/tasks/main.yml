@@ -1,0 +1,22 @@
+---
+- name: Install Unzip
+  dnf:
+    name: unzip
+    state: present
+
+- name: Download AWS CLI v2
+  get_url:
+    url: "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip"
+    dest: "/tmp/awscliv2.zip"
+
+- name: Extract AWS CLI
+  unarchive:
+    src: "/tmp/awscliv2.zip"
+    dest: "/tmp"
+    remote_src: yes
+    creates: "/tmp/aws/install"
+
+- name: Install AWS CLI v2
+  command: /tmp/aws/install --update
+  args:
+    creates: /usr/local/bin/aws

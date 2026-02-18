@@ -1,0 +1,17 @@
+---
+- name: Install Docker
+  dnf:
+    name: docker
+    state: present
+
+- name: Start and Enable Docker Service
+  systemd:
+    name: docker
+    state: started
+    enabled: yes
+
+- name: Add ec2-user to Docker Group
+  user:
+    name: ec2-user
+    groups: docker
+    append: yes
