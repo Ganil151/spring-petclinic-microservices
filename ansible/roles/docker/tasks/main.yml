@@ -1,7 +1,13 @@
 ---
-- name: Install Docker
+# ───────────────────────────────────────────────────────────────────
+# Role: Docker — Install Docker Engine + Compose Plugin on AL2023
+# ───────────────────────────────────────────────────────────────────
+
+- name: Install Docker Engine and Compose Plugin
   dnf:
-    name: docker
+    name:
+      - docker
+      - docker-compose-plugin
     state: present
 
 - name: Start and Enable Docker Service
@@ -15,3 +21,19 @@
     name: ec2-user
     groups: docker
     append: yes
+
+- name: Verify Docker Installation
+  command: docker --version
+  register: docker_version
+  changed_when: false
+
+- name: Verify Docker Compose Installation
+  command: docker compose version
+  register: compose_version
+  changed_when: false
+
+- name: Display Docker & Compose Versions
+  debug:
+    msg:
+      - "{{ docker_version.stdout }}"
+      - "{{ compose_version.stdout }}"
