@@ -18,6 +18,8 @@ pipeline {
         disableConcurrentBuilds()
     }
 
+    
+
     parameters {
         string(name: 'NODE_LABEL', defaultValue: 'worker-node', description: 'Node label to run the build on')
         string(name: 'DOCKER_CREDENTIALS_ID', defaultValue: 'dockerhub-credentials', description: 'dockerhub-credentials')
