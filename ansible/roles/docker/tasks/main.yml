@@ -3,24 +3,48 @@
 # Role: Docker — Install Docker Engine + Compose Plugin on AL2023
 # ───────────────────────────────────────────────────────────────────
 
-- name: Install Docker Engine and Compose Plugin
+- name: Update dnf cache
   dnf:
-    name:
-      - docker
-      - docker-compose-plugin
+    update_cache: true
+
+- name: Install Docker Engine
+  dnf:
+    name: docker
     state: present
 
 - name: Start and Enable Docker Service
   systemd:
     name: docker
     state: started
-    enabled: yes
+    enabled: true
 
 - name: Add ec2-user to Docker Group
   user:
     name: ec2-user
     groups: docker
-    append: yes
+    append: true
+
+# ─── Install Docker Compose V2 (Plugin Mode) ────────────────────
+# AL2023 does not have a native 'docker-compose-plugin' package.
+# We download it directly from Docker's official GitHub releases.
+
+- name: Create Docker CLI Plugins Directory
+  file:
+    path: /usr/local/lib/docker/cli-plugins
+    state: directory
+    mode: '0755'
+
+- name: Download Docker Compose V2 Binary
+  get_url:
+    url: "https://github.com/docker/compose/releases/download/v2.24.6/docker-compose-linux-{{ 'x86_64' if ansible_architecture == 'x86_64' else 'aarch64' }}"
+    dest: /usr/local/lib/docker/cli-plugins/docker-compose
+    mode: '0755'
+
+- name: Create symlink for standalone docker-compose command
+  file:
+    src: /usr/local/lib/docker/cli-plugins/docker-compose
+    dest: /usr/bin/docker-compose
+    state: link
 
 - name: Verify Docker Installation
   command: docker --version
