@@ -4,6 +4,10 @@
 # This resource creates the Ansible inventory file from live Terraform outputs.
 # Every `terraform apply` keeps the inventory in sync with actual infrastructure.
 
+# ============================================================================
+# VPC (Virtual Private Cloud)
+# ============================================================================
+
 module "vpc" {
   source = "../../modules/networking/vpc"
 
