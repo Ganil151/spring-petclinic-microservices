@@ -38,6 +38,7 @@ module "sg" {
 # ─────────────────────────────────────────────────────────────────────────────
 # IAM (Identity and Access Management)
 # ─────────────────────────────────────────────────────────────────────────────
+# This module creates IAM roles and policies for the VPC.
 
 module "iam" {
   source = "../../global/iam"
@@ -49,7 +50,7 @@ module "iam" {
 # ─────────────────────────────────────────────────────────────────────────────
 # ECR (Elastic Container Registry)
 # ─────────────────────────────────────────────────────────────────────────────
-
+#
 module "ecr" {
   source = "../../modules/ecr"
 
