@@ -7,7 +7,15 @@ resource "aws_instance" "this" {
   key_name                    = var.key_name
   associate_public_ip_address = var.associate_public_ip
   user_data_base64            = base64encode(var.user_data)
+  user_data_replace_on_change = var.user_data_replace_on_change
   iam_instance_profile        = var.iam_instance_profile
+
+  # IMDSv2 (Security Best Practice — prevents SSRF attacks)
+  metadata_options {
+    http_tokens                 = "required"
+    http_endpoint               = "enabled"
+    http_put_response_hop_limit = 2
+  }
 
   root_block_device {
     volume_size = var.root_volume_size
@@ -20,6 +28,8 @@ resource "aws_instance" "this" {
     Environment = var.environment
     Project     = var.project_name
     Role        = var.role
+    ManagedBy   = "terraform"
+    ConfiguredBy = "ansible"
   }
 }
 
