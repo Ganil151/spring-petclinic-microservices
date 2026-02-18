@@ -9,7 +9,7 @@
 # ─── Play 1: Core Tools on ALL Nodes ─────────────────────────────
 - name: Install Core Tools on All Nodes
   hosts: all_nodes
-  gather_facts: yes
+  gather_facts: true
 
   pre_tasks:
     - name: Display Target Node Info
@@ -20,6 +20,10 @@
       wait_for_connection:
         delay: 5
         timeout: 120
+
+    - name: Wait for Cloud-Init to finish (Prevents dnf lock issues)
+      command: cloud-init status --wait
+      changed_when: false
 
   roles:
     - java
