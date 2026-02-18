@@ -114,11 +114,14 @@ resource "local_file" "ansible_inventory" {
   file_permission = "0644"
 
   content = templatefile("${path.module}/templates/ansible_inventory.tftpl", {
-    jenkins_master_ip = module.jenkins_master.public_ips[0]
-    worker_node_ips   = module.worker_node.public_ips
-    sonarqube_ip      = module.sonarqube_server.public_ips[0]
-    ssh_user          = "ec2-user"
-    ssh_key_file      = "../terraform/environments/dev/spms-dev.pem"
+    jenkins_master_ip    = module.jenkins_master.public_ips[0]
+    jenkins_master_priv  = module.jenkins_master.private_ips[0]
+    worker_node_ips      = module.worker_node.public_ips
+    worker_node_priv_ips = module.worker_node.private_ips
+    sonarqube_ip         = module.sonarqube_server.public_ips[0]
+    sonarqube_priv       = module.sonarqube_server.private_ips[0]
+    ssh_user             = "ec2-user"
+    ssh_key_file         = var.ssh_private_key_path
   })
 
   depends_on = [
