@@ -9,7 +9,8 @@
 # │ Instance          │ Ansible Roles                                │
 # ├───────────────────┼──────────────────────────────────────────────┤
 # │ Jenkins Master    │ java, docker, awscli, jenkins, security_tools│
-# │ Worker Nodes      │ java, docker, awscli, maven, kubectl, helm   │
+# │ Worker Nodes      │ java, docker, awscli, maven, kubectl, helm,  │
+# │                   │ security_tools                               │
 # │ SonarQube         │ java, docker, awscli, sonarqube, sec_tools   │
 # └───────────────────┴──────────────────────────────────────────────┘
 # ───────────────────────────────────────────────────────────────────
@@ -47,3 +48,4 @@ worker_nodes
 [devops_tools:children]
 jenkins_master
 sonarqube
+worker_nodes
