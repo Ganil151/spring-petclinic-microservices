@@ -5,8 +5,7 @@ pipeline {
         // AWS & General Config
         AWS_REGION      = 'us-east-1' // Adjust as needed
         PROJECT_NAME    = 'spring-petclinic'
-        DOCKER_HUB_USERNAME = params.DOCKER_HUB_USERNAME
-        DOCKER_HUB_PASSWORD = params.DOCKER_HUB_PASSWORD
+        DO
         GITHUB_CREDENTIALS_ID = params.GITHUB_CREDENTIALS_ID
 
         
