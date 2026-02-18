@@ -140,7 +140,7 @@ module "sonarqube_server" {
   extra_volume_size           = var.sonarqube_extra_volume_size
 }
 
-# ────────────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────────────────
 # Terraform → Ansible Integration: Auto-Generated Inventory
 # ─────────────────────────────────────────────────────────────────────────────
 # This resource creates the Ansible inventory file from live Terraform outputs.
