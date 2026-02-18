@@ -5,16 +5,7 @@ pipeline {
         // AWS & General Config
         AWS_REGION      = 'us-east-1' // Adjust as needed
         PROJECT_NAME    = 'spring-petclinic'
-        ECR_REGISTRY    = 'REPLACE_WITH_YOUR_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com'
         
-        // Tool Configuration
-        MAVEN_HOME      = '/opt/maven'
-        SONAR_URL       = 'http://sonarqube:9000'
-        
-        // Parallel Build Groups
-        INFRA_SERVICES  = "spring-petclinic-config-server,spring-petclinic-discovery-server"
-        BACKEND_SERVICES = "spring-petclinic-customers-service,spring-petclinic-vets-service,spring-petclinic-visits-service,spring-petclinic-genai-service"
-        GATEWAY_SERVICES = "spring-petclinic-api-gateway,spring-petclinic-admin-server"
     }
 
     options {
