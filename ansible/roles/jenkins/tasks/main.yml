@@ -158,7 +158,7 @@
   slurp:
     src: /var/lib/jenkins/secrets/initialAdminPassword
   register: jenkins_admin_password
-  ignore_errors: yes
+  ignore_errors: true
 
 - name: Read ec2-user SSH Public Key
   slurp:

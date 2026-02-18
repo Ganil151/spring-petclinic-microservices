@@ -1,13 +1,12 @@
 ---
 - name: Update dnf cache
   dnf:
-    update_cache: yes
+    update_cache: true
 
 - name: Install Java 21 (Amazon Corretto)
   dnf:
     name: java-21-amazon-corretto-devel
     state: present
-  when: ansible_os_family == "RedHat"
 
 - name: Ensure Java binary is in PATH
   command: java -version
