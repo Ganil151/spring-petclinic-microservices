@@ -205,6 +205,7 @@
   },
   "active": "e8a8bfd7c13c69fd",
   "lastOpenFiles": [
+    "kubernetes/helm-charts/spring-petclinic/Chart.yaml",
     "kubernetes/helm-charts/spring-petclinic/templates",
     "kubernetes/helm-charts/spring-petclinic",
     "kubernetes/helm-charts",
@@ -215,7 +216,6 @@
     "ansible/roles/sonarqube/tasks/main.yml",
     "ansible/roles/jenkins/handlers/main.yml",
     "ansible/roles/jenkins/handlers",
-    "ansible/roles/jenkins/tasks/main.yml",
     "spring-petclinic-api-gateway/target/classes/static/images/spring-pivotal-logo.png",
     "spring-petclinic-api-gateway/target/classes/static/images/spring-logo-dataflow.png",
     "spring-petclinic-api-gateway/target/classes/static/images/spring-logo-dataflow-mobile.png",
