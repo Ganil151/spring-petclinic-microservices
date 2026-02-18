@@ -1,18 +1,26 @@
 #!/bin/bash
-# Optimized SonarQube Server Bootstrap for AL2023
-# Target: Static Analysis & Security Scanning for Spring Petclinic
+# ───────────────────────────────────────────────────────────────────
+# SonarQube Server Bootstrap — User Data (First Boot Only)
+# ───────────────────────────────────────────────────────────────────
+# PURPOSE: Apply kernel tuning, deploy SonarQube via Docker Compose.
+#          These MUST happen at first boot.
+# NOTE:    Java, Docker engine install, and AWS CLI are handled by
+#          Ansible roles. Docker service start is deferred to Ansible.
+#          However, Docker is needed here to run docker-compose, so
+#          we install it minimally to bootstrap the SonarQube stack.
+# ───────────────────────────────────────────────────────────────────
 set -e
 
-# 1. Identity & Initialization
+# ─── 1. Identity & Initialization ────────────────────────────────
 sudo hostnamectl set-hostname sonarqube-server
 echo "Stabilizing instance for 60 seconds..."
 sleep 60
 
-# 2. System Updates & Baseline
+# ─── 2. System Updates & Baseline ────────────────────────────────
 sudo dnf update -y
 sudo dnf install -y python3-pip git jq unzip wget docker
 
-# 3. Kernel & System Limits (Critical for Elasticsearch)
+# ─── 3. Kernel & System Limits (Critical for Elasticsearch) ─────
 echo "Applying SonarQube System Optimizations..."
 cat <<EOF | sudo tee /etc/sysctl.d/99-sonarqube.conf
 vm.max_map_count=524288
@@ -28,11 +36,13 @@ cat <<EOF | sudo tee /etc/security/limits.d/99-sonarqube.conf
 * hard    nproc    8192
 EOF
 
-# 4. Docker Setup
+# ─── 4. Docker Setup (Required for SonarQube Compose) ───────────
+# NOTE: Docker is installed here because SonarQube MUST start at
+# boot via docker-compose. Ansible will manage Docker config later.
 sudo systemctl enable --now docker
 sudo usermod -aG docker ec2-user
 
-# 5. SonarQube Deployment Configuration
+# ─── 5. SonarQube Deployment Configuration ──────────────────────
 SONAR_DIR="/home/ec2-user/sonarqube"
 mkdir -p "$SONAR_DIR"
 
@@ -86,30 +96,19 @@ EOF
 # Fix ownership so ec2-user can manage the compose file
 sudo chown -R ec2-user:ec2-user "$SONAR_DIR"
 
-# 6. Start Stack (Using AL2023 Docker Compose Plugin)
+# ─── 6. Start Stack ─────────────────────────────────────────────
 cd "$SONAR_DIR"
 sudo docker compose up -d
 echo "Waiting 30 seconds for containers to start..."
 sleep 30
 
-# 7. Security Tooling (DevSecOps)
-echo "Installing Security Scanners..."
-# Trivy
-TRIVY_VERSION=$(curl -s https://api.github.com/repos/aquasecurity/trivy/releases/latest | jq -r .tag_name | sed 's/v//')
-sudo dnf install -y "https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/trivy_${TRIVY_VERSION}_Linux-64bit.rpm"
-
-# Checkov (IAAC Scanner)
-pip3 install --user checkov
-
-# Java 21 (Required for modern Sonar Scanners)
-sudo dnf install -y java-21-amazon-corretto-devel
-
-# 8. Verification
-echo "------------------------------------------------"
+# ─── 7. Verification ─────────────────────────────────────────────
+echo "────────────────────────────────────────────────"
 echo "✅ SonarQube Stack is Deploying!"
-echo "------------------------------------------------"
+echo "────────────────────────────────────────────────"
 printf "SonarQube Port:  9000\n"
 printf "DB Password:     %s\n" "$DB_PASSWORD"
-printf "Checkov:        %s\n" "$(/home/ec2-user/.local/bin/checkov --version)"
-echo "------------------------------------------------"
+echo "NOTE: Trivy, Checkov, Java 21, and AWS CLI will"
+echo "      be installed by Ansible in the next phase."
+echo "────────────────────────────────────────────────"
 echo "Note: It may take 2-3 minutes for SonarQube to fully initialize Elasticsearch."
