@@ -1,5 +1,5 @@
 pipeline {
-    agent any
+    agent {}
 
     environment {
         // AWS & General Config
