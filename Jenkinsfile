@@ -5,7 +5,7 @@ pipeline {
         // AWS & General Config
         AWS_REGION      = 'us-east-1' // Adjust as needed
         PROJECT_NAME    = 'spring-petclinic'
-        DO
+        DOCKER_CREDENTIALS_ID = params.DOCKER_CREDENTIALS_ID
         GITHUB_CREDENTIALS_ID = params.GITHUB_CREDENTIALS_ID
 
         
@@ -20,8 +20,7 @@ pipeline {
 
     parameters {
         string(name: 'NODE_LABEL', defaultValue: 'worker-node', description: 'Node label to run the build on')
-        string(name: 'DOCKER_HUB_USERNAME', defaultValue: '', description: 'Docker Hub username')
-        string(name: 'DOCKER_HUB_PASSWORD', defaultValue: '', description: 'Docker Hub password')
+        string(name: 'DOCKER_CREDENTIALS_ID', defaultValue: '', description: 'Docker Hub username')
         string(name: 'GITHUB_CREDENTIALS_ID', defaultValue: '', description: 'GitHub credentials ID')
     }
 
