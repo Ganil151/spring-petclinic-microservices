@@ -88,6 +88,15 @@ pipeline {
                     }
                 }
             }
+        stage('🚀 Deployment') {
+            steps {
+                node(params.NODE_LABEL ?: 'worker-node') {
+                    script {
+                        echo "🚀 Deploying ${PROJECT_NAME} to EKS (Staging)..."
+                        // sh "helm upgrade --install ${PROJECT_NAME} ./kubernetes/helm-charts --namespace staging --set image.tag=${env.BUILD_NUMBER}"
+                    }
+                }
+            }
         }
 
     }
