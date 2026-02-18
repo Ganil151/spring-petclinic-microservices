@@ -19,6 +19,10 @@ module "vpc" {
   availability_zones   = var.data_availability_zone
 }
 
+# ============================================================================
+# Security Groups
+# ============================================================================
+
 module "sg" {
   source = "../../modules/networking/sg"
 
@@ -28,6 +32,10 @@ module "sg" {
   allowed_cidr_blocks = var.allowed_cidr_blocks
   ingress_ports       = var.ingress_ports
 }
+
+# ============================================================================
+# IAM (Identity and Access Management)
+# ============================================================================
 
 module "iam" {
   source = "../../global/iam"
