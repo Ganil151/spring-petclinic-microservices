@@ -43,6 +43,9 @@ pipeline {
                     echo "🔧 Preparing environment..."
                     sh "chmod +x mvnw"
                     
+                    echo "🕵️ Verifying AWS IAM Identity..."
+                    sh "aws sts get-caller-identity"
+
                     if (!commandExists('yq')) {
                         echo "Installing yq..."
                         sh '''
@@ -89,8 +92,16 @@ pipeline {
         stage('🐳 Docker Build & Push') {
             steps {
                 script {
+                    // Resolve ECR Registry dynamically if not provided
+                    def ecrRegistry = params.ECR_REGISTRY
+                    if (!ecrRegistry) {
+                        def accountId = sh(script: "aws sts get-caller-identity --query Account --output text", returnStdout: true).trim()
+                        ecrRegistry = "${accountId}.dkr.ecr.${env.AWS_REGION}.amazonaws.com"
+                        echo "✨ Auto-detected ECR Registry: ${ecrRegistry}"
+                    }
+
                     echo "🔐 Logging into Amazon ECR..."
-                    sh "aws ecr get-login-password --region ${env.AWS_REGION} | docker login --username AWS --password-stdin ${params.ECR_REGISTRY}"
+                    sh "aws ecr get-login-password --region ${env.AWS_REGION} | docker login --username AWS --password-stdin ${ecrRegistry}"
 
                     def services = [
                         'config-server': 8888,
@@ -107,8 +118,8 @@ pipeline {
                         def repoName = "petclinic-dev-${serviceShortName}"
                         
                         echo "🏗️ Building Docker image for ${fullModuleName}..."
-                        def imageTagLatest = "${params.ECR_REGISTRY}/${repoName}:latest"
-                        def imageTagBuild = "${params.ECR_REGISTRY}/${repoName}:${env.BUILD_NUMBER}"
+                        def imageTagLatest = "${ecrRegistry}/${repoName}:latest"
+                        def imageTagBuild = "${ecrRegistry}/${repoName}:${env.BUILD_NUMBER}"
 
                         sh "docker build -f docker/Dockerfile \
                             --build-arg ARTIFACT_NAME=${fullModuleName}/target/${fullModuleName}-4.0.1 \
