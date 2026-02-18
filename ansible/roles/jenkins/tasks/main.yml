@@ -68,32 +68,11 @@
     - /var/cache/jenkins
     - /var/log/jenkins
 
-# ─── 4. Install Jenkins Plugin Manager CLI ───────────────────────
-# The 'jenkins-plugin-cli' is not a system package, we download the jar
-- name: Download Jenkins Plugin Manager Tool
-  get_url:
-    url: https://github.com/jenkinsci/plugin-installation-manager-tool/releases/download/2.12.13/jenkins-plugin-manager-2.12.13.jar
-    dest: /opt/jenkins-plugin-manager.jar
-    mode: '0644'
-
-- name: Install Jenkins Plugins via Manager Tool
-  command: >
-    java -jar /opt/jenkins-plugin-manager.jar
-    --war /usr/share/java/jenkins.war
-    --plugin-download-directory /var/lib/jenkins/plugins
-    --plugins
-    workflow-aggregator:596.v8c21da_02283a_
-    git:5.2.1
-    github-branch-source:1767.va_7d01b_c729f9
-    docker-workflow:572.v950f58993843
-    sonar:2.16.1
-    maven-plugin:3.23
-    credentials-binding:642.v781769450dca_
-    aws-credentials:218.v1b_cb_a_9213550
-    pipeline-utility-steps:2.16.0
-  become_user: ec2-user
-  args:
-    creates: /var/lib/jenkins/plugins/git.jpi
+# ─── 4. Configure Jenkins Service ────────────────────────────────
+- name: Ensure Jenkins Service is Reloaded
+  systemd:
+    daemon_reload: true
+  changed_when: false
 
 # ─── 5. Configure Java Environment ──────────────────────────────
 - name: Set JAVA_HOME in ec2-user Profile
