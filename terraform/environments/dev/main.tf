@@ -47,38 +47,6 @@ module "iam" {
   environment  = var.environment
 }
 
-# ─────────────────────────────────────────────────────────────────────────────
-# ECR (Elastic Container Registry)
-# ─────────────────────────────────────────────────────────────────────────────
-# This module creates ECR repositories for the VPC.
-
-module "ecr" {
-  source = "../../modules/ecr"
-
-  project_name = var.project_name
-  environment  = var.environment
-
-  # Full list of microservice repositories for the Spring PetClinic project
-  repository_names = [
-    "config-server",
-    "discovery-server",
-    "api-gateway",
-    "customers-service",
-    "vets-service",
-    "visits-service",
-    "admin-server",
-    "genai-service"
-  ]
-
-  # IMMUTABLE tags prevent overwriting released images — use MUTABLE only in dev
-  image_tag_mutability = "MUTABLE"
-
-  # Enable CVE scanning on every push (SRE security standard)
-  scan_on_push = true
-
-  # IAM role must exist before ECR repos are created so Jenkins can push images
-  depends_on = [module.iam]
-}
 
 # ─────────────────────────────────────────────────────────────────────────────
 # EC2 Instances (Jenkins, Worker, SonarQube)
