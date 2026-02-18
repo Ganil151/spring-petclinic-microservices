@@ -1,22 +1,30 @@
----
-- name: Install dependencies (jq)
+- name: Install dependencies (jq, python3-pip)
   dnf:
-    name: jq
+    name: 
+      - jq
+      - python3-pip
     state: present
 
 - name: Install Trivy RPM
   shell: |
     TRIVY_VERSION=$(curl -s https://api.github.com/repos/aquasecurity/trivy/releases/latest | jq -r .tag_name | sed 's/v//')
-    TRIVY_ARCH={{ '64bit' if ansible_architecture == 'x86_64' else 'ARM64' }}
+    TRIVY_ARCH={{ '64bit' if ansible_facts['architecture'] == 'x86_64' else 'ARM64' }}
     dnf install -y "https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/trivy_${TRIVY_VERSION}_Linux-${TRIVY_ARCH}.rpm"
   args:
     creates: /usr/bin/trivy
 
-- name: Install Checkov (IaC Scanner)
+- name: Install Checkov in a Virtual Environment (Prevents system package conflicts)
   pip:
     name: checkov
     state: present
-    executable: pip3
+    virtualenv: /opt/checkov-venv
+    virtualenv_command: /usr/bin/python3 -m venv
+
+- name: Create symlink for Checkov
+  file:
+    src: /opt/checkov-venv/bin/checkov
+    dest: /usr/local/bin/checkov
+    state: link
 
 - name: Verify Trivy Installation
   command: trivy --version
@@ -24,7 +32,7 @@
   changed_when: false
 
 - name: Verify Checkov Installation
-  command: checkov --version
+  command: /usr/local/bin/checkov --version
   register: checkov_version
   changed_when: false
 
