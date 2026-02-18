@@ -205,6 +205,8 @@
   },
   "active": "e8a8bfd7c13c69fd",
   "lastOpenFiles": [
+    "ansible/roles/jenkins/handlers/main.yml",
+    "ansible/roles/jenkins/handlers",
     "ansible/roles/jenkins/tasks/main.yml",
     "ansible/roles/sonarqube/templates",
     "ansible/roles/sonarqube/tasks",
@@ -214,8 +216,6 @@
     "ansible/roles/jenkins/tasks",
     "ansible/roles/jenkins/files",
     "ansible/roles/jenkins",
-    "ansible/roles/security_tools/tasks/main.yml",
-    "ansible/roles/helm/tasks/main.yml",
     "spring-petclinic-api-gateway/target/classes/static/images/spring-pivotal-logo.png",
     "spring-petclinic-api-gateway/target/classes/static/images/spring-logo-dataflow.png",
     "spring-petclinic-api-gateway/target/classes/static/images/spring-logo-dataflow-mobile.png",
