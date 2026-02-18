@@ -205,6 +205,8 @@
   },
   "active": "e8a8bfd7c13c69fd",
   "lastOpenFiles": [
+    "ansible/roles/security_tools/tasks/main.yml",
+    "ansible/roles/helm/tasks/main.yml",
     "ansible/roles/security_tools/tasks",
     "ansible/roles/security_tools",
     "ansible/roles/helm/tasks",
@@ -214,8 +216,6 @@
     "terraform/environments/dev/templates",
     "spring-petclinic-visits-service/target/test-classes/application-test.yml",
     "spring-petclinic-visits-service/target/classes/logback-spring.xml",
-    "spring-petclinic-visits-service/target/classes/db/mysql/schema.sql",
-    "spring-petclinic-visits-service/target/classes/db/mysql/data.sql",
     "spring-petclinic-api-gateway/target/classes/static/images/spring-pivotal-logo.png",
     "spring-petclinic-api-gateway/target/classes/static/images/spring-logo-dataflow.png",
     "spring-petclinic-api-gateway/target/classes/static/images/spring-logo-dataflow-mobile.png",
