@@ -25,7 +25,7 @@ pipeline {
     }
 
     stages {
-        stage('') {
+        stage('Checkout') {
             steps {
                 script {
                     echo "🚀 Starting CI/CD Pipeline for ${PROJECT_NAME}"
