@@ -81,4 +81,18 @@ output "tool_mapping" {
     }
   }
 }
+# ─── ECR (Container Registry) ───────────────────────────────────
+output "ecr_registry_id" {
+  description = "AWS account ID that owns the ECR registry"
+  value       = module.ecr.registry_id
+}
 
+output "ecr_repository_urls" {
+  description = "Map of microservice name → ECR repository URL (use in docker push/pull)"
+  value       = module.ecr.repository_urls
+}
+
+output "ecr_repository_arns" {
+  description = "Map of microservice name → ECR repository ARN (use in IAM policies)"
+  value       = module.ecr.repository_arns
+}
