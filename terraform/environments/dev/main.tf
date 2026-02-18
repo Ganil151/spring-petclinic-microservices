@@ -50,7 +50,8 @@ module "iam" {
 # ─────────────────────────────────────────────────────────────────────────────
 # ECR (Elastic Container Registry)
 # ─────────────────────────────────────────────────────────────────────────────
-#
+# This module creates ECR repositories for the VPC.
+
 module "ecr" {
   source = "../../modules/ecr"
 
