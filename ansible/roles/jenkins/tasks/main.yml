@@ -3,16 +3,26 @@
 # Role: Jenkins — Install, Configure, and Harden Jenkins Master
 # ───────────────────────────────────────────────────────────────────
 
+# ─── 0. Wait for System Readiness ───────────────────────────────
+- name: Wait for Cloud-Init to finish (Prevents dnf lock issues)
+  command: cloud-init status --wait
+  changed_when: false
+
 # ─── 1. Add Jenkins Repository ───────────────────────────────────
 - name: Download Jenkins Repository File
   get_url:
     url: https://pkg.jenkins.io/redhat-stable/jenkins.repo
     dest: /etc/yum.repos.d/jenkins.repo
+    mode: '0644'
 
 - name: Import Jenkins GPG Key
-  rpm_key:
-    key: https://pkg.jenkins.io/redhat-stable/jenkins.io-2023.key
-    state: present
+  command: rpm --import https://pkg.jenkins.io/redhat-stable/jenkins.io-2023.key
+  register: gpg_import
+  failed_when: gpg_import.rc != 0 and 'already installed' not in gpg_import.stderr
+
+- name: Update dnf cache again
+  dnf:
+    update_cache: yes
 
 - name: Install Jenkins
   dnf:
@@ -33,11 +43,16 @@
       [Service]
       User=ec2-user
       Group=ec2-user
+      # Force a larger heap and specific Java path if needed
       Environment="JENKINS_HOME=/var/lib/jenkins"
+      # ExecStart= must be empty before being redefined in systemd
       ExecStart=
       ExecStart=/usr/bin/jenkins
     mode: '0644'
   notify: Reload Systemd
+
+- name: Flush handlers (Force systemd reload now)
+  meta: flush_handlers
 
 # ─── 3. Prepare Jenkins Directories ──────────────────────────────
 - name: Create Jenkins Directories
@@ -53,21 +68,29 @@
     - /var/cache/jenkins
     - /var/log/jenkins
 
-# ─── 4. Install Jenkins Plugins ──────────────────────────────────
-- name: Install Jenkins Plugins via CLI
+# ─── 4. Install Jenkins Plugin Manager CLI ───────────────────────
+# The 'jenkins-plugin-cli' is not a system package, we download the jar
+- name: Download Jenkins Plugin Manager Tool
+  get_url:
+    url: https://github.com/jenkinsci/plugin-installation-manager-tool/releases/download/2.12.13/jenkins-plugin-manager-2.12.13.jar
+    dest: /opt/jenkins-plugin-manager.jar
+    mode: '0644'
+
+- name: Install Jenkins Plugins via Manager Tool
   command: >
-    jenkins-plugin-cli --plugins
-    workflow-aggregator
-    git
-    github-branch-source
-    docker-workflow
-    sonar
-    maven-plugin
-    temurin-installer
-    credentials-binding
-    dependency-check-jenkins-plugin
-    aws-credentials
-    pipeline-utility-steps
+    java -jar /opt/jenkins-plugin-manager.jar
+    --war /usr/share/java/jenkins.war
+    --plugin-download-directory /var/lib/jenkins/plugins
+    --plugins
+    workflow-aggregator:596.v8c21da_02283a_
+    git:5.2.1
+    github-branch-source:1767.va_7d01b_c729f9
+    docker-workflow:572.v950f58993843
+    sonar:2.16.1
+    maven-plugin:3.23
+    credentials-binding:642.v781769450dca_
+    aws-credentials:218.v1b_cb_a_9213550
+    pipeline-utility-steps:2.16.0
   become_user: ec2-user
   args:
     creates: /var/lib/jenkins/plugins/git.jpi
@@ -123,13 +146,12 @@
     name: jenkins
     state: started
     enabled: yes
-    daemon_reload: yes
 
 - name: Wait for Jenkins to Initialize
   wait_for:
     port: 8080
-    delay: 10
-    timeout: 120
+    delay: 15
+    timeout: 300
 
 # ─── 9. Retrieve Admin Password ─────────────────────────────────
 - name: Read Jenkins Initial Admin Password
@@ -149,6 +171,6 @@
       - "════════════════════════════════════════════════"
       - "✅ Jenkins Master Configured Successfully!"
       - "════════════════════════════════════════════════"
-      - "Admin Password: {{ (jenkins_admin_password.content | b64decode | trim) if jenkins_admin_password is succeeded else 'N/A' }}"
+      - "Admin Password: {{ (jenkins_admin_password.content | b64decode | trim) if (jenkins_admin_password is succeeded and jenkins_admin_password.content is defined) else 'N/A' }}"
       - "SSH Public Key: {{ ec2_user_pubkey.content | b64decode | trim }}"
       - "════════════════════════════════════════════════"
