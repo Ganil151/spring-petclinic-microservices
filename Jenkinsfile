@@ -20,7 +20,7 @@ pipeline {
     }
 
     parameters {
-        string(name: 'NODE_LABEL', defaultValue: 'W', description: 'Node label to run the build on')
+        string(name: 'NODE_LABEL', defaultValue: 'worker-node', description: 'Node label to run the build on')
         string(name: 'DOCKER_HUB_USERNAME', defaultValue: '', description: 'Docker Hub username')
         string(name: 'DOCKER_HUB_PASSWORD', defaultValue: '', description: 'Docker Hub password')
         string(name: 'GITHUB_CREDENTIALS_ID', defaultValue: '', description: 'GitHub credentials ID')
