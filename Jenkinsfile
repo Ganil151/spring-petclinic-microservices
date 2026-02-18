@@ -7,7 +7,7 @@ pipeline {
         PROJECT_NAME    = 'spring-petclinic'
         DOCKER_HUB_USERNAME = params.DOCKER_HUB_USERNAME
         DOCKER_HUB_PASSWORD = params.DOCKER_HUB_PASSWORD
-        
+        GITHU
         
     }
 
