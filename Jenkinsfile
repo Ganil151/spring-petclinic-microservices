@@ -22,6 +22,8 @@ pipeline {
         string(name: 'NODE_LABEL', defaultValue: 'worker-node', description: 'Node label to run the build on')
         string(name: 'ECR_REGISTRY', defaultValue: '', description: 'ECR Registry URL (Leave blank to auto-detect)')
         string(name: 'GITHUB_CREDENTIALS_ID', defaultValue: 'github-credentials', description: 'GitHub credentials ID')
+        string(name: 'SONAR_URL', defaultValue: 'http://13.217.118.81:9000', description: 'SonarQube Server URL')
+        string(name: 'SONAR_TOKEN_ID', defaultValue: 'sonarqube-token', description: 'Jenkins Credential ID for SonarQube Token')
     }
 
     triggers {
@@ -96,6 +98,22 @@ pipeline {
                 script {
                     echo "🔍 Running unit tests..."
                     sh './mvnw test'
+                }
+            }
+        }
+
+        stage('📊 SonarQube Analysis') {
+            steps {
+                script {
+                    echo "📊 Starting SonarQube code analysis..."
+                    withCredentials([string(credentialsId: params.SONAR_TOKEN_ID, variable: 'SONAR_TOKEN')]) {
+                        sh """
+                            ./mvnw sonar:sonar \
+                                -Dsonar.projectKey=${env.PROJECT_NAME} \
+                                -Dsonar.host.url=${params.SONAR_URL} \
+                                -Dsonar.login=${SONAR_TOKEN}
+                        """
+                    }
                 }
             }
         }
