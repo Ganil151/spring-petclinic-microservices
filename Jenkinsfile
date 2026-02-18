@@ -47,6 +47,17 @@ pipeline {
             }
         }
 
+        stage('Remove genai-service from docker-compose.yml') {
+            steps {
+                script {
+                    sh '''
+                    cp docker-compose.yml docker-compose.yml.bak
+                    yq eval 'del(.services.genai-service)' -i docker-compose.yml
+                    '''
+                }
+            }
+        }
+
         stage('🛠️ Initialization') {
             steps {
                 node(params.NODE_LABEL ?: 'worker-node') {
