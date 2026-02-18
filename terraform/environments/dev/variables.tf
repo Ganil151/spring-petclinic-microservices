@@ -177,12 +177,6 @@ variable "associate_public_ip" {
   default     = false
 }
 
-variable "user_data" {
-  description = "Startup script"
-  type        = string
-  default     = ""
-}
-
 variable "iam_instance_profile" {
   description = "IAM profile"
   type        = string
