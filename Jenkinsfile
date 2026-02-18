@@ -28,16 +28,7 @@ pipeline {
     }
 
     stages {
-        stage('� Checkout') {
-            steps {
-                script {
-                    echo "📥 Checking out source code..."
-                    checkout scm
-                }
-            }
-        }
-
-        stage('�🛠️ Initialization') {
+        stage('🛠️ Initialization') {
             steps {
                 script {
                     echo "🚀 Starting CI/CD Pipeline for ${PROJECT_NAME}"
