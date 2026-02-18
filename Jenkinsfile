@@ -6,6 +6,7 @@ pipeline {
         AWS_REGION      = 'us-east-1' // Adjust as needed
         PROJECT_NAME    = 'spring-petclinic'
         
+        
     }
 
     options {
