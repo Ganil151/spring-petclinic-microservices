@@ -14,7 +14,7 @@
   pre_tasks:
     - name: Display Target Node Info
       debug:
-        msg: "Configuring {{ inventory_hostname }} ({{ ansible_distribution }} {{ ansible_distribution_version }})"
+        msg: "Configuring {{ inventory_hostname }} ({{ ansible_facts['distribution'] }} {{ ansible_facts['distribution_version'] }})"
 
     - name: Wait for SSH to become available
       wait_for_connection:
