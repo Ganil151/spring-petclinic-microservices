@@ -140,6 +140,8 @@ class GitAutomation:
         return True
 
     def push_changes(self) -> bool:
+        print("⏳ Waiting 10 seconds before pushing...")
+        time.sleep(10)
         print("🚀 Pushing to remote...")
         success, stdout, stderr = self.run_command(["git", "push"])
         if success:
