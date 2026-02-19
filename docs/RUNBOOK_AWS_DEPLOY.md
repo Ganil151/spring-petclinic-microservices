@@ -136,7 +136,10 @@ Success! The configuration is valid.
 ### Step 2.1: Review Terraform Plan
 
 ```bash
-# Generate execution plan
+# 1. Set Database Password (MANDATORY)
+export TF_VAR_db_password="YourSecurePassword123"
+
+# 2. Generate execution plan
 terraform plan -out=tfplan
 
 # Optional: Save plan to file for audit
