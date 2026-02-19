@@ -422,10 +422,10 @@ A reliable "Source of Truth" for Terraform is critical. This setup ensures **Con
   cat > backend.tf << EOF
   terraform {
     backend "s3" {
-      bucket       = "REPLACE_WITH_BUCKET_NAME"
+      bucket       = "petclinic-terraform-state-xxxx"
       key          = "tfstate/dev/terraform.tfstate"
       region       = "us-east-1"
-      use_lockfile = true
+      use_lockfile = true  # ✨ Native S3 locking (TF 1.10+)
       encrypt      = true
     }
   }
@@ -1105,9 +1105,14 @@ Ensure the following plugins are installed to support the pipeline:
                   sh 'trivy image --severity HIGH,CRITICAL ${ECR_REGISTRY}/dev-petclinic-api-gateway:latest'
               }
           }
-          stage('K8s Deploy') {
+          stage('K8s Deploy (Helm)') {
               steps {
-                  sh 'kubectl apply -f k8s/'
+                  script {
+                      sh "helm upgrade --install ${env.PROJECT_NAME} ./helm/microservices \
+                          --namespace petclinic --create-namespace \
+                          -f ./helm/microservices/overrides/dev.yaml \
+                          --set global.ecrRegistry=${ECR_REGISTRY}"
+                  }
               }
           }
           stage('Smoke Test') {
@@ -1227,10 +1232,14 @@ Ensure the following plugins are installed to support the pipeline:
 
 - [ ] **Install/Upgrade Microservices with Helm**
   ```bash
+  export ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+  export ECR_REGISTRY="${ACCOUNT_ID}.dkr.ecr.us-east-1.amazonaws.com"
+  
   helm upgrade --install petclinic ./helm/microservices \
     --namespace petclinic \
-    --set global.image.repositoryPrefix=${ECR_REGISTRY}/dev-petclinic- \
-    --set global.image.tag=latest \
+    --create-namespace \
+    -f ./helm/microservices/overrides/dev.yaml \
+    --set global.ecrRegistry=${ECR_REGISTRY} \
     --wait --timeout 300s
   ```
   **Verification:** `helm list -n petclinic`

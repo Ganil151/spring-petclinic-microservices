@@ -566,23 +566,21 @@ job.batch/db-migration condition met
 
 ---
 
-### Step 4.3: Deploy Microservices
+### Step 4.3: Deploy Microservices (Helm)
+*   **Logic:** Helm manages the state of the 7 microservices. It automatically handles Service creation, Deployments, and HPA.
 
 ```bash
-# Deploy in dependency order
-kubectl apply -f k8s/config-server.yaml
-kubectl wait --for=condition=available --timeout=300s deployment/config-server -n petclinic
+# 1. Resolve ECR Registry
+export ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+export ECR_REGISTRY="${ACCOUNT_ID}.dkr.ecr.us-east-1.amazonaws.com"
 
-kubectl apply -f k8s/discovery-server.yaml
-kubectl wait --for=condition=available --timeout=300s deployment/discovery-server -n petclinic
-
-kubectl apply -f k8s/customers-service.yaml
-kubectl apply -f k8s/vets-service.yaml
-kubectl apply -f k8s/visits-service.yaml
-kubectl wait --for=condition=available --timeout=300s deployment/customers-service -n petclinic
-
-kubectl apply -f k8s/api-gateway.yaml
-kubectl wait --for=condition=available --timeout=300s deployment/api-gateway -n petclinic
+# 2. Deploy using Helm
+helm upgrade --install petclinic ./helm/microservices \
+    --namespace petclinic \
+    --create-namespace \
+    -f ./helm/microservices/overrides/dev.yaml \
+    --set global.ecrRegistry=${ECR_REGISTRY} \
+    --wait --timeout 600s
 ```
 
 **📊 Deployment Architecture:**
