@@ -52,3 +52,10 @@ worker_nodes
 jenkins_master
 sonarqube
 worker_nodes
+
+# ───────────────────────────────────────────────────────────────────
+# Global Variables
+# ───────────────────────────────────────────────────────────────────
+[all:vars]
+eks_cluster_name=${eks_cluster_name}
+aws_region=${aws_region}

@@ -206,6 +206,8 @@ resource "local_file" "ansible_inventory" {
     sonarqube_priv       = module.sonarqube_server.private_ips[0]
     ssh_user             = "ec2-user"
     ssh_key_file         = var.ssh_private_key_path
+    eks_cluster_name     = module.eks.cluster_name
+    aws_region           = var.aws_region
   })
 
   depends_on = [
