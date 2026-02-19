@@ -1,0 +1,31 @@
+{{- range $name, $config := .Values.services }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $name }}
+  labels:
+    app: {{ $name }}
+    {{- include "spring-petclinic.labels" $ | nindent 4 }}
+spec:
+  replicas: {{ $config.replicaCount | default 1 }}
+  selector:
+    matchLabels:
+      app: {{ $name }}
+  template:
+    metadata:
+      labels:
+        app: {{ $name }}
+    spec:
+      containers:
+        - name: {{ $name }}
+          image: "{{ $.Values.global.ecrRegistry }}/{{ $config.image.repository }}:{{ $config.image.tag }}"
+          imagePullPolicy: Always
+          ports:
+            - containerPort: {{ $config.port }}
+          resources:
+            {{- toYaml $config.resources | nindent 12 }}
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: "docker"
+{{- end }}
