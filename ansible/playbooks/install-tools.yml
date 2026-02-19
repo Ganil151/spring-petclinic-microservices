@@ -47,6 +47,7 @@
     - maven
     - kubectl
     - helm
+    - eks_setup
 
 # ─── Play 4: SonarQube Stack Deployment ──────────────────────────
 - name: Deploy SonarQube Stack

@@ -208,6 +208,7 @@ resource "local_file" "ansible_inventory" {
     ssh_key_file         = var.ssh_private_key_path
     eks_cluster_name     = module.eks.cluster_name
     aws_region           = var.aws_region
+    vpc_id               = module.vpc.vpc_id
   })
 
   depends_on = [
