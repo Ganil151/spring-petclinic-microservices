@@ -83,55 +83,32 @@ This document describes all configured network ports for the Spring PetClinic Mi
 ## Port Configuration in Terraform
 
 ### Location
-Ports are configured in each environment's `terraform.tfvars` file under the `ingress_rules` variable.
+Ports are configured in each environment's `terraform.tfvars` file under the `ingress_ports` variable.
 
 ### Structure
 ```hcl
-ingress_rules = {
-  service_name = {
-    from_port   = <port_number>
-    to_port     = <port_number>
-    protocol    = "tcp"
-    description = "Service description"
-  }
-}
-```
-
-### Example
-```hcl
-ingress_rules = {
-  ssh = {
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    description = "SSH access"
-  }
-  jenkins = {
-    from_port   = 8080
-    to_port     = 8080
-    protocol    = "tcp"
-    description = "Jenkins web interface"
-  }
-}
+ingress_ports = [
+  80,   # HTTP
+  443,  # HTTPS
+  3306, # MySQL
+  8080, # API Gateway, Jenkins
+  # ... other ports
+]
 ```
 
 ## Adding New Ports
 
 ### Step 1: Update terraform.tfvars
-Add the new rule to the `ingress_rules` map in the environment's `terraform.tfvars`:
+Add the new port number to the `ingress_ports` list in the environment's `terraform.tfvars`:
 
 ```hcl
 # In environments/dev/terraform.tfvars
-ingress_rules = {
-  # ... existing rules ...
-  
-  new_service = {
-    from_port   = 8095
-    to_port     = 8095
-    protocol    = "tcp"
-    description = "New microservice"
-  }
-}
+ingress_ports = [
+  22,
+  80,
+  # ... existing ports ...
+  8095 # New microservice
+]
 ```
 
 ### Step 2: Apply Changes

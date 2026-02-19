@@ -86,29 +86,20 @@ allowed_cidr_blocks = ["10.0.0.0/8"]  # Internal network only
 
 1. **Variable Definition** (variables.tf)
    ```hcl
-   variable "ingress_rules" {
-     description = "Map of ingress rules for security groups"
-     type = map(object({
-       from_port   = number
-       to_port     = number
-       protocol    = string
-       description = string
-     }))
-     default = {}
+   variable "ingress_ports" {
+     description = "List of ports to allow ingress traffic for"
+     type        = list(number)
+     default     = []
    }
    ```
 
 2. **Port Values** (terraform.tfvars)
    ```hcl
-   ingress_rules = {
-     ssh = {
-       from_port   = 22
-       to_port     = 22
-       protocol    = "tcp"
-       description = "SSH access"
-     }
+   ingress_ports = [
+     22,   # SSH
+     80,   # HTTP
      # ... more ports ...
-   }
+   ]
    ```
 
 3. **Module Usage** (main.tf)
@@ -149,16 +140,10 @@ terraform apply  # Apply port configuration
 ### Add New Port
 Edit `terraform.tfvars`:
 ```hcl
-ingress_rules = {
-  # ... existing rules ...
-  
-  new_service = {
-    from_port   = 8095
-    to_port     = 8095
-    protocol    = "tcp"
-    description = "New service description"
-  }
-}
+ingress_ports = [
+  # ... existing ports ...
+  8095 # New service
+]
 ```
 
 ### Verify Security Group
@@ -183,13 +168,9 @@ allowed_cidr_blocks = ["0.0.0.0/0"]
 # CIDR blocks + comprehensive port configuration
 allowed_cidr_blocks = ["0.0.0.0/0"]
 
-ingress_rules = {
-  ssh    = { from_port = 22,   to_port = 22,   protocol = "tcp", description = "SSH" }
-  http   = { from_port = 80,   to_port = 80,   protocol = "tcp", description = "HTTP" }
-  https  = { from_port = 443,  to_port = 443,  protocol = "tcp", description = "HTTPS" }
-  mysql  = { from_port = 3306, to_port = 3306, protocol = "tcp", description = "MySQL" }
-  # ... + 14 more ports
-}
+ingress_ports = [
+  22, 80, 443, 3306, 8080, 9000, 8761, 8888, 9090, 8081, 8082, 8083, 9091, 3000, 9411
+]
 ```
 
 ---
