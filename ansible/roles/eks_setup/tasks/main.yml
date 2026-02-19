@@ -9,11 +9,50 @@
   register: nodes_list
   changed_when: false
 
-- name: Display Cluster Nodes
-  debug:
-    var: nodes_list.stdout_lines
-
 - name: Ensure Metrics Server is installed (for HPA)
   command: kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
   register: metrics_apply
   changed_when: "'configured' in metrics_apply.stdout or 'created' in metrics_apply.stdout"
+
+# ─── AWS Load Balancer Controller Setup ─────────────────────────────
+
+- name: Check if Load Balancer Controller Policy exists
+  command: "aws iam get-policy --policy-arn arn:aws:iam::{{ account_id }}:policy/AWSLoadBalancerControllerIAMPolicy"
+  register: policy_check
+  ignore_errors: true
+  changed_when: false
+
+- name: Create Load Balancer Controller Policy if missing
+  shell: |
+    curl -o /tmp/lbc_policy.json https://raw.githubusercontent.com/kubernetes-sigs/aws-load-balancer-controller/main/docs/install/iam_policy.json
+    aws iam create-policy --policy-name AWSLoadBalancerControllerIAMPolicy --policy-document file:///tmp/lbc_policy.json
+  when: policy_check.rc != 0
+
+- name: Attach Policy to Role
+  command: "aws iam attach-role-policy --role-name {{ project_name | lower }}-{{ environment | lower }}-lb-controller-role --policy-arn arn:aws:iam::{{ account_id }}:policy/AWSLoadBalancerControllerIAMPolicy"
+  changed_when: false
+
+- name: Add EKS Helm Repo
+  command: helm repo add eks https://aws.github.io/eks-charts
+  changed_when: false
+
+- name: Update Helm Repos
+  command: helm repo update
+  changed_when: false
+
+- name: Check if LBC is already installed
+  command: helm list -n kube-system -q
+  register: helm_list
+  changed_when: false
+
+- name: Install AWS Load Balancer Controller
+  command: >
+    helm upgrade --install aws-load-balancer-controller eks/aws-load-balancer-controller
+    -n kube-system
+    --set clusterName={{ eks_cluster_name }}
+    --set serviceAccount.create=true
+    --set serviceAccount.name=aws-load-balancer-controller
+    --set serviceAccount.annotations."eks\.amazonaws\.com/role-arn"=arn:aws:iam::{{ account_id }}:role/{{ project_name | lower }}-{{ environment | lower }}-lb-controller-role
+    --set region={{ aws_region }}
+    --set vpcId={{ vpc_id }}
+  when: "'aws-load-balancer-controller' not in helm_list.stdout"
