@@ -214,7 +214,7 @@ resource "local_file" "ansible_inventory" {
     vpc_id               = module.vpc.vpc_id
     account_id           = data.aws_caller_identity.current.account_id
     project_name         = var.project_name
-    environment          = var.environment
+    env_name             = var.environment
   })
 
   depends_on = [
