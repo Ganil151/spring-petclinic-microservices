@@ -187,6 +187,7 @@ module "sonarqube_server" {
   user_data_replace_on_change = true
   root_volume_size            = var.sonarqube_root_volume_size
   extra_volume_size           = var.sonarqube_extra_volume_size
+  iam_instance_profile        = module.iam.ec2_profile_name
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
