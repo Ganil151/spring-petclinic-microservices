@@ -48,6 +48,35 @@ resource "aws_iam_role_policy_attachment" "ebs_csi_driver" {
   role       = aws_iam_role.ebs_csi_driver.name
 }
 
+# IAM Role for AWS Load Balancer Controller (IRSA)
+resource "aws_iam_role" "load_balancer_controller" {
+  name = lower("${var.project_name}-${var.environment}-lb-controller-role")
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRoleWithWebIdentity"
+        Effect = "Allow"
+        Principal = {
+          Federated = aws_iam_openid_connect_provider.this.arn
+        }
+        Condition = {
+          StringEquals = {
+            "${replace(aws_iam_openid_connect_provider.this.url, "https://", "")}:sub" : "system:serviceaccount:kube-system:aws-load-balancer-controller"
+          }
+        }
+      }
+    ]
+  })
+
+  tags = {
+    Name        = lower("${var.project_name}-${var.environment}-lb-controller-role")
+    Environment = var.environment
+    Project     = var.project_name
+  }
+}
+
 output "oidc_provider_arn" {
   value = aws_iam_openid_connect_provider.this.arn
 }

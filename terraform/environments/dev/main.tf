@@ -211,6 +211,9 @@ resource "local_file" "ansible_inventory" {
     eks_cluster_name     = module.eks.cluster_name
     aws_region           = var.aws_region
     vpc_id               = module.vpc.vpc_id
+    account_id           = data.aws_caller_identity.current.account_id
+    project_name         = var.project_name
+    environment          = var.environment
   })
 
   depends_on = [
