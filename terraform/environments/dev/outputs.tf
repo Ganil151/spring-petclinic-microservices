@@ -100,12 +100,12 @@ output "ecr_repository_arns" {
 # ─── RDS (Database) ──────────────────────────────────────────────
 output "rds_endpoint" {
   description = "The connection endpoint for the RDS instance"
-  value       = module.rds.db_instance_endpoint
+  value       = module.rds.rds_endpoint
 }
 
 output "rds_username" {
   description = "The master username for the RDS instance"
-  value       = module.rds.db_instance_username
+  value       = module.rds.rds_username
 }
 
 # ─── EKS (Kubernetes) ─────────────────────────────────────────────
