@@ -11,24 +11,12 @@
             "id": "e8a8bfd7c13c69fd",
             "type": "leaf",
             "state": {
-              "type": "markdown",
+              "type": "image",
               "state": {
-                "file": "docs/RUNBOOK_AWS_DEPLOY.md",
-                "mode": "source",
-                "source": false,
-                "backlinks": true,
-                "backlinkOpts": {
-                  "collapseAll": false,
-                  "extraContext": false,
-                  "sortOrder": "alphabetical",
-                  "showSearch": false,
-                  "searchQuery": "",
-                  "backlinkCollapsed": false,
-                  "unlinkedCollapsed": true
-                }
+                "file": "docs/spring-ai.png"
               },
-              "icon": "lucide-file",
-              "title": "RUNBOOK_AWS_DEPLOY"
+              "icon": "lucide-image",
+              "title": "spring-ai"
             }
           }
         ]
@@ -88,8 +76,7 @@
       }
     ],
     "direction": "horizontal",
-    "width": 300,
-    "collapsed": true
+    "width": 300
   },
   "right": {
     "id": "e4f6ad916cfc0bbe",
@@ -205,13 +192,13 @@
   },
   "active": "e8a8bfd7c13c69fd",
   "lastOpenFiles": [
+    "docs/RUNBOOK_AWS_DEPLOY.md",
     "docs/JENKINS_TROUBLESHOOTING.md",
     "docs/JAVA21_MIGRATION.md",
     "docs/DEPLOYMENT_CHECKLIST.md",
     "docs/QUICK_REFERENCE.md",
     "terraform/environments/dev/spms-dev.pem",
     "docs/REFACTORING_SUMMARY.md",
-    "docs/RUNBOOK_AWS_DEPLOY.md",
     "docs/grafana-custom-metrics-dashboard.png",
     "ansible/roles/eks_setup/tasks/main.yml",
     "ansible/roles/eks_setup/tasks",
