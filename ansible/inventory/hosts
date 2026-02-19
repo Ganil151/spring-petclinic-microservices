@@ -60,4 +60,4 @@ aws_region=us-east-1
 vpc_id=vpc-00aa5eb6e14df1f91
 account_id=365269738775
 project_name=Petclinic
-environment=dev
+env_name=dev
