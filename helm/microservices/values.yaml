@@ -1,0 +1,99 @@
+# Default values for spring-petclinic-microservices.
+global:
+  region: us-east-1
+  ecrRegistry: "" # Will be passed via --set or detected
+
+commonLabels:
+  app.kubernetes.io/part-of: spring-petclinic
+
+services:
+  config-server:
+    port: 8888
+    replicaCount: 1
+    image:
+      repository: petclinic-dev-config-server
+      tag: latest
+    resources:
+      limits:
+        memory: 512Mi
+      requests:
+        cpu: 100m
+        memory: 256Mi
+
+  discovery-server:
+    port: 8761
+    replicaCount: 1
+    image:
+      repository: petclinic-dev-discovery-server
+      tag: latest
+    resources:
+      limits:
+        memory: 512Mi
+      requests:
+        cpu: 100m
+        memory: 256Mi
+
+  customers-service:
+    port: 8081
+    replicaCount: 1
+    image:
+      repository: petclinic-dev-customers-service
+      tag: latest
+    resources:
+      limits:
+        memory: 512Mi
+      requests:
+        cpu: 100m
+        memory: 256Mi
+
+  visits-service:
+    port: 8082
+    replicaCount: 1
+    image:
+      repository: petclinic-dev-visits-service
+      tag: latest
+    resources:
+      limits:
+        memory: 512Mi
+      requests:
+        cpu: 100m
+        memory: 256Mi
+
+  vets-service:
+    port: 8083
+    replicaCount: 1
+    image:
+      repository: petclinic-dev-vets-service
+      tag: latest
+    resources:
+      limits:
+        memory: 512Mi
+      requests:
+        cpu: 100m
+        memory: 256Mi
+
+  api-gateway:
+    port: 8080
+    replicaCount: 1
+    image:
+      repository: petclinic-dev-api-gateway
+      tag: latest
+    resources:
+      limits:
+        memory: 512Mi
+      requests:
+        cpu: 100m
+        memory: 512Mi
+
+  admin-server:
+    port: 9090
+    replicaCount: 1
+    image:
+      repository: petclinic-dev-admin-server
+      tag: latest
+    resources:
+      limits:
+        memory: 512Mi
+      requests:
+        cpu: 100m
+        memory: 256Mi
