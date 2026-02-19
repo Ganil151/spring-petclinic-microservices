@@ -57,6 +57,27 @@ terraform output tool_mapping       # Which tools go where
 terraform output ansible_command    # Ready-to-run Ansible command
 terraform output jenkins_master_url # Jenkins Web UI URL
 terraform output sonarqube_url      # SonarQube Web UI URL
+terraform output rds_endpoint       # MySQL Connection string
+terraform output eks_cluster_name   # Cluster name for kubectl
+```
+
+### Manage Kubernetes & Helm
+```bash
+# 1. Connect to EKS
+aws eks update-kubeconfig --region us-east-1 --name $(terraform output -raw eks_cluster_name)
+
+# 2. Verify nodes
+kubectl get nodes
+
+# 3. Helm Operations
+cd helm/microservices
+helm lint .
+
+# Deploy (using dev overrides)
+helm upgrade --install petclinic . \
+  --namespace petclinic --create-namespace \
+  -f overrides/dev.yaml \
+  --set global.ecrRegistry=$(aws sts get-caller-identity --query Account --output text).dkr.ecr.us-east-1.amazonaws.com
 ```
 
 ### Validate DRY Compliance
