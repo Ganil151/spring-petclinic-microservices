@@ -14,7 +14,7 @@ resource "aws_iam_role" "cluster" {
   })
 
   tags = {
-    Name        = "${var.project_name}-${var.environment}-eks-cluster-role"
+    Name        = lower("${var.project_name}-${var.environment}-eks-cluster-role")
     Environment = var.environment
     Project     = var.project_name
   }
@@ -41,7 +41,7 @@ resource "aws_iam_role" "nodes" {
   })
 
   tags = {
-    Name        = "${var.project_name}-${var.environment}-eks-node-role"
+    Name        = lower("${var.project_name}-${var.environment}-eks-node-role")
     Environment = var.environment
     Project     = var.project_name
   }
@@ -79,7 +79,7 @@ resource "aws_eks_cluster" "this" {
   ]
 
   tags = {
-    Name        = "${var.project_name}-${var.environment}-cluster"
+    Name        = lower("${var.project_name}-${var.environment}-cluster")
     Environment = var.environment
     Project     = var.project_name
   }
@@ -111,7 +111,7 @@ resource "aws_eks_node_group" "this" {
   ]
 
   tags = {
-    Name                                                 = "${var.project_name}-${var.environment}-node-group"
+    Name                                                 = lower("${var.project_name}-${var.environment}-node-group")
     Environment                                          = var.environment
     Project                                              = var.project_name
     "kubernetes.io/cluster/${aws_eks_cluster.this.name}" = "owned"

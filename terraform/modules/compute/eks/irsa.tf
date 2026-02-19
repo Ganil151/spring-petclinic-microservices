@@ -8,7 +8,7 @@ resource "aws_iam_openid_connect_provider" "this" {
   url             = aws_eks_cluster.this.identity[0].oidc[0].issuer
 
   tags = {
-    Name        = "${var.project_name}-${var.environment}-oidc-provider"
+    Name        = lower("${var.project_name}-${var.environment}-oidc-provider")
     Environment = var.environment
     Project     = var.project_name
   }
