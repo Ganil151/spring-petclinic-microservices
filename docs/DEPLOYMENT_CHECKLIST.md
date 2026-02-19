@@ -598,6 +598,10 @@ A reliable "Source of Truth" for Terraform is critical. This setup ensures **Con
 
 - [ ] **Plan RDS instance**
   ```bash
+  # 1. Set Database Password (MANDATORY)
+  export TF_VAR_db_password="YourSecurePassword123"
+
+  # 2. Plan RDS
   terraform plan -target=module.rds
   ```
   **Review:** Multi-AZ MySQL instance, security groups, subnet group
