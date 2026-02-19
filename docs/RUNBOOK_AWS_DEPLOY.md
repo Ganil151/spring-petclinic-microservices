@@ -17,13 +17,13 @@ graph TD
     A[Pre-Flight Checks] -->|5 min| B[Infrastructure Provisioning]
     B -->|20 min| B5[Ansible Configuration]
     B5 -->|10 min| C[Connectivity Validation]
-    C -->|2 min| D[Application Deployment]
+    C -->|2 min| D[Application Deployment (Helm)]
     D -->|15 min| E[Verification & Health Checks]
     E -->|3 min| F[Production Ready]
     
     B1[VPC + Security Groups] --> B2[EC2 Instances]
     B2 --> B3[Ansible Inventory Auto-Generated]
-    B3 --> B4[RDS + EKS]
+    B3 --> B4[RDS + EKS Cluster]
     
     B5a[Play 1: Core Tools] --> B5b[Play 2: Jenkins]
     B5b --> B5c[Play 3: Build Tools]
