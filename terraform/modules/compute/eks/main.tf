@@ -1,6 +1,6 @@
 # EKS Cluster IAM Role
 resource "aws_iam_role" "cluster" {
-  name = "${var.project_name}-${var.environment}-eks-cluster-role"
+  name = lower("${var.project_name}-${var.environment}-eks-cluster-role")
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -27,7 +27,7 @@ resource "aws_iam_role_policy_attachment" "cluster_AmazonEKSClusterPolicy" {
 
 # EKS Node Group IAM Role
 resource "aws_iam_role" "nodes" {
-  name = "${var.project_name}-${var.environment}-eks-node-role"
+  name = lower("${var.project_name}-${var.environment}-eks-node-role")
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -64,7 +64,7 @@ resource "aws_iam_role_policy_attachment" "nodes_AmazonEC2ContainerRegistryReadO
 
 # EKS Cluster
 resource "aws_eks_cluster" "this" {
-  name     = "${var.project_name}-${var.environment}-cluster"
+  name     = lower("${var.project_name}-${var.environment}-cluster")
   role_arn = aws_iam_role.cluster.arn
   version  = var.cluster_version
 
@@ -88,7 +88,7 @@ resource "aws_eks_cluster" "this" {
 # Managed Node Group
 resource "aws_eks_node_group" "this" {
   cluster_name    = aws_eks_cluster.this.name
-  node_group_name = "${var.project_name}-${var.environment}-node-group"
+  node_group_name = lower("${var.project_name}-${var.environment}-node-group")
   node_role_arn   = aws_iam_role.nodes.arn
   subnet_ids      = var.subnet_ids
 

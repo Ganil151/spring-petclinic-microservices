@@ -1,5 +1,5 @@
 resource "aws_security_group" "rds" {
-  name        = "${var.project_name}-${var.environment}-rds-sg"
+  name        = lower("${var.project_name}-${var.environment}-rds-sg")
   description = "Security group for RDS instance"
   vpc_id      = var.vpc_id
 
