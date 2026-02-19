@@ -206,6 +206,7 @@
   },
   "active": "e8a8bfd7c13c69fd",
   "lastOpenFiles": [
+    "terraform/global/iam/eks_policy.tf",
     "ansible/inventory/hosts",
     "README.md",
     "docs/QUICK_REFERENCE.md",
@@ -229,7 +230,6 @@
     "helm/microservices/overrides/prod.yaml",
     "helm/microservices/overrides/dev.yaml",
     "helm/microservices/templates/service.yaml",
-    "helm/microservices/templates/ingress.yaml",
     "spring-petclinic-api-gateway/target/classes/static/images/spring-pivotal-logo.png",
     "spring-petclinic-api-gateway/target/classes/static/images/spring-logo-dataflow.png",
     "spring-petclinic-api-gateway/target/classes/static/images/spring-logo-dataflow-mobile.png",
