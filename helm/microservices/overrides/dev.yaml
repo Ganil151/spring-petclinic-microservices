@@ -1,0 +1,23 @@
+global:
+  region: us-east-1
+
+# Environment-specific overrides for dev
+# This is where we might point to the RDS instance or configure smaller replica counts
+commonLabels:
+  environment: dev
+
+services:
+  api-gateway:
+    replicaCount: 1
+  customers-service:
+    replicaCount: 1
+  vets-service:
+    replicaCount: 1
+  visits-service:
+    replicaCount: 1
+  config-server:
+    replicaCount: 1
+  discovery-server:
+    replicaCount: 1
+  admin-server:
+    replicaCount: 1
