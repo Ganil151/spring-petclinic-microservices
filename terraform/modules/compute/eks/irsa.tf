@@ -14,8 +14,40 @@ resource "aws_iam_openid_connect_provider" "this" {
   }
 }
 
-# Example: IAM Role for Load Balancer Controller (Placeholder for reference)
-# In professional setups, you use this OIDC provider to bind K8s SA to IAM Roles
+# IAM Role for EBS CSI Driver (IRSA)
+resource "aws_iam_role" "ebs_csi_driver" {
+  name = lower("${var.project_name}-${var.environment}-ebs-csi-driver-role")
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRoleWithWebIdentity"
+        Effect = "Allow"
+        Principal = {
+          Federated = aws_iam_openid_connect_provider.this.arn
+        }
+        Condition = {
+          StringEquals = {
+            "${replace(aws_iam_openid_connect_provider.this.url, "https://", "")}:sub" : "system:serviceaccount:kube-system:ebs-csi-controller-sa"
+          }
+        }
+      }
+    ]
+  })
+
+  tags = {
+    Name        = lower("${var.project_name}-${var.environment}-ebs-csi-driver-role")
+    Environment = var.environment
+    Project     = var.project_name
+  }
+}
+
+resource "aws_iam_role_policy_attachment" "ebs_csi_driver" {
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy"
+  role       = aws_iam_role.ebs_csi_driver.name
+}
+
 output "oidc_provider_arn" {
   value = aws_iam_openid_connect_provider.this.arn
 }
