@@ -152,7 +152,7 @@ module "sonarqube_server" {
 # Every `terraform apply` keeps the inventory in sync with actual infrastructure.
 
 resource "local_file" "ansible_inventory" {
-  filename        = "${path.module}/../../../ansible/inventory/dynamic_hosts"
+  filename        = "${path.module}/../../../ansible/inventory/hosts"
   file_permission = "0644"
 
   content = templatefile("${path.module}/templates/ansible_inventory.tftpl", {
@@ -191,7 +191,7 @@ resource "local_file" "ansible_inventory" {
 #     command     = <<-EOT
 #       echo "Waiting 60s for EC2 instances to initialize..."
 #       sleep 60
-#       ansible-playbook -i inventory/dynamic_hosts playbooks/install-tools.yml
+#       ansible-playbook -i inventory/hosts playbooks/install-tools.yml
 #     EOT
 #   }
 # }

@@ -22,7 +22,7 @@ pipeline {
         string(name: 'NODE_LABEL', defaultValue: 'worker-node', description: 'Node label to run the build on')
         string(name: 'ECR_REGISTRY', defaultValue: '', description: 'ECR Registry URL (Leave blank to auto-detect)')
         string(name: 'GITHUB_CREDENTIALS_ID', defaultValue: 'github-credentials', description: 'GitHub credentials ID')
-        string(name: 'SONAR_URL', defaultValue: 'http://13.217.118.81:9000', description: 'SonarQube Server URL')
+        string(name: 'SONAR_TOKEN', defaultValue: 'sonarqube-token', description: 'SonarQube Token')
         string(name: 'SONAR_TOKEN_ID', defaultValue: 'sonarqube-token', description: 'Jenkins Credential ID for SonarQube Token')
     }
 
