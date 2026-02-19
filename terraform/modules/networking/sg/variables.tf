@@ -20,3 +20,8 @@ variable "ingress_ports" {
   type        = list(number)
   default     = []
 }
+
+variable "vpc_cidr" {
+  description = "The CIDR block of the VPC for internal traffic"
+  type        = string
+}
