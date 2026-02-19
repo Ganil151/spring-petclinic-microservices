@@ -97,6 +97,19 @@ module "rds" {
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
+# ALB (Application Load Balancer)
+# ─────────────────────────────────────────────────────────────────────────────
+module "alb" {
+  source = "../../modules/networking/alb"
+
+  project_name       = var.project_name
+  environment        = var.environment
+  vpc_id             = module.vpc.vpc_id
+  public_subnet_ids  = module.vpc.public_subnet_ids
+  security_group_ids = [module.sg.alb_sg_id]
+}
+
+# ─────────────────────────────────────────────────────────────────────────────
 # EKS (Elastic Kubernetes Service)
 # ─────────────────────────────────────────────────────────────────────────────
 module "eks" {

@@ -1,5 +1,5 @@
 resource "aws_lb" "this" {
-  name               = "${var.project_name}-${var.environment}-alb"
+  name               = lower("${var.project_name}-${var.environment}-alb")
   internal           = var.internal
   load_balancer_type = "application"
   security_groups    = var.security_group_ids
@@ -8,7 +8,7 @@ resource "aws_lb" "this" {
   enable_deletion_protection = var.enable_deletion_protection
 
   tags = {
-    Name        = "${var.project_name}-${var.environment}-alb"
+    Name        = lower("${var.project_name}-${var.environment}-alb")
     Environment = var.environment
     Project     = var.project_name
   }
@@ -16,7 +16,7 @@ resource "aws_lb" "this" {
 
 # Default Target Group (Placeholder)
 resource "aws_lb_target_group" "default" {
-  name     = "${var.project_name}-${var.environment}-default-tg"
+  name     = lower("${var.project_name}-${var.environment}-default-tg")
   port     = 80
   protocol = "HTTP"
   vpc_id   = var.vpc_id
@@ -30,7 +30,7 @@ resource "aws_lb_target_group" "default" {
   }
 
   tags = {
-    Name        = "${var.project_name}-${var.environment}-default-tg"
+    Name        = lower("${var.project_name}-${var.environment}-default-tg")
     Environment = var.environment
     Project     = var.project_name
   }
