@@ -133,6 +133,11 @@ allowed_cidr_blocks = ["10.0.0.0/8"]  # Internal network only
 ### Deploy with New Ports
 ```bash
 cd environments/dev
+
+# 1. Set DB Password
+export TF_VAR_db_password="YourSecurePassword123"
+
+# 2. Plan and Apply
 terraform plan   # Review changes
 terraform apply  # Apply port configuration
 ```
