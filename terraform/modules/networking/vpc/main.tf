@@ -4,7 +4,7 @@ resource "aws_vpc" "this" {
   enable_dns_support   = true
 
   tags = {
-    Name        = "${var.project_name}-${var.environment}-vpc"
+    Name        = lower("${var.project_name}-${var.environment}-vpc")
     Environment = var.environment
     Project     = var.project_name
   }
@@ -19,11 +19,11 @@ resource "aws_subnet" "public" {
   map_public_ip_on_launch = true
 
   tags = {
-    Name                                                = "${var.project_name}-${var.environment}-public-subnet-${count.index + 1}"
-    Environment                                         = var.environment
-    Project                                             = var.project_name
-    "kubernetes.io/role/elb"                            = "1"
-    "kubernetes.io/cluster/${var.project_name}-cluster" = "shared"
+    Name                                                 = lower("${var.project_name}-${var.environment}-public-subnet-${count.index + 1}")
+    Environment                                          = var.environment
+    Project                                              = var.project_name
+    "kubernetes.io/role/elb"                             = "1"
+    "kubernetes.io/cluster/${lower(var.project_name)}-cluster" = "shared"
   }
 }
 
@@ -35,11 +35,11 @@ resource "aws_subnet" "private" {
   availability_zone = var.availability_zones[count.index]
 
   tags = {
-    Name                                                = "${var.project_name}-${var.environment}-private-subnet-${count.index + 1}"
-    Environment                                         = var.environment
-    Project                                             = var.project_name
-    "kubernetes.io/role/internal-elb"                   = "1"
-    "kubernetes.io/cluster/${var.project_name}-cluster" = "shared"
+    Name                                                 = lower("${var.project_name}-${var.environment}-private-subnet-${count.index + 1}")
+    Environment                                          = var.environment
+    Project                                              = var.project_name
+    "kubernetes.io/role/internal-elb"                    = "1"
+    "kubernetes.io/cluster/${lower(var.project_name)}-cluster" = "shared"
   }
 }
 
@@ -48,7 +48,7 @@ resource "aws_internet_gateway" "this" {
   vpc_id = aws_vpc.this.id
 
   tags = {
-    Name        = "${var.project_name}-${var.environment}-igw"
+    Name        = lower("${var.project_name}-${var.environment}-igw")
     Environment = var.environment
     Project     = var.project_name
   }
@@ -60,7 +60,7 @@ resource "aws_eip" "nat" {
   domain = "vpc"
 
   tags = {
-    Name        = "${var.project_name}-${var.environment}-nat-eip-${count.index + 1}"
+    Name        = lower("${var.project_name}-${var.environment}-nat-eip-${count.index + 1}")
     Environment = var.environment
     Project     = var.project_name
   }
@@ -72,7 +72,7 @@ resource "aws_nat_gateway" "this" {
   subnet_id     = aws_subnet.public[count.index].id
 
   tags = {
-    Name        = "${var.project_name}-${var.environment}-nat-gw-${count.index + 1}"
+    Name        = lower("${var.project_name}-${var.environment}-nat-gw-${count.index + 1}")
     Environment = var.environment
     Project     = var.project_name
   }
@@ -90,7 +90,7 @@ resource "aws_route_table" "public" {
   }
 
   tags = {
-    Name        = "${var.project_name}-${var.environment}-public-rt"
+    Name        = lower("${var.project_name}-${var.environment}-public-rt")
     Environment = var.environment
     Project     = var.project_name
   }
@@ -109,7 +109,7 @@ resource "aws_route_table" "private" {
   }
 
   tags = {
-    Name        = "${var.project_name}-${var.environment}-private-rt-${count.index + 1}"
+    Name        = lower("${var.project_name}-${var.environment}-private-rt-${count.index + 1}")
     Environment = var.environment
     Project     = var.project_name
   }
