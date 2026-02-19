@@ -29,6 +29,11 @@ ansible/
 ```bash
 cd terraform/environments/dev
 terraform init
+
+# 1. Set Database Password (Required for RDS)
+export TF_VAR_db_password="YourSecurePassword123"
+
+# 2. Plan and Apply
 terraform plan -out=tfplan
 terraform apply tfplan
 ```
