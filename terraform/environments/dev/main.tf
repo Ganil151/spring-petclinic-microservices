@@ -221,19 +221,19 @@ resource "local_file" "ansible_inventory" {
 # Uncomment this block to automatically run the Ansible playbook after
 # Terraform provisions the infrastructure. Requires ansible-playbook on PATH.
 
-# resource "null_resource" "run_ansible" {
-#   depends_on = [local_file.ansible_inventory]
-#
-#   triggers = {
-#     inventory_id = local_file.ansible_inventory.id
-#   }
-#
-#   provisioner "local-exec" {
-#     working_dir = "${path.module}/../../../ansible"
-#     command     = <<-EOT
-#       echo "Waiting 60s for EC2 instances to initialize..."
-#       sleep 60
-#       ansible-playbook -i inventory/hosts playbooks/install-tools.yml
-#     EOT
-#   }
-# }
+resource "null_resource" "run_ansible" {
+  depends_on = [local_file.ansible_inventory]
+
+  triggers = {
+    inventory_id = local_file.ansible_inventory.id
+  }
+
+  provisioner "local-exec" {
+    working_dir = "${path.module}/../../../ansible"
+    command     = <<-EOT
+      echo "Waiting 60s for EC2 instances to initialize..."
+      sleep 60
+      ansible-playbook playbooks/install-tools.yml
+    EOT
+  }
+}
