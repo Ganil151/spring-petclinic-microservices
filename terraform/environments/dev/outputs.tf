@@ -96,3 +96,30 @@ output "ecr_repository_arns" {
   description = "Map of microservice name → ECR repository ARN (use in IAM policies)"
   value       = module.ecr.repository_arns
 }
+
+# ─── RDS (Database) ──────────────────────────────────────────────
+output "rds_endpoint" {
+  description = "The connection endpoint for the RDS instance"
+  value       = module.rds.db_instance_endpoint
+}
+
+output "rds_username" {
+  description = "The master username for the RDS instance"
+  value       = module.rds.db_instance_username
+}
+
+# ─── EKS (Kubernetes) ─────────────────────────────────────────────
+output "eks_cluster_name" {
+  description = "The name of the EKS cluster"
+  value       = module.eks.cluster_name
+}
+
+output "eks_cluster_endpoint" {
+  description = "The endpoint for the EKS cluster"
+  value       = module.eks.cluster_endpoint
+}
+
+output "eks_cluster_certificate_authority_data" {
+  description = "The base64 encoded certificate data required to communicate with the cluster"
+  value       = module.eks.cluster_certificate_authority_data
+}
