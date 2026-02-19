@@ -15,7 +15,8 @@ resource "aws_eks_addon" "kube_proxy" {
 }
 
 resource "aws_eks_addon" "aws_ebs_csi_driver" {
-  cluster_name = aws_eks_cluster.this.name
-  addon_name   = "aws-ebs-csi-driver"
-  depends_on   = [aws_eks_node_group.this]
+  cluster_name             = aws_eks_cluster.this.name
+  addon_name               = "aws-ebs-csi-driver"
+  service_account_role_arn = aws_iam_role.ebs_csi_driver.arn
+  depends_on               = [aws_eks_node_group.this]
 }
