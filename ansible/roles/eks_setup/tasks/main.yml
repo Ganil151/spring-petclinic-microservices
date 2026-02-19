@@ -29,7 +29,7 @@
   when: policy_check.rc != 0
 
 - name: Attach Policy to Role
-  command: "aws iam attach-role-policy --role-name {{ project_name | lower }}-{{ environment | lower }}-lb-controller-role --policy-arn arn:aws:iam::{{ account_id }}:policy/AWSLoadBalancerControllerIAMPolicy"
+  command: "aws iam attach-role-policy --role-name {{ project_name | lower }}-{{ env_name | lower }}-lb-controller-role --policy-arn arn:aws:iam::{{ account_id }}:policy/AWSLoadBalancerControllerIAMPolicy"
   changed_when: false
 
 - name: Add EKS Helm Repo
@@ -52,7 +52,7 @@
     --set clusterName={{ eks_cluster_name }}
     --set serviceAccount.create=true
     --set serviceAccount.name=aws-load-balancer-controller
-    --set serviceAccount.annotations."eks\.amazonaws\.com/role-arn"=arn:aws:iam::{{ account_id }}:role/{{ project_name | lower }}-{{ environment | lower }}-lb-controller-role
+    --set serviceAccount.annotations."eks\.amazonaws\.com/role-arn"=arn:aws:iam::{{ account_id }}:role/{{ project_name | lower }}-{{ env_name | lower }}-lb-controller-role
     --set region={{ aws_region }}
     --set vpcId={{ vpc_id }}
   when: "'aws-load-balancer-controller' not in helm_list.stdout"
