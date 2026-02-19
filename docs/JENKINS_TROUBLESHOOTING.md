@@ -75,4 +75,15 @@ trivy image --cache-dir /mnt/data/trivy/cache [IMAGE]
 ```
 
 ---
+
+### 5. SonarQube Analysis: "Expected URL scheme 'http' or 'https'"
+- **Symptom**: `Unable to execute SonarScanner analysis: Fail to get bootstrap index from server: Expected URL scheme 'http' or 'https' but no colon was found`.
+- **Cause**: The `SONAR_URL` parameter was missing from the Jenkins pipeline parameters, leading to an empty `-Dsonar.host.url` value.
+- **Resolution**:
+    1.  Add `SONAR_URL` to the `parameters` block in the `Jenkinsfile`.
+    2.  Use `${params.SONAR_URL}` in the `sh` command.
+    3.  Ensure the default value (e.g., `http://10.0.1.14:9000`) is valid.
+
+---
 *Created on: 2026-02-18*
+*Updated on: 2026-02-19*
