@@ -11,12 +11,24 @@
             "id": "e8a8bfd7c13c69fd",
             "type": "leaf",
             "state": {
-              "type": "image",
+              "type": "markdown",
               "state": {
-                "file": "docs/spring-ai.png"
+                "file": "docs/PORT_CONFIGURATION.md",
+                "mode": "source",
+                "source": false,
+                "backlinks": true,
+                "backlinkOpts": {
+                  "collapseAll": false,
+                  "extraContext": false,
+                  "sortOrder": "alphabetical",
+                  "showSearch": false,
+                  "searchQuery": "",
+                  "backlinkCollapsed": false,
+                  "unlinkedCollapsed": true
+                }
               },
-              "icon": "lucide-image",
-              "title": "spring-ai"
+              "icon": "lucide-file",
+              "title": "PORT_CONFIGURATION"
             }
           }
         ]
@@ -76,7 +88,8 @@
       }
     ],
     "direction": "horizontal",
-    "width": 300
+    "width": 300,
+    "collapsed": true
   },
   "right": {
     "id": "e4f6ad916cfc0bbe",
@@ -192,14 +205,17 @@
   },
   "active": "e8a8bfd7c13c69fd",
   "lastOpenFiles": [
-    "docs/RUNBOOK_AWS_DEPLOY.md",
+    "docs/microservices-architecture-diagram.jpg",
     "docs/JENKINS_TROUBLESHOOTING.md",
     "docs/JAVA21_MIGRATION.md",
+    "docs/grafana-custom-metrics-dashboard.png",
     "docs/DEPLOYMENT_CHECKLIST.md",
+    "docs/application-screenshot.png",
+    "docs/REFACTORING_SUMMARY.md",
+    "docs/RUNBOOK_AWS_DEPLOY.md",
+    "docs/spring-ai.png",
     "docs/QUICK_REFERENCE.md",
     "terraform/environments/dev/spms-dev.pem",
-    "docs/REFACTORING_SUMMARY.md",
-    "docs/grafana-custom-metrics-dashboard.png",
     "ansible/roles/eks_setup/tasks/main.yml",
     "ansible/roles/eks_setup/tasks",
     "ansible/roles/eks_setup",
@@ -215,7 +231,6 @@
     "spring-petclinic-api-gateway/target/classes/static/images/platform-bg.png",
     "spring-petclinic-api-gateway/target/classes/static/images/pets.png",
     "spring-petclinic-api-gateway/target/classes/static/images/favicon.png",
-    "spring-petclinic-api-gateway/target/classes/static/fonts/varela_round-webfont.svg",
-    "spring-petclinic-api-gateway/target/classes/static/fonts/montserrat-webfont.svg"
+    "spring-petclinic-api-gateway/target/classes/static/fonts/varela_round-webfont.svg"
   ]
 }
