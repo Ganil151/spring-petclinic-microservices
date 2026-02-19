@@ -138,7 +138,7 @@ module "jenkins_master" {
   instance_type               = var.jenkins_instance_type
   subnet_id                   = module.vpc.public_subnet_ids[0]
   security_group_ids          = [module.sg.ec2_sg_id]
-  key_name                    = var.key_name
+  key_name                    = module.key_pair.key_name
   associate_public_ip         = var.associate_public_ip
   user_data                   = file("${path.module}/../../scripts/jenkins_bootstrap.sh")
   user_data_replace_on_change = true
@@ -159,7 +159,7 @@ module "worker_node" {
   instance_type               = var.worker_instance_type
   subnet_id                   = module.vpc.public_subnet_ids[0]
   security_group_ids          = [module.sg.ec2_sg_id]
-  key_name                    = var.key_name
+  key_name                    = module.key_pair.key_name
   associate_public_ip         = var.associate_public_ip
   user_data                   = file("${path.module}/../../scripts/worker_bootstrap.sh")
   user_data_replace_on_change = true
@@ -179,7 +179,7 @@ module "sonarqube_server" {
   instance_type               = var.sonarqube_instance_type
   subnet_id                   = module.vpc.public_subnet_ids[0]
   security_group_ids          = [module.sg.ec2_sg_id]
-  key_name                    = var.key_name
+  key_name                    = module.key_pair.key_name
   associate_public_ip         = var.associate_public_ip
   user_data                   = file("${path.module}/../../scripts/sonarqube_bootstrap.sh")
   user_data_replace_on_change = true
@@ -211,7 +211,8 @@ resource "local_file" "ansible_inventory" {
   depends_on = [
     module.jenkins_master,
     module.worker_node,
-    module.sonarqube_server
+    module.sonarqube_server,
+    module.key_pair
   ]
 }
 
