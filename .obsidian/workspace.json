@@ -13,7 +13,7 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "docs/DEPLOYMENT_CHECKLIST.md",
+                "file": "docs/JENKINS_TROUBLESHOOTING.md",
                 "mode": "source",
                 "source": false,
                 "backlinks": true,
@@ -28,7 +28,7 @@
                 }
               },
               "icon": "lucide-file",
-              "title": "DEPLOYMENT_CHECKLIST"
+              "title": "JENKINS_TROUBLESHOOTING"
             }
           }
         ]
@@ -88,7 +88,8 @@
       }
     ],
     "direction": "horizontal",
-    "width": 300
+    "width": 300,
+    "collapsed": true
   },
   "right": {
     "id": "e4f6ad916cfc0bbe",
@@ -204,6 +205,9 @@
   },
   "active": "e8a8bfd7c13c69fd",
   "lastOpenFiles": [
+    "docs/JAVA21_MIGRATION.md",
+    "docs/grafana-custom-metrics-dashboard.png",
+    "docs/DEPLOYMENT_CHECKLIST.md",
     "ansible/roles/eks_setup/tasks/main.yml",
     "ansible/roles/eks_setup/tasks",
     "ansible/roles/eks_setup",
@@ -214,7 +218,6 @@
     "helm/microservices/templates/service.yaml",
     "helm/microservices/templates/ingress.yaml",
     "helm/microservices/templates/hpa.yaml",
-    "helm/microservices/templates/deployment.yaml",
     "docs/JENKINS_TROUBLESHOOTING.md",
     "spring-petclinic-api-gateway/target/classes/static/images/spring-pivotal-logo.png",
     "spring-petclinic-api-gateway/target/classes/static/images/spring-logo-dataflow.png",
