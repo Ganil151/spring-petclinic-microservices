@@ -1,0 +1,19 @@
+---
+- name: Proactively update Kubeconfig for EKS
+  command: "aws eks update-kubeconfig --name {{ eks_cluster_name }} --region {{ aws_region }}"
+  register: kubeconfig_result
+  changed_when: "'Updated context' in kubeconfig_result.stdout"
+
+- name: Verify cluster connectivity
+  command: kubectl get nodes
+  register: nodes_list
+  changed_when: false
+
+- name: Display Cluster Nodes
+  debug:
+    var: nodes_list.stdout_lines
+
+- name: Ensure Metrics Server is installed (for HPA)
+  command: kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
+  register: metrics_apply
+  changed_when: "'configured' in metrics_apply.stdout or 'created' in metrics_apply.stdout"
