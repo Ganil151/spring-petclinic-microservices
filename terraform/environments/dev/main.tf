@@ -175,6 +175,37 @@ module "sonarqube_server" {
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
+# RDS (Relational Database Service)
+# ─────────────────────────────────────────────────────────────────────────────
+module "rds" {
+  source = "../../modules/database/rds"
+
+  project_name         = var.project_name
+  environment          = var.environment
+  vpc_id              = module.vpc.vpc_id
+  private_subnet_ids  = module.vpc.private_subnet_ids
+  db_instance_class   = var.db_instance_class
+  db_allocated_storage = var.db_allocated_storage
+  db_username         = var.db_username
+  db_password         = var.db_password # We'll need to define this or use a secret
+  security_group_ids  = [module.sg.ec2_sg_id] # Or a specific RDS SG
+}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# EKS (Elastic Kubernetes Service)
+# ─────────────────────────────────────────────────────────────────────────────
+module "eks" {
+  source = "../../modules/compute/eks"
+
+  project_name    = var.project_name
+  environment     = var.environment
+  vpc_id          = module.vpc.vpc_id
+  public_subnets  = module.vpc.public_subnet_ids
+  private_subnets = module.vpc.private_subnet_ids
+  cluster_version = var.cluster_version
+}
+
+# ─────────────────────────────────────────────────────────────────────────────
 # Terraform → Ansible Integration: Auto-Generated Inventory
 # ─────────────────────────────────────────────────────────────────────────────
 # This resource creates the Ansible inventory file from live Terraform outputs.
