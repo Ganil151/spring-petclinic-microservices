@@ -202,6 +202,34 @@ pipeline {
                 }
             }
         }
+
+        stage('🚀 Deploy to EKS') {
+            steps {
+                script {
+                    echo "🚢 Deploying microservices to EKS using Helm..."
+                    
+                    // Resolve ECR Registry dynamically
+                    def ecrRegistry = params.ECR_REGISTRY
+                    if (!ecrRegistry) {
+                        def accountId = sh(script: "aws sts get-caller-identity --query Account --output text", returnStdout: true).trim()
+                        ecrRegistry = "${accountId}.dkr.ecr.${env.AWS_REGION}.amazonaws.com"
+                    }
+
+                    echo "🔐 Updating Kubeconfig for cluster: ${params.EKS_CLUSTER_NAME}"
+                    sh "aws eks update-kubeconfig --region ${env.AWS_REGION} --name ${params.EKS_CLUSTER_NAME}"
+
+                    echo "🚀 Running Helm Upgrade..."
+                    sh """
+                        helm upgrade --install ${env.PROJECT_NAME} ./helm/microservices \
+                            --namespace petclinic \
+                            --create-namespace \
+                            -f ./helm/microservices/overrides/dev.yaml \
+                            --set global.ecrRegistry=${ecrRegistry} \
+                            --wait --timeout 10m
+                    """
+                }
+            }
+        }
     }
 
 
