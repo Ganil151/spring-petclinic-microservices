@@ -57,6 +57,12 @@ variable "db_username" {
   default     = "petclinic"
 }
 
+variable "db_password" {
+  description = "RDS admin password"
+  type        = string
+  sensitive   = true
+}
+
 variable "ami" {
   description = "AMI ID for EC2 instances"
   type        = string
