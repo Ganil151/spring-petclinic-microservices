@@ -13,7 +13,7 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "docs/RUNBOOK_AWS_DEPLOY.md",
+                "file": "docs/REFACTORING_SUMMARY.md",
                 "mode": "source",
                 "source": false,
                 "backlinks": true,
@@ -28,7 +28,7 @@
                 }
               },
               "icon": "lucide-file",
-              "title": "RUNBOOK_AWS_DEPLOY"
+              "title": "REFACTORING_SUMMARY"
             }
           }
         ]
@@ -88,8 +88,7 @@
       }
     ],
     "direction": "horizontal",
-    "width": 300,
-    "collapsed": true
+    "width": 300
   },
   "right": {
     "id": "e4f6ad916cfc0bbe",
@@ -206,6 +205,7 @@
   "active": "e8a8bfd7c13c69fd",
   "lastOpenFiles": [
     "docs/JENKINS_TROUBLESHOOTING.md",
+    "docs/RUNBOOK_AWS_DEPLOY.md",
     "docs/JAVA21_MIGRATION.md",
     "docs/grafana-custom-metrics-dashboard.png",
     "docs/DEPLOYMENT_CHECKLIST.md",
