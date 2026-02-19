@@ -25,6 +25,7 @@ pipeline {
         string(name: 'SONAR_URL', defaultValue: 'http://10.0.1.14:9000', description: 'SonarQube Server URL')
         string(name: 'SONAR_TOKEN', defaultValue: 'sonarqube-token', description: 'SonarQube Token')
         string(name: 'SONAR_TOKEN_ID', defaultValue: 'sonarqube-token', description: 'Jenkins Credential ID for SonarQube Token')
+        string(name: 'EKS_CLUSTER_NAME', defaultValue: 'Petclinic-dev-cluster', description: 'EKS Cluster Name')
     }
 
     triggers {
