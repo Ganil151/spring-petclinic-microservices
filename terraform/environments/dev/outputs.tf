@@ -9,6 +9,11 @@ output "vpc_id" {
   value       = module.vpc.vpc_id
 }
 
+output "alb_dns_name" {
+  description = "The DNS name of the ALB"
+  value       = module.alb.alb_dns_name
+}
+
 # ─── Jenkins Master ──────────────────────────────────────────────
 output "jenkins_master_public_ip" {
   description = "Public IP of the Jenkins Master"
