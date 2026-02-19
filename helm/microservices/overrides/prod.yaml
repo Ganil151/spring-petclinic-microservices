@@ -1,0 +1,25 @@
+global:
+  region: us-east-1
+
+# Environment-specific overrides for prod
+commonLabels:
+  environment: prod
+
+services:
+  api-gateway:
+    replicaCount: 3
+    resources:
+      limits:
+        memory: 1Gi
+  customers-service:
+    replicaCount: 2
+  vets-service:
+    replicaCount: 2
+  visits-service:
+    replicaCount: 2
+  config-server:
+    replicaCount: 2
+  discovery-server:
+    replicaCount: 2
+  admin-server:
+    replicaCount: 1
