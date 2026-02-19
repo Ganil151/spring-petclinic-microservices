@@ -22,7 +22,7 @@ pipeline {
         string(name: 'NODE_LABEL', defaultValue: 'worker-node', description: 'Node label to run the build on')
         string(name: 'ECR_REGISTRY', defaultValue: '', description: 'ECR Registry URL (Leave blank to auto-detect)')
         string(name: 'GITHUB_CREDENTIALS_ID', defaultValue: 'github-credentials', description: 'GitHub credentials ID')
-        string(name: 'SONAR_URL', defaultValue: 'http://10.0.1.34:9000', description: 'SonarQube Server URL')
+        string(name: 'SONAR_URL_ID', defaultValue: 'sonarqube-url', description: 'Jenkins Credential ID for SonarQube URL')
         string(name: 'SONAR_TOKEN', defaultValue: 'sonarqube-token', description: 'SonarQube Token')
         string(name: 'SONAR_TOKEN_ID', defaultValue: 'sonarqube-token', description: 'Jenkins Credential ID for SonarQube Token')
         string(name: 'EKS_CLUSTER_NAME', defaultValue: 'Petclinic-dev-cluster', description: 'EKS Cluster Name')
@@ -108,11 +108,15 @@ pipeline {
             steps {
                 script {
                     echo "📊 Starting SonarQube code analysis..."
-                    withCredentials([string(credentialsId: params.SONAR_TOKEN_ID, variable: 'SONAR_TOKEN')]) {
+                    // Securely fetch both the URL and Token from the Jenkins Credentials Provider
+                    withCredentials([
+                        string(credentialsId: params.SONAR_TOKEN_ID, variable: 'SONAR_TOKEN'),
+                        string(credentialsId: params.SONAR_URL_ID, variable: 'SONAR_URL')
+                    ]) {
                         sh """
                             ./mvnw sonar:sonar \
                                 -Dsonar.projectKey=${env.PROJECT_NAME} \
-                                -Dsonar.host.url=${params.SONAR_URL} \
+                                -Dsonar.host.url=${SONAR_URL} \
                                 -Dsonar.login=${SONAR_TOKEN}
                         """
                     }
