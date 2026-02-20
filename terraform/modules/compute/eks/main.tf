@@ -76,6 +76,11 @@ resource "aws_eks_cluster" "this" {
     endpoint_public_access  = true
   }
 
+  access_config {
+    authentication_mode                         = "API_AND_CONFIG_MAP"
+    bootstrap_cluster_creator_admin_permissions = true
+  }
+
   depends_on = [
     aws_iam_role_policy_attachment.cluster_AmazonEKSClusterPolicy
   ]
@@ -120,4 +125,50 @@ resource "aws_eks_node_group" "this" {
     Role                                                 = var.cluster_role
     "kubernetes.io/cluster/${aws_eks_cluster.this.name}" = "owned"
   }
+}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# EKS Access Entries (Modern IAM-to-RBAC Bridge)
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Admin Access Entries
+resource "aws_eks_access_entry" "admins" {
+  for_each      = toset(var.admin_role_arns)
+  cluster_name  = aws_eks_cluster.this.name
+  principal_arn = each.value
+  type          = "STANDARD"
+}
+
+resource "aws_eks_access_policy_association" "admins" {
+  for_each      = toset(var.admin_role_arns)
+  cluster_name  = aws_eks_cluster.this.name
+  policy_arn    = "arn:aws:iam::aws:policy/AmazonEKSClusterAdminPolicy"
+  principal_arn = each.value
+
+  access_scope {
+    type = "cluster"
+  }
+
+  depends_on = [aws_eks_access_entry.admins]
+}
+
+# Viewer Access Entries
+resource "aws_eks_access_entry" "viewers" {
+  for_each      = toset(var.cluster_viewer_role_arns)
+  cluster_name  = aws_eks_cluster.this.name
+  principal_arn = each.value
+  type          = "STANDARD"
+}
+
+resource "aws_eks_access_policy_association" "viewers" {
+  for_each      = toset(var.cluster_viewer_role_arns)
+  cluster_name  = aws_eks_cluster.this.name
+  policy_arn    = "arn:aws:iam::aws:policy/AmazonEKSViewPolicy"
+  principal_arn = each.value
+
+  access_scope {
+    type = "cluster"
+  }
+
+  depends_on = [aws_eks_access_entry.viewers]
 }
