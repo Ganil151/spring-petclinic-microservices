@@ -9,7 +9,7 @@ data:
     - rolearn: arn:aws:iam::365269738775:role/Petclinic-dev-ec2-role
       groups:
       - system:masters
-      username: ec2-admin
+      username: ec2-user
 kind: ConfigMap
 metadata:
   name: aws-auth
