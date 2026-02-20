@@ -35,7 +35,10 @@ module "sg" {
   vpc_cidr                      = var.vpc_cidr
   allowed_cidr_blocks           = var.allowed_cidr_blocks
   ingress_ports                 = var.ingress_ports
-  eks_cluster_security_group_id = module.eks.cluster_security_group_id
+  eks_cluster_security_group_ids = [
+    module.eks_primary.cluster_security_group_id,
+    module.eks_secondary.cluster_security_group_id
+  ]
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -112,14 +115,27 @@ module "alb" {
   security_group_ids = [module.sg.alb_sg_id]
 }
 
-# ─────────────────────────────────────────────────────────────────────────────
-# EKS (Elastic Kubernetes Service)
-# ─────────────────────────────────────────────────────────────────────────────
-module "eks" {
+# Primary EKS Cluster - Handles Frontend & Gateway services
+module "eks_primary" {
   source = "../../modules/compute/eks"
 
   project_name    = var.project_name
   environment     = var.environment
+  cluster_suffix  = "primary"
+  cluster_role    = "frontend-services"
+  vpc_id          = module.vpc.vpc_id
+  subnet_ids      = concat(module.vpc.public_subnet_ids, module.vpc.private_subnet_ids)
+  cluster_version = var.cluster_version
+}
+
+# Secondary EKS Cluster - Handles Backend Microservices & Data processing
+module "eks_secondary" {
+  source = "../../modules/compute/eks"
+
+  project_name    = var.project_name
+  environment     = var.environment
+  cluster_suffix  = "secondary"
+  cluster_role    = "backend-services"
   vpc_id          = module.vpc.vpc_id
   subnet_ids      = concat(module.vpc.public_subnet_ids, module.vpc.private_subnet_ids)
   cluster_version = var.cluster_version
@@ -214,7 +230,7 @@ module "ansible" {
   sonarqube_priv       = module.sonarqube_server.private_ips[0]
   ssh_user             = "ec2-user"
   ssh_key_file         = var.ssh_private_key_path
-  eks_cluster_name     = module.eks.cluster_name
+  eks_cluster_name     = module.eks_primary.cluster_name # Defaulting to primary for ansible context
   aws_region           = var.aws_region
   vpc_id               = module.vpc.vpc_id
   account_id           = module.data.account_id
@@ -227,6 +243,7 @@ module "ansible" {
     module.worker_node,
     module.sonarqube_server,
     module.key_pair,
-    module.eks
+    module.eks_primary,
+    module.eks_secondary
   ]
 }
