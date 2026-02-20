@@ -206,6 +206,8 @@
   },
   "active": "e8a8bfd7c13c69fd",
   "lastOpenFiles": [
+    "terraform/modules/ansible/main.tf",
+    "terraform/modules/ansible/variables.tf",
     "terraform/modules/ansible/templates/ansible_inventory.tftpl",
     "terraform/modules/ansible/templates",
     "terraform/modules/ansible",
@@ -215,8 +217,6 @@
     "terraform/global/data/main.tf",
     "terraform/global/data",
     "terraform/global/data.tf",
-    "tree.txt",
-    "spring-petclinic-admin-server/target/classes/logback-spring.xml",
     "spring-petclinic-api-gateway/target/classes/static/images/spring-pivotal-logo.png",
     "spring-petclinic-api-gateway/target/classes/static/images/spring-logo-dataflow.png",
     "spring-petclinic-api-gateway/target/classes/static/images/spring-logo-dataflow-mobile.png",
