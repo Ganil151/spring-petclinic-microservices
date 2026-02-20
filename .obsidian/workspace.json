@@ -63,7 +63,7 @@
             "state": {
               "type": "search",
               "state": {
-                "query": "",
+                "query": "ssh-",
                 "matchingCase": false,
                 "explainSearch": false,
                 "collapseAll": false,
@@ -84,12 +84,12 @@
               "title": "Bookmarks"
             }
           }
-        ]
+        ],
+        "currentTab": 1
       }
     ],
     "direction": "horizontal",
-    "width": 300,
-    "collapsed": true
+    "width": 300
   },
   "right": {
     "id": "e4f6ad916cfc0bbe",
@@ -203,7 +203,7 @@
       "obsidian-git:Open Git source control": false
     }
   },
-  "active": "e8a8bfd7c13c69fd",
+  "active": "1d3a98a0fccac8f9",
   "lastOpenFiles": [
     "ansible/inventory/hosts.raw",
     "terraform/environments/dev/spms-dev.pem",
