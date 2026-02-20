@@ -877,6 +877,24 @@ kubectl describe pod <pod-name> -n petclinic
 
 ---
 
+### Issue 2: Jenkins Parameter Caching (Stale Cluster Name)
+
+**Symptoms:**
+Pipeline fails with `ResourceNotFoundException: No cluster found for name: petclinic-dev-cluster` even after the codebase has been updated to use `primary`.
+
+**Root Cause:**
+Jenkins caches parameter default values in the job metadata. If a job fails during the update, it may not refresh its internal parameter list.
+
+**Fix:**
+The `Jenkinsfile` now includes a **Stale Parameter Defense**. It will automatically fallback to `primary` if it detects the old name.
+To force a manual refresh:
+1. Open the Jenkins Job UI.
+2. Click **Build with Parameters** (the UI may still show the old name).
+3. Manually type `petclinic-dev-primary` in the `EKS_CLUSTER_NAME` field.
+4. Run the build. After one successful run, the UI will refresh with the new default.
+
+---
+
 ## 📚 Reference Links
 
 - [Terraform AWS Provider](https://registry.terraform.io/providers/hashicorp/aws/latest/docs)
