@@ -126,6 +126,7 @@ module "eks_primary" {
   vpc_id          = module.vpc.vpc_id
   subnet_ids      = concat(module.vpc.public_subnet_ids, module.vpc.private_subnet_ids)
   cluster_version = var.cluster_version
+  admin_role_arns = [module.iam.ec2_role_arn]
 }
 
 # Secondary EKS Cluster - Handles Backend Microservices & Data processing
@@ -139,6 +140,7 @@ module "eks_secondary" {
   vpc_id          = module.vpc.vpc_id
   subnet_ids      = concat(module.vpc.public_subnet_ids, module.vpc.private_subnet_ids)
   cluster_version = var.cluster_version
+  admin_role_arns = [module.iam.ec2_role_arn]
 }
 
 

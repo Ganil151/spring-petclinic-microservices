@@ -227,7 +227,13 @@ pipeline {
                     echo "🔐 Updating Kubeconfig for cluster: ${clusterName}"
                     sh "aws eks update-kubeconfig --region ${env.AWS_REGION} --name ${clusterName}"
 
-                    echo "🚀 Running Helm Upgrade..."
+                    echo "�️  Auditing Identity Persona..."
+                    sh "aws sts get-caller-identity"
+
+                    echo "🛡️  Checking RBAC Permissions..."
+                    sh "kubectl auth can-i '*' '*' --all-namespaces"
+
+                    echo "�🚀 Running Helm Upgrade..."
                     sh """
                         helm upgrade --install ${env.PROJECT_NAME} ./helm/microservices \
                             --namespace petclinic \
