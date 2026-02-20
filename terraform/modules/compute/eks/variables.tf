@@ -8,6 +8,18 @@ variable "environment" {
   type        = string
 }
 
+variable "cluster_suffix" {
+  description = "Suffix for the EKS cluster name to avoid conflicts"
+  type        = string
+  default     = "primary"
+}
+
+variable "cluster_role" {
+  description = "The specific role/purpose of this EKS cluster (e.g., app, data, batch)"
+  type        = string
+  default     = "general"
+}
+
 variable "vpc_id" {
   description = "VPC ID for EKS cluster"
   type        = string
