@@ -84,12 +84,12 @@
               "title": "Bookmarks"
             }
           }
-        ],
-        "currentTab": 1
+        ]
       }
     ],
     "direction": "horizontal",
-    "width": 300
+    "width": 300,
+    "collapsed": true
   },
   "right": {
     "id": "e4f6ad916cfc0bbe",
@@ -203,7 +203,7 @@
       "obsidian-git:Open Git source control": false
     }
   },
-  "active": "1d3a98a0fccac8f9",
+  "active": "e8a8bfd7c13c69fd",
   "lastOpenFiles": [
     "terraform/global/iam/eks_policy.tf",
     "ansible/inventory/hosts",
