@@ -125,6 +125,17 @@ module "eks" {
   cluster_version = var.cluster_version
 }
 
+# Allow Jenkins/worker nodes to communicate with the EKS cluster API server
+resource "aws_security_group_rule" "allow_eks_api_from_ec2" {
+  type                     = "ingress"
+  from_port                = 443
+  to_port                  = 443
+  protocol                 = "tcp"
+  security_group_id        = module.eks.cluster_security_group_id
+  source_security_group_id = module.sg.ec2_sg_id
+  description              = "Allow EC2 instances to connect to EKS API"
+}
+
 # ─────────────────────────────────────────────────────────────────────────────
 # EC2 Instances (Jenkins, Worker, SonarQube)
 # ─────────────────────────────────────────────────────────────────────────────
