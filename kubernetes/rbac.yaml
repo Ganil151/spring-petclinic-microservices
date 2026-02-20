@@ -1,7 +1,7 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: jenkins-namespace-manager
+  name: ec2-user-namespace-manager
 rules:
   - apiGroups: [""]
     resources: ["namespaces"]
@@ -10,20 +10,20 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: jenkins-namespace-manager-binding
+  name: ec2-user-namespace-manager-binding
 subjects:
   - kind: Group
-    name: jenkins-deployers
+    name: ec2-user-deployers
     apiGroup: rbac.authorization.k8s.io
 roleRef:
   kind: ClusterRole
-  name: jenkins-namespace-manager
+  name: ec2-user-namespace-manager
   apiGroup: rbac.authorization.k8s.io
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  name: jenkins-petclinic-admin
+  name: ec2-user-petclinic-admin
   namespace: petclinic
 rules:
   - apiGroups: ["*"]
@@ -33,13 +33,13 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: jenkins-petclinic-admin-binding
+  name: ec2-user-petclinic-admin-binding
   namespace: petclinic
 subjects:
   - kind: Group
-    name: jenkins-deployers
+    name: ec2-user-deployers
     apiGroup: rbac.authorization.k8s.io
 roleRef:
   kind: Role
-  name: jenkins-petclinic-admin
+  name: ec2-user-petclinic-admin
   apiGroup: rbac.authorization.k8s.io
