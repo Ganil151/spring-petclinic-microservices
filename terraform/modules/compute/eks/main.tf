@@ -133,10 +133,11 @@ resource "aws_eks_node_group" "this" {
 
 # Admin Access Entries
 resource "aws_eks_access_entry" "admins" {
-  for_each      = toset(var.admin_role_arns)
-  cluster_name  = aws_eks_cluster.this.name
-  principal_arn = each.value
-  type          = "STANDARD"
+  for_each          = toset(var.admin_role_arns)
+  cluster_name      = aws_eks_cluster.this.name
+  principal_arn     = each.value
+  type              = "STANDARD"
+  kubernetes_groups = var.kubernetes_groups
 }
 
 resource "aws_eks_access_policy_association" "admins" {
