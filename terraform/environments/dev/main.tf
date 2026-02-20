@@ -198,67 +198,35 @@ module "sonarqube_server" {
 # This resource creates the Ansible inventory file from live Terraform outputs.
 # Every `terraform apply` keeps the inventory in sync with actual infrastructure.
 
-resource "local_file" "ansible_inventory" {
-  filename        = "${path.module}/../../../ansible/inventory/hosts.raw"
-  file_permission = "0600"
+module "ansible" {
+  source = "../../modules/ansible"
 
-  content = templatefile("${path.module}/templates/ansible_inventory.tftpl", {
-    jenkins_master_ip    = module.jenkins_master.public_ips[0]
-    jenkins_master_priv  = module.jenkins_master.private_ips[0]
-    worker_node_ips      = module.worker_node.public_ips
-    worker_node_priv_ips = module.worker_node.private_ips
-    sonarqube_ip         = module.sonarqube_server.public_ips[0]
-    sonarqube_priv       = module.sonarqube_server.private_ips[0]
-    ssh_user             = "ec2-user"
-    ssh_key_file         = var.ssh_private_key_path
-    eks_cluster_name     = module.eks.cluster_name
-    aws_region           = var.aws_region
-    vpc_id               = module.vpc.vpc_id
-    account_id           = module.data.account_id
-    project_name         = var.project_name
-    env_name             = var.environment
-  })
+  project_name         = var.project_name
+  environment          = var.environment
+  inventory_file_path  = "${path.module}/../../../ansible/inventory/hosts.raw"
+  ansible_working_dir  = "${path.module}/../../../ansible"
+  
+  jenkins_master_ip    = module.jenkins_master.public_ips[0]
+  jenkins_master_priv  = module.jenkins_master.private_ips[0]
+  worker_node_ips      = module.worker_node.public_ips
+  worker_node_priv_ips = module.worker_node.private_ips
+  sonarqube_ip         = module.sonarqube_server.public_ips[0]
+  sonarqube_priv       = module.sonarqube_server.private_ips[0]
+  ssh_user             = "ec2-user"
+  ssh_key_file         = var.ssh_private_key_path
+  eks_cluster_name     = module.eks.cluster_name
+  aws_region           = var.aws_region
+  vpc_id               = module.vpc.vpc_id
+  account_id           = module.data.account_id
+
+  # Toggle for auto-running. Controlled by variables or manual override.
+  run_ansible          = false 
 
   depends_on = [
     module.jenkins_master,
     module.worker_node,
     module.sonarqube_server,
-    module.key_pair
+    module.key_pair,
+    module.eks
   ]
-}
-
-resource "null_resource" "encrypt_inventory" {
-  depends_on = [local_file.ansible_inventory]
-
-  triggers = {
-    inventory_id = local_file.ansible_inventory.id
-  }
-
-  provisioner "local-exec" {
-    working_dir = "${path.module}/../../../ansible"
-    command     = "cp inventory/hosts.raw inventory/hosts && ansible-vault encrypt inventory/hosts"
-  }
-}
-
-# ─────────────────────────────────────────────────────────────────────────────
-# Optional: Auto-Trigger Ansible After Provisioning
-# ─────────────────────────────────────────────────────────────────────────────
-# Uncomment this block to automatically run the Ansible playbook after
-# Terraform provisions the infrastructure. Requires ansible-playbook on PATH.
-
-resource "null_resource" "run_ansible" {
-  depends_on = [null_resource.encrypt_inventory]
-
-  triggers = {
-    inventory_id = local_file.ansible_inventory.id
-  }
-
-  provisioner "local-exec" {
-    working_dir = "${path.module}/../../../ansible"
-    command     = <<-EOT
-      echo "Waiting 60s for EC2 instances to initialize..."
-      sleep 60
-      ansible-playbook playbooks/site.yml
-    EOT
-  }
 }
