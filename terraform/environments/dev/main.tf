@@ -230,7 +230,8 @@ module "ansible" {
   sonarqube_priv       = module.sonarqube_server.private_ips[0]
   ssh_user             = "ec2-user"
   ssh_key_file         = var.ssh_private_key_path
-  eks_cluster_name     = module.eks_primary.cluster_name # Defaulting to primary for ansible context
+  eks_cluster_name     = module.eks_primary.cluster_name
+  cluster_suffix       = "primary" # Defaulting to primary cluster context
   aws_region           = var.aws_region
   vpc_id               = module.vpc.vpc_id
   account_id           = module.data.account_id
