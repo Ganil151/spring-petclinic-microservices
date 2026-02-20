@@ -13,7 +13,7 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "docs/RUNBOOK_AWS_DEPLOY.md",
+                "file": "docs/DEPLOYMENT_CHECKLIST.md",
                 "mode": "source",
                 "source": false,
                 "backlinks": true,
@@ -28,7 +28,7 @@
                 }
               },
               "icon": "lucide-file",
-              "title": "RUNBOOK_AWS_DEPLOY"
+              "title": "DEPLOYMENT_CHECKLIST"
             }
           }
         ]
@@ -84,8 +84,7 @@
               "title": "Bookmarks"
             }
           }
-        ],
-        "currentTab": 1
+        ]
       }
     ],
     "direction": "horizontal",
@@ -206,6 +205,7 @@
   },
   "active": "e8a8bfd7c13c69fd",
   "lastOpenFiles": [
+    "docs/RUNBOOK_AWS_DEPLOY.md",
     "ansible/inventory/hosts.raw",
     "terraform/modules/ansible/main.tf",
     "terraform/modules/ansible/variables.tf",
@@ -216,7 +216,6 @@
     "terraform/global/data/data.tf",
     "terraform/global/data/outputs.tf",
     "terraform/global/data/main.tf",
-    "terraform/global/data",
     "spring-petclinic-api-gateway/target/classes/static/images/spring-pivotal-logo.png",
     "spring-petclinic-api-gateway/target/classes/static/images/spring-logo-dataflow.png",
     "spring-petclinic-api-gateway/target/classes/static/images/spring-logo-dataflow-mobile.png",
@@ -234,7 +233,6 @@
     "docs/JAVA21_MIGRATION.md",
     "docs/grafana-custom-metrics-dashboard.png",
     "docs/DEPLOYMENT_CHECKLIST.md",
-    "docs/REFACTORING_SUMMARY.md",
-    "docs/RUNBOOK_AWS_DEPLOY.md"
+    "docs/REFACTORING_SUMMARY.md"
   ]
 }
