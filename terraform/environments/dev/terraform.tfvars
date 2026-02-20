@@ -1,10 +1,10 @@
 # ============================================================================
 # GENERAL CONFIGURATION
 # ============================================================================
-project_name = "Petclinic"
-environment  = "dev"
-aws_region   = "us-east-1"
-data_source_path = "../../global/data"
+project_name         = "Petclinic"
+environment          = "dev"
+aws_region           = "us-east-1"
+data_source_path     = "../../global/data"
 ssh_private_key_path = "../terraform/environments/dev/spms-dev.pem"
 
 # ============================================================================

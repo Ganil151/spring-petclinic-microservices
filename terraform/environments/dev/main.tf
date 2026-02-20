@@ -29,12 +29,12 @@ module "vpc" {
 module "sg" {
   source = "../../modules/networking/sg"
 
-  project_name                  = var.project_name
-  environment                   = var.environment
-  vpc_id                        = module.vpc.vpc_id
-  vpc_cidr                      = var.vpc_cidr
-  allowed_cidr_blocks           = var.allowed_cidr_blocks
-  ingress_ports                 = var.ingress_ports
+  project_name        = var.project_name
+  environment         = var.environment
+  vpc_id              = module.vpc.vpc_id
+  vpc_cidr            = var.vpc_cidr
+  allowed_cidr_blocks = var.allowed_cidr_blocks
+  ingress_ports       = var.ingress_ports
   eks_cluster_security_group_ids = [
     module.eks_primary.cluster_security_group_id,
     module.eks_secondary.cluster_security_group_id
@@ -217,11 +217,11 @@ module "sonarqube_server" {
 module "ansible" {
   source = "../../modules/ansible"
 
-  project_name         = var.project_name
-  environment          = var.environment
-  inventory_file_path  = "${path.module}/../../../ansible/inventory/hosts.raw"
-  ansible_working_dir  = "${path.module}/../../../ansible"
-  
+  project_name        = var.project_name
+  environment         = var.environment
+  inventory_file_path = "${path.module}/../../../ansible/inventory/hosts.raw"
+  ansible_working_dir = "${path.module}/../../../ansible"
+
   jenkins_master_ip    = module.jenkins_master.public_ips[0]
   jenkins_master_priv  = module.jenkins_master.private_ips[0]
   worker_node_ips      = module.worker_node.public_ips
@@ -236,7 +236,7 @@ module "ansible" {
   account_id           = module.data.account_id
 
   # Toggle for auto-running. Controlled by variables or manual override.
-  run_ansible          = false 
+  run_ansible = false
 
   depends_on = [
     module.jenkins_master,
