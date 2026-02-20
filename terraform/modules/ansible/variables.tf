@@ -46,6 +46,11 @@ variable "eks_cluster_name" {
   default = "N/A"
 }
 
+variable "cluster_suffix" {
+  type    = string
+  default = "primary"
+}
+
 variable "aws_region" {
   type    = string
   default = "us-east-1"

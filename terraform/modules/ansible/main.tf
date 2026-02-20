@@ -12,6 +12,7 @@ resource "local_file" "ansible_inventory" {
     ssh_user             = var.ssh_user
     ssh_key_file         = var.ssh_key_file
     eks_cluster_name     = var.eks_cluster_name
+    cluster_suffix       = var.cluster_suffix
     aws_region           = var.aws_region
     vpc_id               = var.vpc_id
     account_id           = var.account_id
