@@ -3,7 +3,7 @@ output "account_id" {
 }
 
 output "region_name" {
-  value = data.aws_region.current.name
+  value = data.aws_region.current.id
 }
 
 output "availability_zones" {
