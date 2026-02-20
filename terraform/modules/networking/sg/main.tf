@@ -42,7 +42,7 @@ resource "aws_security_group" "ec2" {
 
   # 2. Administrative/Public Traffic: Restrict external access to common ports
   dynamic "ingress" {
-    for_each = [22, 80, 443, 8080, 9000]
+    for_each = var.ingress_ports
     content {
       from_port   = ingress.value
       to_port     = ingress.value
