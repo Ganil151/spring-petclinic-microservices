@@ -177,3 +177,32 @@ The Terraform configuration has been successfully refactored to:
 - **Provide automation** for ongoing validation
 
 All environments are now properly configured with environment-appropriate settings while maintaining a single source of truth for common configurations.
+
+---
+
+## Phase 6: Multi-Cluster EKS Refactor (Dual-Cluster Support)
+
+### 1. Architectural Changes
+Refactored the EKS compute module to support multiple independent clusters within the same VPC and environment.
+- ✅ **Cluster Suffixing:** Introduced `cluster_suffix` (e.g., `primary`, `secondary`) into the naming convention for EKS clusters, OIDC providers, and IAM roles.
+- ✅ **IAM Isolation:** Service account roles (EBS CSI, Load Balancer Controller) are now cluster-specific, preventing `EntityAlreadyExists` errors during parallel deployments.
+
+### 2. Multi-Cluster Security Groups
+Updated the `networking/sg` module to handle a dynamic number of EKS clusters.
+- ✅ **List to Map Refactor:** The `eks_cluster_security_group_ids` variable was converted from a `list(string)` to a `map(string)`.
+- ✅ **Static Keys for for_each:** Used static keys ('primary', 'secondary') in the `for_each` loop to ensure Terraform can track resources correctly even when security group IDs are unknown at plan time.
+
+### 3. CI/CD Pipeline Resilience
+Enhanced the Jenkins pipeline to handle the transition to the new naming convention.
+- ✅ **Stale Parameter Defense:** Implemented fallback logic in the `Jenkinsfile` to detect and correct cached parameter values (e.g., automatically mapping `petclinic-dev-cluster` to `petclinic-dev-primary`).
+- ✅ **Flexible Deployment:** The pipeline now accepts `EKS_CLUSTER_NAME` as a parameter, defaulting to the new `primary` cluster.
+
+### 4. Ansible Sync
+Synchronized the configuration management layer with the new infrastructure naming.
+- ✅ **Inventory Update:** The Ansible inventory template now includes `cluster_suffix` in the global variables.
+- ✅ **EKS Setup Role:** Updated tasks (like Load Balancer Controller installation) to dynamically reference the correct cluster-specific IAM roles.
+
+### Results
+- ✅ Successfully provisioned two distinct EKS clusters in the `dev` environment.
+- ✅ Eliminated all IAM naming collisions.
+- ✅ Maintained full automation from Terraform through Ansible to Jenkins deployment.

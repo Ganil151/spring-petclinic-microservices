@@ -23,7 +23,9 @@ graph TD
     
     B1[VPC + Security Groups] --> B2[EC2 Instances]
     B2 --> B3[Ansible Inventory Auto-Generated]
-    B3 --> B4[RDS + EKS Cluster]
+    B3 --> B4[RDS Instances]
+    B4 --> B4a[EKS Primary Cluster: Frontend]
+    B4 --> B4b[EKS Secondary Cluster: Backend]
     
     B5a[Play 1: Core Tools] --> B5b[Play 2: Jenkins]
     B5b --> B5c[Play 3: Build Tools]
