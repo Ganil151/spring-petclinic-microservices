@@ -38,8 +38,8 @@ variable "ingress_rules" {
   default = {}
 }
 
-variable "eks_cluster_security_group_id" {
-  description = "The security group ID of the EKS cluster to allow communication from EC2"
-  type        = string
-  default     = null
+variable "eks_cluster_security_group_ids" {
+  description = "List of security group IDs of the EKS clusters to allow communication from EC2"
+  type        = list(string)
+  default     = []
 }

@@ -91,15 +91,15 @@ resource "aws_security_group" "ec2" {
   }
 }
 
-# Allow Jenkins/worker nodes to communicate with the EKS cluster API server
+# Allow Jenkins/worker nodes to communicate with the EKS cluster API servers
 resource "aws_security_group_rule" "allow_eks_api_from_ec2" {
-  count = var.eks_cluster_security_group_id != null ? 1 : 0
+  for_each = toset(var.eks_cluster_security_group_ids)
 
   type                     = "ingress"
   from_port                = 443
   to_port                  = 443
   protocol                 = "tcp"
-  security_group_id        = var.eks_cluster_security_group_id
+  security_group_id        = each.value
   source_security_group_id = aws_security_group.ec2.id
   description              = "Allow EC2 instances to connect to EKS API"
 }

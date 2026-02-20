@@ -1,6 +1,6 @@
 # EKS Cluster IAM Role
 resource "aws_iam_role" "cluster" {
-  name = lower("${var.project_name}-${var.environment}-eks-cluster-role")
+  name = lower("${var.project_name}-${var.environment}-${var.cluster_suffix}-cluster-role")
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -14,9 +14,10 @@ resource "aws_iam_role" "cluster" {
   })
 
   tags = {
-    Name        = lower("${var.project_name}-${var.environment}-eks-cluster-role")
+    Name        = lower("${var.project_name}-${var.environment}-${var.cluster_suffix}-cluster-role")
     Environment = var.environment
     Project     = var.project_name
+    Role        = var.cluster_role
   }
 }
 
@@ -27,7 +28,7 @@ resource "aws_iam_role_policy_attachment" "cluster_AmazonEKSClusterPolicy" {
 
 # EKS Node Group IAM Role
 resource "aws_iam_role" "nodes" {
-  name = lower("${var.project_name}-${var.environment}-eks-node-role")
+  name = lower("${var.project_name}-${var.environment}-${var.cluster_suffix}-node-role")
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -41,9 +42,10 @@ resource "aws_iam_role" "nodes" {
   })
 
   tags = {
-    Name        = lower("${var.project_name}-${var.environment}-eks-node-role")
+    Name        = lower("${var.project_name}-${var.environment}-${var.cluster_suffix}-node-role")
     Environment = var.environment
     Project     = var.project_name
+    Role        = var.cluster_role
   }
 }
 
@@ -64,7 +66,7 @@ resource "aws_iam_role_policy_attachment" "nodes_AmazonEC2ContainerRegistryReadO
 
 # EKS Cluster
 resource "aws_eks_cluster" "this" {
-  name     = lower("${var.project_name}-${var.environment}-cluster")
+  name     = lower("${var.project_name}-${var.environment}-${var.cluster_suffix}")
   role_arn = aws_iam_role.cluster.arn
   version  = var.cluster_version
 
@@ -79,16 +81,17 @@ resource "aws_eks_cluster" "this" {
   ]
 
   tags = {
-    Name        = lower("${var.project_name}-${var.environment}-cluster")
+    Name        = lower("${var.project_name}-${var.environment}-${var.cluster_suffix}")
     Environment = var.environment
     Project     = var.project_name
+    Role        = var.cluster_role
   }
 }
 
 # Managed Node Group
 resource "aws_eks_node_group" "this" {
   cluster_name    = aws_eks_cluster.this.name
-  node_group_name = lower("${var.project_name}-${var.environment}-node-group")
+  node_group_name = lower("${var.project_name}-${var.environment}-${var.cluster_suffix}-node-group")
   node_role_arn   = aws_iam_role.nodes.arn
   subnet_ids      = var.subnet_ids
 
@@ -111,9 +114,10 @@ resource "aws_eks_node_group" "this" {
   ]
 
   tags = {
-    Name                                                 = lower("${var.project_name}-${var.environment}-node-group")
+    Name                                                 = lower("${var.project_name}-${var.environment}-${var.cluster_suffix}-node-group")
     Environment                                          = var.environment
     Project                                              = var.project_name
+    Role                                                 = var.cluster_role
     "kubernetes.io/cluster/${aws_eks_cluster.this.name}" = "owned"
   }
 }
