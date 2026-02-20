@@ -60,12 +60,22 @@ output "rds_endpoint" {
 }
 
 # ─── EKS (Kubernetes) ─────────────────────────────────────────────
-output "eks_cluster_name" {
-  description = "The name of the EKS cluster"
-  value       = try(module.eks.cluster_name, "N/A")
+output "eks_primary_cluster_name" {
+  description = "The name of the primary EKS cluster"
+  value       = try(module.eks_primary.cluster_name, "N/A")
 }
 
-output "eks_cluster_endpoint" {
-  description = "The endpoint for the EKS cluster"
-  value       = try(module.eks.cluster_endpoint, "N/A")
+output "eks_secondary_cluster_name" {
+  description = "The name of the secondary EKS cluster"
+  value       = try(module.eks_secondary.cluster_name, "N/A")
+}
+
+output "eks_primary_endpoint" {
+  description = "The endpoint for the primary EKS cluster"
+  value       = try(module.eks_primary.cluster_endpoint, "N/A")
+}
+
+output "eks_secondary_endpoint" {
+  description = "The endpoint for the secondary EKS cluster"
+  value       = try(module.eks_secondary.cluster_endpoint, "N/A")
 }
