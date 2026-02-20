@@ -35,10 +35,10 @@ module "sg" {
   vpc_cidr            = var.vpc_cidr
   allowed_cidr_blocks = var.allowed_cidr_blocks
   ingress_ports       = var.ingress_ports
-  eks_cluster_security_group_ids = [
-    module.eks_primary.cluster_security_group_id,
-    module.eks_secondary.cluster_security_group_id
-  ]
+  eks_cluster_security_group_ids = {
+    primary   = module.eks_primary.cluster_security_group_id
+    secondary = module.eks_secondary.cluster_security_group_id
+  }
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
