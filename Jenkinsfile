@@ -24,7 +24,7 @@ pipeline {
         string(name: 'GITHUB_CREDENTIALS_ID', defaultValue: 'github-credentials', description: 'GitHub credentials ID')
         string(name: 'SONAR_URL_ID', defaultValue: 'sonarqube-url', description: 'Jenkins Credential ID for SonarQube URL')
         string(name: 'SONAR_TOKEN_ID', defaultValue: 'sonarqube-token', description: 'Jenkins Credential ID for SonarQube Token')
-        string(name: 'EKS_CLUSTER_NAME', defaultValue: 'Petclinic-dev-cluster', description: 'EKS Cluster Name')
+        string(name: 'EKS_CLUSTER_NAME', defaultValue: 'petclinic-dev-cluster', description: 'EKS Cluster Name')
     }
 
     triggers {
