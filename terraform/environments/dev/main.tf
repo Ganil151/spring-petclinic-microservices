@@ -198,8 +198,8 @@ module "sonarqube_server" {
 # Every `terraform apply` keeps the inventory in sync with actual infrastructure.
 
 resource "local_file" "ansible_inventory" {
-  filename        = "${path.module}/../../../ansible/inventory/hosts"
-  file_permission = "0644"
+  filename        = "${path.module}/../../../ansible/inventory/hosts.raw"
+  file_permission = "0600"
 
   content = templatefile("${path.module}/templates/ansible_inventory.tftpl", {
     jenkins_master_ip    = module.jenkins_master.public_ips[0]
@@ -226,6 +226,19 @@ resource "local_file" "ansible_inventory" {
   ]
 }
 
+resource "null_resource" "encrypt_inventory" {
+  depends_on = [local_file.ansible_inventory]
+
+  triggers = {
+    inventory_id = local_file.ansible_inventory.id
+  }
+
+  provisioner "local-exec" {
+    working_dir = "${path.module}/../../../ansible"
+    command     = "cp inventory/hosts.raw inventory/hosts && ansible-vault encrypt inventory/hosts"
+  }
+}
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Optional: Auto-Trigger Ansible After Provisioning
 # ─────────────────────────────────────────────────────────────────────────────
@@ -233,7 +246,7 @@ resource "local_file" "ansible_inventory" {
 # Terraform provisions the infrastructure. Requires ansible-playbook on PATH.
 
 resource "null_resource" "run_ansible" {
-  depends_on = [local_file.ansible_inventory]
+  depends_on = [null_resource.encrypt_inventory]
 
   triggers = {
     inventory_id = local_file.ansible_inventory.id

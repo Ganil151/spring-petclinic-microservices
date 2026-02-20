@@ -77,6 +77,9 @@ coverage.xml
 *.retry
 retry/
 ansible_fact_cache/
+ansible/inventory/hosts
+ansible/inventory/hosts.raw
+ansible/.vault_pass
 
 # ==========================================
 # Secrets & Credentials
