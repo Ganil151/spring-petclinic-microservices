@@ -64,6 +64,12 @@
     group: ec2-user
     mode: '0644'
 
+- name: Pull Latest SonarQube Images
+  command: docker compose pull
+  args:
+    chdir: /home/ec2-user/sonarqube
+  changed_when: true
+
 - name: Start SonarQube Stack
   command: docker compose up -d
   args:

@@ -1,0 +1,26 @@
+---
+# ───────────────────────────────────────────────────────────────────
+# Playbook: Core Tools
+# ───────────────────────────────────────────────────────────────────
+- name: Install Core Tools on All Nodes
+  hosts: all_nodes
+  gather_facts: true
+
+  pre_tasks:
+    - name: Display Target Node Info
+      debug:
+        msg: "Configuring {{ inventory_hostname }} ({{ ansible_facts['distribution'] }} {{ ansible_facts['distribution_version'] }})"
+
+    - name: Wait for SSH to become available
+      wait_for_connection:
+        delay: 5
+        timeout: 120
+
+    - name: Wait for Cloud-Init to finish (Prevents dnf lock issues)
+      command: cloud-init status --wait
+      changed_when: false
+
+  roles:
+    - java
+    - docker
+    - awscli
