@@ -205,8 +205,8 @@
   },
   "active": "e8a8bfd7c13c69fd",
   "lastOpenFiles": [
-    "docs/RUNBOOK_AWS_DEPLOY.md",
     "ansible/inventory/hosts.raw",
+    "docs/RUNBOOK_AWS_DEPLOY.md",
     "terraform/modules/ansible/main.tf",
     "terraform/modules/ansible/variables.tf",
     "terraform/modules/ansible/templates/ansible_inventory.tftpl",
