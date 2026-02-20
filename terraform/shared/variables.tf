@@ -1,5 +1,5 @@
 # Shared variable definitions
-# This file should be symlinked to each environment
+# This file is symlinked to each environment to maintain consistent definitions
 
 # ============================================================================
 # GENERAL CONFIGURATION
@@ -21,6 +21,12 @@ variable "environment" {
     condition     = contains(["dev", "staging", "prod"], var.environment)
     error_message = "Environment must be dev, staging, or prod."
   }
+}
+
+variable "data_source_path" {
+  description = "Path to the global data module"
+  type        = string
+  default     = "../../global/data"
 }
 
 # ============================================================================
@@ -58,6 +64,17 @@ variable "ingress_ports" {
   default     = []
 }
 
+variable "ingress_rules" {
+  description = "Map of complex ingress rules for security groups"
+  type = map(object({
+    from_port   = number
+    to_port     = number
+    protocol    = string
+    description = string
+  }))
+  default = {}
+}
+
 # ============================================================================
 # EKS CONFIGURATION
 # ============================================================================
@@ -88,6 +105,13 @@ variable "db_username" {
   default     = "petclinic"
 }
 
+variable "db_password" {
+  description = "RDS admin password"
+  type        = string
+  sensitive   = true
+  default     = null
+}
+
 # ============================================================================
 # EC2 INSTANCE CONFIGURATION
 # ============================================================================
@@ -102,6 +126,12 @@ variable "key_name" {
   default     = null
 }
 
+variable "ssh_private_key_path" {
+  description = "Path to the SSH private key file"
+  type        = string
+  default     = null
+}
+
 variable "associate_public_ip" {
   description = "Associate public IP with EC2 instances"
   type        = bool
@@ -112,6 +142,12 @@ variable "user_data" {
   description = "User data script for EC2 instances"
   type        = string
   default     = ""
+}
+
+variable "user_data_replace_on_change" {
+  description = "Whether to replace the user data when launching the instance"
+  type        = bool
+  default     = false
 }
 
 variable "iam_instance_profile" {
