@@ -39,7 +39,7 @@ variable "ingress_rules" {
 }
 
 variable "eks_cluster_security_group_ids" {
-  description = "List of security group IDs of the EKS clusters to allow communication from EC2"
-  type        = list(string)
-  default     = []
+  description = "Map of EKS cluster identifiers to their security group IDs"
+  type        = map(string)
+  default     = {}
 }
