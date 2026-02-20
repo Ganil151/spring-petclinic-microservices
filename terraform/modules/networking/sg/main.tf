@@ -32,15 +32,30 @@ resource "aws_security_group" "ec2" {
   vpc_id      = var.vpc_id
 
   # 1. Internal Traffic: Allow all services to talk to each other within the VPC
-  ingress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = [var.vpc_cidr]
-    description = "Allow all internal VPC traffic"
+  dynamic "ingress" {
+    for_each = var.vpc_cidr != null ? [1] : []
+    content {
+      from_port   = 0
+      to_port     = 0
+      protocol    = "-1"
+      cidr_blocks = [var.vpc_cidr]
+      description = "Allow all internal VPC traffic"
+    }
   }
 
-  # 2. Administrative/Public Traffic: Restrict external access to common ports
+  # 2. Complex Rules: Detailed ingress rules (useful for Prod)
+  dynamic "ingress" {
+    for_each = var.ingress_rules
+    content {
+      from_port   = ingress.value.from_port
+      to_port     = ingress.value.to_port
+      protocol    = ingress.value.protocol
+      cidr_blocks = var.allowed_cidr_blocks
+      description = ingress.value.description
+    }
+  }
+
+  # 3. Administrative/Public Traffic: Simple port list (useful for Dev/Staging)
   dynamic "ingress" {
     for_each = var.ingress_ports
     content {

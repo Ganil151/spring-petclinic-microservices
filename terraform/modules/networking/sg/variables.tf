@@ -24,6 +24,18 @@ variable "ingress_ports" {
 variable "vpc_cidr" {
   description = "The CIDR block of the VPC for internal traffic"
   type        = string
+  default     = null
+}
+
+variable "ingress_rules" {
+  description = "Map of complex ingress rules"
+  type = map(object({
+    from_port   = number
+    to_port     = number
+    protocol    = string
+    description = string
+  }))
+  default = {}
 }
 
 variable "eks_cluster_security_group_id" {
