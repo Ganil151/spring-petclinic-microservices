@@ -205,6 +205,7 @@
   },
   "active": "e8a8bfd7c13c69fd",
   "lastOpenFiles": [
+    "terraform/environments/dev/spms-dev.pem",
     "ansible/playbooks/site.yml",
     "ansible/playbooks/05-security.yml",
     "ansible/playbooks/04-sonarqube.yml",
@@ -226,7 +227,6 @@
     "docs/REFACTORING_SUMMARY.md",
     "docs/RUNBOOK_AWS_DEPLOY.md",
     "docs/spring-ai.png",
-    "terraform/environments/dev/spms-dev.pem",
     "ansible/roles/eks_setup/tasks/main.yml",
     "ansible/roles/eks_setup/tasks",
     "spring-petclinic-api-gateway/target/classes/static/images/spring-pivotal-logo.png",
