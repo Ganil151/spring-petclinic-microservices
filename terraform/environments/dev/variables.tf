@@ -3,6 +3,12 @@ variable "project_name" {
   type        = string
 }
 
+variable "data_source_path" {
+  description = "Path to the global data module"
+  type        = string
+  default     = "../../global/data"
+}
+
 variable "aws_region" {
   description = "AWS region"
   type        = string

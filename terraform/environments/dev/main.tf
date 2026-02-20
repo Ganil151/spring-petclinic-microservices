@@ -1,7 +1,9 @@
 # ─────────────────────────────────────────────────────────────────────────────
-# Spring PetClinic Microservices - Terraform Configuration
+# Global Data Sources
 # ─────────────────────────────────────────────────────────────────────────────
-
+module "data" {
+  source = "../../global/data"
+}
 
 # ─────────────────────────────────────────────────────────────────────────────
 # VPC (Virtual Private Cloud)
@@ -221,7 +223,7 @@ resource "local_file" "ansible_inventory" {
     eks_cluster_name     = module.eks.cluster_name
     aws_region           = var.aws_region
     vpc_id               = module.vpc.vpc_id
-    account_id           = data.aws_caller_identity.current.account_id
+    account_id           = module.data.account_id
     project_name         = var.project_name
     env_name             = var.environment
   })
