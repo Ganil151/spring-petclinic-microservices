@@ -4,6 +4,7 @@
 project_name = "Petclinic"
 environment  = "dev"
 aws_region   = "us-east-1"
+data_source_path = "../../global/data"
 
 # ============================================================================
 # NETWORKING CONFIGURATION
