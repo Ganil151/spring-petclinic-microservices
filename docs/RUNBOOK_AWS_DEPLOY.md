@@ -158,10 +158,16 @@ Plan: 45 to add, 0 to change, 0 to destroy.
 │                    AWS VPC                      │
 │  ┌──────────────┐         ┌──────────────┐    │
 │  │ Public Subnet│         │Private Subnet│    │
-│  │   (NAT GW)   │────────▶│  EKS Nodes   │    │
-│  └──────────────┘         └──────┬───────┘    │
-│                                   │             │
-│                          ┌────────▼────────┐   │
+│  │   (NAT GW)   │────────▶│ EKS Primary  │    │
+│  └──────────────┘         │  (Frontend)  │    │
+│                           └──────┬───────┘    │
+│                                  │             │
+│                           ┌──────▼───────┐    │
+│                           │ EKS Secondary│    │
+│                           │  (Backend)   │    │
+│                           └──────┬───────┘    │
+│                                  │             │
+│                          ┌───────▼────────┐   │
 │                          │   RDS MySQL     │   │
 │                          │  (Multi-AZ)     │   │
 │                          └─────────────────┘   │
@@ -241,20 +247,22 @@ aws dynamodb delete-item \
 terraform output -json > outputs.json
 
 # Capture specific values
-export CLUSTER_NAME=$(terraform output -raw cluster_name)
+export PRIMARY_CLUSTER=$(terraform output -raw eks_primary_cluster_name)
+export SECONDARY_CLUSTER=$(terraform output -raw eks_secondary_cluster_name)
 export RDS_ENDPOINT=$(terraform output -raw rds_endpoint)
-export RDS_PORT=$(terraform output -raw rds_port)
 export VPC_ID=$(terraform output -raw vpc_id)
 
 # Verify exports
-echo "Cluster: $CLUSTER_NAME"
-echo "RDS: $RDS_ENDPOINT:$RDS_PORT"
+echo "Primary Cluster: $PRIMARY_CLUSTER"
+echo "Secondary Cluster: $SECONDARY_CLUSTER"
+echo "RDS: $RDS_ENDPOINT"
 ```
 
 **Expected Output:**
 ```
-Cluster: petclinic-eks-cluster
-RDS: petclinic-db.abc123.us-east-1.rds.amazonaws.com:3306
+Primary Cluster: petclinic-dev-primary
+Secondary Cluster: petclinic-dev-secondary
+RDS: petclinic-dev-db.c4vose4cw6rj.us-east-1.rds.amazonaws.com:3306
 ```
 
 **💾 Pro-Tip:** Save outputs to SSM Parameter Store for other teams:
