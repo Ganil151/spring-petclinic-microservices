@@ -16,9 +16,9 @@
     mode: '0644'
 
 - name: Import Jenkins GPG Key
-  command: rpm --import https://pkg.jenkins.io/redhat-stable/jenkins.io-2023.key
-  register: gpg_import
-  failed_when: gpg_import.rc != 0 and 'already installed' not in gpg_import.stderr
+  rpm_key:
+    state: present
+    key: https://pkg.jenkins.io/redhat-stable/jenkins.io-2023.key
 
 - name: Update dnf cache again
   dnf:
