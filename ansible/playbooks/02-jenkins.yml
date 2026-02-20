@@ -1,0 +1,10 @@
+---
+# ───────────────────────────────────────────────────────────────────
+# Playbook: Jenkins Master
+# ───────────────────────────────────────────────────────────────────
+- name: Configure Jenkins Master
+  hosts: jenkins_master
+  gather_facts: false
+
+  roles:
+    - jenkins

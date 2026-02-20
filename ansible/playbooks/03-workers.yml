@@ -1,0 +1,14 @@
+---
+# ───────────────────────────────────────────────────────────────────
+# Playbook: Build & Deploy Tools on Worker Nodes
+# ───────────────────────────────────────────────────────────────────
+- name: Install Build & Deploy Tools on Worker Nodes
+  hosts: build_agents
+  gather_facts: false
+  ignore_unreachable: true # Ensure we proceed to SonarQube even if worker nodes have issues
+
+  roles:
+    - maven
+    - kubectl
+    - helm
+    - { role: eks_setup, ignore_errors: true }
