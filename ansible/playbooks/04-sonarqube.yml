@@ -1,0 +1,10 @@
+---
+# ───────────────────────────────────────────────────────────────────
+# Playbook: SonarQube Stack
+# ───────────────────────────────────────────────────────────────────
+- name: Deploy SonarQube Stack
+  hosts: sonarqube
+  gather_facts: false
+
+  roles:
+    - sonarqube

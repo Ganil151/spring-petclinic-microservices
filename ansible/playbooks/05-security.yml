@@ -1,0 +1,10 @@
+---
+# ───────────────────────────────────────────────────────────────────
+# Playbook: DevSecOps Tools
+# ───────────────────────────────────────────────────────────────────
+- name: Install DevSecOps Tools
+  hosts: devops_tools
+  gather_facts: false
+
+  roles:
+    - security_tools

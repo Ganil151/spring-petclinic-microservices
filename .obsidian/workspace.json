@@ -205,6 +205,8 @@
   },
   "active": "e8a8bfd7c13c69fd",
   "lastOpenFiles": [
+    "ansible/playbooks/05-security.yml",
+    "ansible/playbooks/04-sonarqube.yml",
     "ansible/playbooks/03-workers.yml",
     "ansible/playbooks/02-jenkins.yml",
     "ansible/playbooks/01-core.yml",
@@ -227,8 +229,6 @@
     "ansible/roles/eks_setup/tasks/main.yml",
     "ansible/roles/eks_setup/tasks",
     "ansible/roles/eks_setup",
-    "terraform/environments/dev/help.txt",
-    "terraform/environments/dev/test.txt",
     "spring-petclinic-api-gateway/target/classes/static/images/spring-pivotal-logo.png",
     "spring-petclinic-api-gateway/target/classes/static/images/spring-logo-dataflow.png",
     "spring-petclinic-api-gateway/target/classes/static/images/spring-logo-dataflow-mobile.png",
