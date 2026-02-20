@@ -8,15 +8,16 @@ resource "aws_iam_openid_connect_provider" "this" {
   url             = aws_eks_cluster.this.identity[0].oidc[0].issuer
 
   tags = {
-    Name        = lower("${var.project_name}-${var.environment}-oidc-provider")
+    Name        = lower("${var.project_name}-${var.environment}-${var.cluster_suffix}-oidc-provider")
     Environment = var.environment
     Project     = var.project_name
+    Role        = var.cluster_role
   }
 }
 
 # IAM Role for EBS CSI Driver (IRSA)
 resource "aws_iam_role" "ebs_csi_driver" {
-  name = lower("${var.project_name}-${var.environment}-ebs-csi-driver-role")
+  name = lower("${var.project_name}-${var.environment}-${var.cluster_suffix}-ebs-csi-driver-role")
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -37,9 +38,10 @@ resource "aws_iam_role" "ebs_csi_driver" {
   })
 
   tags = {
-    Name        = lower("${var.project_name}-${var.environment}-ebs-csi-driver-role")
+    Name        = lower("${var.project_name}-${var.environment}-${var.cluster_suffix}-ebs-csi-driver-role")
     Environment = var.environment
     Project     = var.project_name
+    Role        = var.cluster_role
   }
 }
 
@@ -50,7 +52,7 @@ resource "aws_iam_role_policy_attachment" "ebs_csi_driver" {
 
 # IAM Role for AWS Load Balancer Controller (IRSA)
 resource "aws_iam_role" "load_balancer_controller" {
-  name = lower("${var.project_name}-${var.environment}-lb-controller-role")
+  name = lower("${var.project_name}-${var.environment}-${var.cluster_suffix}-lb-controller-role")
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -71,9 +73,10 @@ resource "aws_iam_role" "load_balancer_controller" {
   })
 
   tags = {
-    Name        = lower("${var.project_name}-${var.environment}-lb-controller-role")
+    Name        = lower("${var.project_name}-${var.environment}-${var.cluster_suffix}-lb-controller-role")
     Environment = var.environment
     Project     = var.project_name
+    Role        = var.cluster_role
   }
 }
 
