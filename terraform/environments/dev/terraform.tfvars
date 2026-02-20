@@ -19,7 +19,6 @@ ingress_ports = [
   22,   # SSH
   80,   # HTTP
   443,  # HTTPS
-  3306, # MySQL
   8080, # Jenkins, API Gateway
   9000, # SonarQube
   8761, # Discovery Server
