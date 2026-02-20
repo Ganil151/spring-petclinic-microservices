@@ -63,13 +63,17 @@ terraform output ansible_command    # Ready-to-run Ansible command
 terraform output jenkins_master_url # Jenkins Web UI URL
 terraform output sonarqube_url      # SonarQube Web UI URL
 terraform output rds_endpoint       # MySQL Connection string
-terraform output eks_cluster_name   # Cluster name for kubectl
+terraform output eks_primary_cluster_name   # Primary Cluster name
+terraform output eks_secondary_cluster_name # Secondary Cluster name
 ```
 
 ### Manage Kubernetes & Helm
 ```bash
-# 1. Connect to EKS
-aws eks update-kubeconfig --region us-east-1 --name $(terraform output -raw eks_cluster_name)
+# 1. Connect to EKS Primary
+aws eks update-kubeconfig --region us-east-1 --name $(terraform output -raw eks_primary_cluster_name)
+
+# 2. Connect to EKS Secondary
+aws eks update-kubeconfig --region us-east-1 --name $(terraform output -raw eks_secondary_cluster_name)
 
 # 2. Verify nodes
 kubectl get nodes

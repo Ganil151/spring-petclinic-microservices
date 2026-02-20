@@ -407,13 +407,21 @@ ansible sonarqube -m shell -a 'docker compose -f /home/ec2-user/sonarqube/docker
 ### Step 3.1: Configure kubectl
 
 ```bash
-# Update kubeconfig dynamically
+# 1. Update Primary Cluster Context
 aws eks update-kubeconfig \
-  --region $(terraform output -raw region) \
-  --name $(terraform output -raw cluster_name)
+  --region us-east-1 \
+  --name $(terraform output -raw eks_primary_cluster_name)
 
-# Verify cluster access
-kubectl cluster-info
+# 2. Update Secondary Cluster Context
+aws eks update-kubeconfig \
+  --region us-east-1 \
+  --name $(terraform output -raw eks_secondary_cluster_name)
+
+# 3. Switch between clusters
+kubectl config use-context <primary-context-name>
+kubectl config use-context <secondary-context-name>
+
+# 4. Verify nodes
 kubectl get nodes
 ```
 
