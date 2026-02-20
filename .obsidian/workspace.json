@@ -205,6 +205,7 @@
   },
   "active": "e8a8bfd7c13c69fd",
   "lastOpenFiles": [
+    "ansible/inventory/hosts.raw",
     "terraform/environments/dev/spms-dev.pem",
     "ansible/playbooks/site.yml",
     "ansible/playbooks/05-security.yml",
@@ -228,7 +229,6 @@
     "docs/RUNBOOK_AWS_DEPLOY.md",
     "docs/spring-ai.png",
     "ansible/roles/eks_setup/tasks/main.yml",
-    "ansible/roles/eks_setup/tasks",
     "spring-petclinic-api-gateway/target/classes/static/images/spring-pivotal-logo.png",
     "spring-petclinic-api-gateway/target/classes/static/images/spring-logo-dataflow.png",
     "spring-petclinic-api-gateway/target/classes/static/images/spring-logo-dataflow-mobile.png",
