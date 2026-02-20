@@ -59,3 +59,15 @@ variable "node_group_min_size" {
   type        = number
   default     = 1
 }
+
+variable "admin_role_arns" {
+  description = "List of IAM ARNs to grant cluster administrator access"
+  type        = list(string)
+  default     = []
+}
+
+variable "cluster_viewer_role_arns" {
+  description = "List of IAM ARNs to grant cluster viewer access"
+  type        = list(string)
+  default     = []
+}
