@@ -1,6 +1,9 @@
 # ─────────────────────────────────────────────────────────────────────────────
-# Spring PetClinic Microservices - Terraform Configuration (Staging)
+# Global Data Sources
 # ─────────────────────────────────────────────────────────────────────────────
+module "data" {
+  source = "../../global/data"
+}
 
 # ─────────────────────────────────────────────────────────────────────────────
 # VPC (Virtual Private Cloud)
@@ -29,6 +32,7 @@ module "sg" {
   project_name        = var.project_name
   environment         = var.environment
   vpc_id              = module.vpc.vpc_id
+  vpc_cidr            = var.vpc_cidr
   allowed_cidr_blocks = var.allowed_cidr_blocks
   ingress_ports       = var.ingress_ports
 }

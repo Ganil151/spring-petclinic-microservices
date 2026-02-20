@@ -1,5 +1,12 @@
 # Production Environment Infrastructure
-# This file composes the infrastructure modules for production
+# ─────────────────────────────────────────────────────────────────────────────
+# Global Data Sources
+# ─────────────────────────────────────────────────────────────────────────────
+module "data" {
+  source = "../../global/data"
+}
+
+# ─────────────────────────────────────────────────────────────────────────────
 
 module "vpc" {
   source = "../../modules/networking/vpc"
@@ -18,6 +25,7 @@ module "sg" {
   project_name        = var.project_name
   environment         = var.environment
   vpc_id              = module.vpc.vpc_id
+  vpc_cidr            = var.vpc_cidr
   allowed_cidr_blocks = var.allowed_cidr_blocks
   ingress_rules       = var.ingress_rules
 }
