@@ -25,3 +25,9 @@ variable "vpc_cidr" {
   description = "The CIDR block of the VPC for internal traffic"
   type        = string
 }
+
+variable "eks_cluster_security_group_id" {
+  description = "The security group ID of the EKS cluster to allow communication from EC2"
+  type        = string
+  default     = null
+}
