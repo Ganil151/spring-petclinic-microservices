@@ -308,7 +308,7 @@ terraform output -json > ../outputs.json
 
 - **ALB DNS:** `petclinic-dev-alb-1087603039.us-east-1.elb.amazonaws.com`
 - **RDS Endpoint:** `petclinic-dev-db.c4vose4cw6rj.us-east-1.rds.amazonaws.com:3306`
-- **EKS Cluster:** `petclinic-dev-cluster`
+- **EKS Clusters:** `petclinic-dev-primary`, `petclinic-dev-secondary`
 - **ECR Registry:** `365269738775.dkr.ecr.us-east-1.amazonaws.com`
 - **Account ID:** `365269738775`
 
@@ -412,7 +412,7 @@ aws ecr get-login-password | docker login --username AWS --password-stdin 365269
 docker push 365269738775.dkr.ecr.us-east-1.amazonaws.com/petclinic:latest
 
 # Deploy to EKS
-kubectl config use-context petclinic-dev-cluster
+kubectl config use-context petclinic-dev-primary
 helm upgrade --install petclinic ./helm/microservices \
   --set image.repository=365269738775.dkr.ecr.us-east-1.amazonaws.com/petclinic \
   --set image.tag=latest \
