@@ -257,7 +257,7 @@ resource "null_resource" "run_ansible" {
     command     = <<-EOT
       echo "Waiting 60s for EC2 instances to initialize..."
       sleep 60
-      ansible-playbook playbooks/install-tools.yml
+      ansible-playbook playbooks/site.yml
     EOT
   }
 }
