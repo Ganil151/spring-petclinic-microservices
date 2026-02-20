@@ -65,7 +65,7 @@ output "ansible_inventory_path" {
 
 output "ansible_command" {
   description = "Ready-to-run Ansible command"
-  value       = "cd ansible && ansible-playbook playbooks/install-tools.yml"
+  value       = "cd ansible && ansible-playbook playbooks/site.yml"
 }
 
 # ─── Tool Mapping Summary ───────────────────────────────────────
