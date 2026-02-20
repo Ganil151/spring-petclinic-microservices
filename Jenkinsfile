@@ -218,8 +218,14 @@ pipeline {
                         ecrRegistry = "${accountId}.dkr.ecr.${env.AWS_REGION}.amazonaws.com"
                     }
 
-                    echo "🔐 Updating Kubeconfig for cluster: ${params.EKS_CLUSTER_NAME}"
-                    sh "aws eks update-kubeconfig --region ${env.AWS_REGION} --name ${params.EKS_CLUSTER_NAME}"
+                    def clusterName = params.EKS_CLUSTER_NAME
+                    if (clusterName == 'petclinic-dev-cluster') {
+                        clusterName = 'petclinic-dev-primary'
+                        echo "⚠️ Stale parameter detected: Fallback to ${clusterName}"
+                    }
+
+                    echo "🔐 Updating Kubeconfig for cluster: ${clusterName}"
+                    sh "aws eks update-kubeconfig --region ${env.AWS_REGION} --name ${clusterName}"
 
                     echo "🚀 Running Helm Upgrade..."
                     sh """
