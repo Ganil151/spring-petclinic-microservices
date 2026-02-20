@@ -206,6 +206,7 @@
   },
   "active": "e8a8bfd7c13c69fd",
   "lastOpenFiles": [
+    "terraform/global/data/data.tf",
     "terraform/global/data/outputs.tf",
     "terraform/global/data/main.tf",
     "terraform/global/data",
@@ -216,7 +217,6 @@
     "spring-petclinic-admin-server/target/classes/META-INF/build-info.properties",
     "spring-petclinic-admin-server/target/classes/META-INF",
     "spring-petclinic-admin-server/target/classes/git.properties",
-    "kubernetes/rbac.yaml",
     "spring-petclinic-api-gateway/target/classes/static/images/spring-pivotal-logo.png",
     "spring-petclinic-api-gateway/target/classes/static/images/spring-logo-dataflow.png",
     "spring-petclinic-api-gateway/target/classes/static/images/spring-logo-dataflow-mobile.png",
