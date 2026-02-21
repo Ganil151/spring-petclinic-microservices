@@ -71,3 +71,9 @@ variable "cluster_viewer_role_arns" {
   type        = list(string)
   default     = []
 }
+
+variable "kubernetes_groups" {
+  description = "List of Kubernetes groups to associate with the access entries"
+  type        = list(string)
+  default     = []
+}
