@@ -222,7 +222,7 @@ module "ansible" {
 
   project_name        = var.project_name
   environment         = var.environment
-  inventory_file_path = "${path.module}/../../../ansible/inventory/hosts.raw"
+  inventory_file_path = "${path.module}/../../../ansible/inventory/hosts"
   ansible_working_dir = "${path.module}/../../../ansible"
 
   jenkins_master_ip    = module.jenkins_master.public_ips[0]
