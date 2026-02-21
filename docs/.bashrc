@@ -101,22 +101,6 @@ ec2-connect() {
     aws ssm start-session --target "$1"
 }
 
-# --- GCP ---
-alias g-who='gcloud auth list'
-alias g-list='gcloud projects list'
-alias g-compute='gcloud compute instances list'
-alias g-ssh='gcloud compute ssh'
-g-proj() { gcloud config set project "$1"; }
-g-zone() { gcloud config set compute/zone "$1"; }
-
-# --- Azure ---
-alias az-who='az account show'
-alias az-login='az login'
-alias az-list='az account list --output table'
-alias az-vm='az vm list --output table'
-alias az-rg='az group list --output table'
-az-sub() { az account set --subscription "$1"; echo "Switched to Azure Sub: $1"; }
-az-res() { az resource list --resource-group "$1" --output table; }
 
 # -----------------------------------------------------------------------------
 # 13. POST-INIT VALIDATION — Verify critical tools
