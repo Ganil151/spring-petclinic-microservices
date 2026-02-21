@@ -173,20 +173,3 @@ resource "aws_eks_access_policy_association" "viewers" {
 
   depends_on = [aws_eks_access_entry.viewers]
 }
-
-resource "aws_eks_access_entry" "jenkins" {
-  cluster_name      = aws_eks_cluster.this.name
-  principal_arn     = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/${var.project_name}-${var.environment}-ec2-role" 
-  kubernetes_groups = ["ec2-user-deployers"] 
-  type              = "STANDARD"
-}
-
-resource "aws_eks_access_policy_association" "jenkins_view" {
-  cluster_name  = aws_eks_cluster.this.name
-  policy_arn    = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSViewPolicy"
-  principal_arn = aws_eks_access_entry.jenkins.principal_arn
-
-  access_scope {
-    type = "cluster"
-  }
-}
