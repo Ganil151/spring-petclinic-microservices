@@ -29,7 +29,7 @@ resource "null_resource" "encrypt_inventory" {
   }
 
   provisioner "local-exec" {
-    command = "ansible-vault encrypt ${var.inventory_file_path} --vault-password-file ../.vault_pass"
+    command = "cd ${var.ansible_working_dir} && ansible-vault encrypt inventory/hosts --vault-password-file .vault_pass"
   }
 
   depends_on = [local_file.ansible_inventory]
