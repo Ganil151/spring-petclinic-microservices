@@ -119,14 +119,14 @@ module "alb" {
 module "eks_primary" {
   source = "../../modules/compute/eks"
 
-  project_name    = var.project_name
-  environment     = var.environment
-  cluster_suffix  = "primary"
-  cluster_role    = "frontend-services"
-  vpc_id          = module.vpc.vpc_id
-  subnet_ids      = concat(module.vpc.public_subnet_ids, module.vpc.private_subnet_ids)
-  cluster_version = var.cluster_version
-  admin_role_arns = [module.iam.ec2_role_arn]
+  project_name      = var.project_name
+  environment       = var.environment
+  cluster_suffix    = "primary"
+  cluster_role      = "frontend-services"
+  vpc_id            = module.vpc.vpc_id
+  subnet_ids        = concat(module.vpc.public_subnet_ids, module.vpc.private_subnet_ids)
+  cluster_version   = var.cluster_version
+  admin_role_arns   = [module.iam.ec2_role_arn]
   kubernetes_groups = ["ec2-user-deployers"]
 }
 
