@@ -31,11 +31,6 @@ resource "aws_iam_role_policy_attachment" "ssm_core" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
 }
 
-# Attach AmazonEKSViewPolicy for cluster visibility
-resource "aws_iam_role_policy_attachment" "eks_view" {
-  role       = aws_iam_role.ec2_role.name
-  policy_arn = "arn:aws:iam::aws:policy/AmazonEKSViewPolicy"
-}
 
 # Custom policy for DescribeCluster (required for update-kubeconfig)
 resource "aws_iam_role_policy" "eks_describe" {
