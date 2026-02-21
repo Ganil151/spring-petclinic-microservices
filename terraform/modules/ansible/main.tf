@@ -22,7 +22,7 @@ resource "local_file" "ansible_inventory" {
 }
 
 resource "null_resource" "encrypt_inventory" {
-  count = var.environment == "prod" ? 1 : 0
+  count = 1
   
   triggers = {
     inventory_content = local_file.ansible_inventory.content
