@@ -13,21 +13,6 @@ alias h='history | grep'
 alias ports='netstat -tulanp'
 alias myip='curl -s https://ifconfig.me; echo'
 
-# ==========================================
-#        02. Git Mastery
-# ==========================================
-alias gs='git status'
-alias ga='git add'
-alias gaa='git add .'
-alias gc='git commit -m'
-alias gp='git push'
-alias gl='git pull'
-alias gb='git branch'
-alias gco='git checkout'
-alias gcm='git checkout main || git checkout master'
-alias gd='git diff --staged'
-alias glog="git log --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit"
-alias gundo='git reset --soft HEAD~1'
 
 # ==========================================
 #        03. Container Ops (Docker & K8s)
