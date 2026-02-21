@@ -85,5 +85,21 @@ trivy image --cache-dir /mnt/data/trivy/cache [IMAGE]
     3.  Ensure the default value (e.g., `http://10.0.1.14:9000`) is valid.
 
 ---
+
+### 6. Spring Boot Admin Server CrashLoopBackOff: "ClassNotFoundException: WebClientAutoConfiguration"
+- **Symptom**: The `admin-server` pod is in `CrashLoopBackOff` state. Pod logs (`kubectl logs -n petclinic admin-server-...`) show: `java.lang.IllegalArgumentException: Could not find class [org.springframework.boot.autoconfigure.web.reactive.function.client.WebClientAutoConfiguration]`.
+- **Cause**: The project was recently updated to Spring Boot 4 (`4.0.1`), but the `spring-petclinic-admin-server` module had a hardcoded `spring-boot-admin.version` set to an older version (`3.4.1`). With structural changes inside Spring Boot 4, the `WebClientAutoConfiguration` class moved, causing the old Admin server dependency to fail on startup.
+- **Resolution**: Edit `spring-petclinic-admin-server/pom.xml` to update `<spring-boot-admin.version>` to `4.0.0` to ensure compatibility with Spring Boot 4.
+
+---
+
+### 7. Maven "mvn: command not found" & "./mvnw compile error: release version 21 not supported"
+- **Symptom**: Running `mvn clean package` fails with `mvn: command not found`. Running `./mvnw clean package` fails with `Fatal error compiling: error: release version 21 not supported`. The `javac` command might also be missing from the path.
+- **Cause**: Maven is not installed globally on the environment, and the local Java installation (e.g., OpenJDK 25 without `javac` support for release 21, or missing JDK tools) cannot complete the build.
+- **Resolution**: 
+    1. Always use the Maven wrapper (`./mvnw`) to ensure independent execution.
+    2. If the local environment lacks the correct JDK to build the project, rely on the Jenkins pipeline's Dockerized agents or explicitly install a complete JDK 21+ (`sudo yum install java-21-amazon-corretto-devel -y`) before building.
+
+---
 *Created on: 2026-02-18*
-*Updated on: 2026-02-19*
+*Updated on: 2026-02-21*
