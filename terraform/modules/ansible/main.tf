@@ -30,7 +30,7 @@ resource "null_resource" "run_ansible" {
   }
 
   provisioner "local-exec" {
-    command = "cd ${var.ansible_working_dir} && ansible-playbook -i ${var.inventory_file_path} --private-key ${var.ssh_key_file} playbooks/site.yml"
+    command = "cd ${var.ansible_working_dir} && ansible-playbook -i inventory/hosts --private-key ${var.ssh_key_file} playbooks/site.yml"
   }
 
   depends_on = [local_file.ansible_inventory]
