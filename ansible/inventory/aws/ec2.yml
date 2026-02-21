@@ -1,0 +1,32 @@
+# Ansible Dynamic Inventory for AWS EC2
+---
+plugin: amazon.aws.aws_ec2
+regions:
+  - us-east-1
+
+# Filter instances by tags
+filters:
+  tag:Environment: dev
+  tag:Project: spring-petclinic
+  instance-state-name: running
+
+# Configure hostnames
+hostnames:
+  - ip-address
+  - dns-name
+
+# Group by tags
+keyed_groups:
+  - key: tags
+    prefix: tag
+    separator: "_"
+
+groups:
+  jenkins_master: "'jenkins-master' in (tags.keys() | list)"
+  jenkins_workers: "'jenkins-worker' in (tags.keys() | list)"
+  sonarqube: "'sonarqube' in (tags.keys() | list)"
+  eks_workers: "'eks-worker' in (tags.keys() | list)"
+  monitoring: "'monitoring' in (tags.keys() | list)"
+
+compose:
+  ansible_host: public_ip_address

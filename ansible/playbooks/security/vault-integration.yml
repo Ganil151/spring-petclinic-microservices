@@ -1,0 +1,92 @@
+---
+# Ansible Playbook for HashiCorp Vault Integration
+# Implements secret management using Vault for secure credential handling
+
+- name: Configure HashiCorp Vault Integration
+  hosts: jenkins_master
+  become: yes
+  vars:
+    vault_version: "1.15.2"
+    vault_data_dir: "/opt/vault/data"
+    vault_config_dir: "/etc/vault"
+
+  pre_tasks:
+    - name: Check if Vault is already installed
+      stat:
+        path: /usr/local/bin/vault
+      register: vault_installed
+
+  tasks:
+    - name: Download Vault Binary
+      get_url:
+        url: "https://releases.hashicorp.com/vault/{{ vault_version }}/vault_{{ vault_version }}_linux_amd64.zip"
+        dest: "/tmp/vault_{{ vault_version }}_linux_amd64.zip"
+        mode: "0644"
+      when: not vault_installed.stat.exists
+
+    - name: Unzip Vault Binary
+      unarchive:
+        src: "/tmp/vault_{{ vault_version }}_linux_amd64.zip"
+        dest: /tmp
+        remote_src: yes
+      when: not vault_installed.stat.exists
+
+    - name: Move Vault Binary to PATH
+      copy:
+        src: /tmp/vault
+        dest: /usr/local/bin/vault
+        mode: "0755"
+        remote_src: yes
+      when: not vault_installed.stat.exists
+
+    - name: Create Vault Directories
+      file:
+        path: "{{ item }}"
+        state: directory
+        mode: "0755"
+        owner: vault
+        group: vault
+      loop:
+        - "{{ vault_data_dir }}"
+        - "{{ vault_config_dir }}"
+
+    - name: Create Vault User
+      user:
+        name: vault
+        system: yes
+        shell: /bin/false
+        home: "{{ vault_data_dir }}"
+        create_home: no
+
+    - name: Create Vault Configuration
+      template:
+        src: vault.hcl.j2
+        dest: "{{ vault_config_dir }}/vault.hcl"
+        owner: vault
+        group: vault
+        mode: "0644"
+      notify: restart vault
+
+    - name: Create Vault Systemd Service
+      template:
+        src: vault.service.j2
+        dest: /etc/systemd/system/vault.service
+        mode: "0644"
+      notify: reload systemd
+
+    - name: Enable and Start Vault Service
+      systemd:
+        name: vault
+        daemon_reload: yes
+        enabled: yes
+        state: started
+
+  handlers:
+    - name: restart vault
+      systemd:
+        name: vault
+        state: restarted
+
+    - name: reload systemd
+      systemd:
+        daemon_reload: yes
