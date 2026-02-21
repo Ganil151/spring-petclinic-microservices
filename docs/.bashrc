@@ -129,5 +129,6 @@ _missing_tools() {
   done
   [[ ${#missing[@]} -gt 0 ]] && \
     echo "⚠️  Missing tools: ${missing[*]}. Install with: sudo dnf install ${missing[*]}"
+  return 0
 }
 _missing_tools
