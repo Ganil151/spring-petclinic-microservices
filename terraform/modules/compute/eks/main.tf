@@ -182,7 +182,6 @@ resource "aws_eks_access_entry" "jenkins" {
   type              = "STANDARD"
 }
 
-# 2. Association: Grant a base "View" policy via EKS API (Optional but recommended)
 resource "aws_eks_access_policy_association" "jenkins_view" {
   cluster_name  = aws_eks_cluster.this.name
   policy_arn    = "arn:aws:iam::aws:policy/AmazonEKSViewPolicy"
