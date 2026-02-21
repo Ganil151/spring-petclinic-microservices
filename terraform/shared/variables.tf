@@ -236,3 +236,11 @@ variable "worker_extra_volume_size" {
   type        = number
   default     = 0
 }
+# ============================================================================
+# ANSIBLE CONFIGURATION
+# ============================================================================
+variable "run_ansible" {
+  description = "Whether to automatically trigger Ansible playbook execution after inventory generation"
+  type        = bool
+  default     = false
+}
