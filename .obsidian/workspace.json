@@ -205,9 +205,9 @@
   },
   "active": "e8a8bfd7c13c69fd",
   "lastOpenFiles": [
+    "ansible/inventory/hosts",
     "terraform/environments/dev/spms-dev.pem",
     "ansible/inventory/hosts.raw",
-    "ansible/inventory/hosts",
     "ansible/requirements.yml",
     "docs/tree.txt",
     "docs/README.md",
