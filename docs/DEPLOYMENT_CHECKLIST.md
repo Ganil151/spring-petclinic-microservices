@@ -234,25 +234,25 @@ scripts/
 
 ### 1.2 SSH Key Strategy
 - [x] **Terraform auto-generates key pair:** `spms-dev.pem`
-- [ ] **Set secure permissions:** `chmod 400 terraform/environments/dev/spms-dev.pem`
+- [x] **Set secure permissions:** `chmod 400 terraform/environments/dev/spms-dev.pem`
 
 ### 1.3 Tool Version Verification
 
-- [ ] **Terraform:** `v1.6.0+` (Required for S3 locking)
-- [ ] **Ansible:** `core 2.14.0+`
-- [ ] **kubectl:** `v1.29.0+` (Compatible with EKS 1.29)
-- [ ] **Java:** `OpenJDK 21` (LTS Version)
-- [ ] **Maven:** `3.9.x`
-- [ ] **Docker:** `24.x.x`
-- [ ] **Helm:** `v3.14.0+`
+- [x] **Terraform:** `v1.6.0+` (Required for S3 locking)
+- [x] **Ansible:** `core 2.14.0+`
+- [x] **kubectl:** `v1.29.0+` (Compatible with EKS 1.29)
+- [x] **Java:** `OpenJDK 21` (LTS Version)
+- [x] **Maven:** `3.9.x`
+- [x] **Docker:** `24.x.x`
+- [x] **Helm:** `v3.14.0+`
 
 ### 1.4 State Backend Preparation
 
 - [x] **S3 Bucket:** `petclinic-terraform-state-17a538b3`
 - [x] **Versioning:** Enabled
 - [x] **Encryption:** AES-256
-- [ ] **DynamoDB Table:** Create `terraform-locks` for production
-- [ ] **Backend Config:** Update `backend.tf` to use DynamoDB
+- [x] **DynamoDB Table:** Create `terraform-locks` for production
+- [x] **Backend Config:** Update `backend.tf` to use DynamoDB
 
 ---
 
@@ -348,13 +348,13 @@ ansible all -m shell -a "docker --version"
 
 ### 3.3 Verification Checklist
 
-- [ ] **Java 21** installed on all nodes
-- [ ] **Docker daemon** active and running
-- [ ] **Maven 3.9.x** available
-- [ ] **kubectl** configured with EKS context
-- [ ] **Helm 3.x** installed
-- [ ] **AWS CLI v2** configured
-- [ ] **CloudWatch agent** running
+- [x] **Java 21** installed on all nodes
+- [x] **Docker daemon** active and running
+- [x] **Maven 3.9.x** available
+- [x] **kubectl** configured with EKS context
+- [x] **Helm 3.x** installed
+- [x] **AWS CLI v2** configured
+- [x] **CloudWatch agent** running
 
 ---
 

@@ -13,7 +13,7 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "docs/DEPLOYMENT_CHECKLIST.md",
+                "file": "docs/RUNBOOK_AWS_DEPLOY.md",
                 "mode": "source",
                 "source": false,
                 "backlinks": true,
@@ -28,7 +28,7 @@
                 }
               },
               "icon": "lucide-file",
-              "title": "DEPLOYMENT_CHECKLIST"
+              "title": "RUNBOOK_AWS_DEPLOY"
             }
           }
         ]
@@ -205,18 +205,18 @@
   },
   "active": "e8a8bfd7c13c69fd",
   "lastOpenFiles": [
-    "terraform/modules/compute/eks/data.tf",
-    "ansible/inventory/hosts.raw",
-    "docs/RUNBOOK_AWS_DEPLOY.md",
-    "terraform/modules/ansible/main.tf",
-    "terraform/modules/ansible/variables.tf",
-    "terraform/modules/ansible/templates/ansible_inventory.tftpl",
-    "terraform/modules/ansible/templates",
-    "terraform/modules/ansible",
-    "terraform/shared/outputs.tf",
-    "terraform/global/data/data.tf",
-    "terraform/global/data/outputs.tf",
-    "terraform/global/data/main.tf",
+    "git-command.py",
+    "docs/DEPLOYMENT_CHECKLIST.md",
+    "spring-petclinic-admin-server/target/maven-status/maven-compiler-plugin/compile/default-compile/inputFiles.lst",
+    "spring-petclinic-admin-server/target/maven-status/maven-compiler-plugin/compile/default-compile",
+    "spring-petclinic-admin-server/target/maven-status/maven-compiler-plugin/compile",
+    "spring-petclinic-admin-server/target/maven-status/maven-compiler-plugin",
+    "spring-petclinic-admin-server/target/maven-status",
+    "spring-petclinic-admin-server/target/generated-sources/annotations",
+    "spring-petclinic-admin-server/target/generated-sources",
+    "spring-petclinic-admin-server/target/classes/logback-spring.xml",
+    "spring-petclinic-admin-server/target/classes/application.yml",
+    "spring-petclinic-admin-server/target/classes/META-INF/build-info.properties",
     "spring-petclinic-api-gateway/target/classes/static/images/spring-pivotal-logo.png",
     "spring-petclinic-api-gateway/target/classes/static/images/spring-logo-dataflow.png",
     "spring-petclinic-api-gateway/target/classes/static/images/spring-logo-dataflow-mobile.png",
@@ -225,6 +225,7 @@
     "spring-petclinic-api-gateway/target/classes/static/images/favicon.png",
     "spring-petclinic-api-gateway/target/classes/static/fonts/varela_round-webfont.svg",
     "spring-petclinic-api-gateway/target/classes/static/fonts/montserrat-webfont.svg",
+    "docs/RUNBOOK_AWS_DEPLOY.md",
     "README.md",
     "docs/QUICK_REFERENCE.md",
     "docs/PORT_SUMMARY.md",
@@ -233,7 +234,6 @@
     "docs/JENKINS_TROUBLESHOOTING.md",
     "docs/JAVA21_MIGRATION.md",
     "docs/grafana-custom-metrics-dashboard.png",
-    "docs/DEPLOYMENT_CHECKLIST.md",
     "docs/REFACTORING_SUMMARY.md"
   ]
 }
