@@ -2,7 +2,7 @@
 #        01. System & Navigation
 # ==========================================
 alias cls='clear'
-alias reload='source ~/.zshrc'
+alias reload='source ~/.bashrc'
 alias path='echo $PATH | tr ":" "\n"'
 alias l='ls -lah --color=auto'
 alias mkdir='mkdir -p'
@@ -13,6 +13,14 @@ alias h='history | grep'
 alias ports='netstat -tulanp'
 alias myip='curl -s https://ifconfig.me; echo'
 
+
+# ==========================================
+#        02. Build & Microservices (Java/Maven)
+# ==========================================
+alias mci='./mvnw clean install'
+alias mcp='./mvnw clean package -DskipTests'
+alias mct='./mvnw clean test'
+alias mrun='./mvnw spring-boot:run'
 
 # ==========================================
 #        03. Container Ops (Docker & K8s)
@@ -86,3 +94,18 @@ ec2-connect() {
     aws ssm start-session --target "$1"
 }
 
+# ==========================================
+#        06. Jenkins & Sonar Node Ops
+# ==========================================
+# Service status and logs (tailoring for our ec2-user)
+alias sys-j='sudo systemctl status jenkins'
+alias logs-j='sudo journalctl -u jenkins -f'
+alias rest-j='sudo systemctl restart jenkins'
+alias sys-sonar='cd /opt/sonarqube && sudo docker-compose ps'
+alias logs-sonar='cd /opt/sonarqube && sudo docker-compose logs -f'
+
+# PetClinic EKS Quick Context
+alias k-pet='kubectl -n petclinic'
+alias kgp-pet='kubectl get pods -n petclinic'
+alias kgpw-pet='kubectl get pods -n petclinic -o wide'
+alias kgs-pet='kubectl get svc -n petclinic'
