@@ -174,7 +174,6 @@ resource "aws_eks_access_policy_association" "viewers" {
   depends_on = [aws_eks_access_entry.viewers]
 }
 
-# 1. Access Entry: Recognizes the Jenkins Role at the Cluster level
 resource "aws_eks_access_entry" "jenkins" {
   cluster_name      = aws_eks_cluster.this.name
   principal_arn     = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/jenkins-agent-role" # Update with actual ARN
