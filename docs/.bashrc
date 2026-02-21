@@ -86,18 +86,3 @@ ec2-connect() {
     aws ssm start-session --target "$1"
 }
 
-
-# -----------------------------------------------------------------------------
-# 13. POST-INIT VALIDATION — Verify critical tools
-# -----------------------------------------------------------------------------
-_missing_tools() {
-  local tools=("terraform" "kubectl" "docker" "jq" "openssl")
-  local missing=()
-  for tool in "${tools[@]}"; do
-    command -v "$tool" >/dev/null 2>&1 || missing+=("$tool")
-  done
-  [[ ${#missing[@]} -gt 0 ]] && \
-    echo "⚠️  Missing tools: ${missing[*]}. Install with: sudo dnf install ${missing[*]}"
-  return 0
-}
-_missing_tools
