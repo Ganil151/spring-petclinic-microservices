@@ -240,7 +240,7 @@ module "ansible" {
   account_id           = module.data.account_id
 
   # Toggle for auto-running. Controlled by variables or manual override.
-  run_ansible = false
+  run_ansible = var.run_ansible
 
   depends_on = [
     module.jenkins_master,

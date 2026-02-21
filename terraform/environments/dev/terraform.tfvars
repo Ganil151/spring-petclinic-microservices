@@ -78,3 +78,6 @@ worker_instance_type     = "t3.medium"
 worker_root_volume_size  = 50
 worker_extra_volume_size = 50
 
+
+# Ansible Auto-Trigger
+run_ansible = true
