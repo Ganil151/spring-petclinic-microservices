@@ -21,19 +21,6 @@ resource "local_file" "ansible_inventory" {
   })
 }
 
-resource "null_resource" "encrypt_inventory" {
-  count = 1
-  
-  triggers = {
-    inventory_content = local_file.ansible_inventory.content
-  }
-
-  provisioner "local-exec" {
-    command = "cd ${var.ansible_working_dir} && cp inventory/hosts.raw inventory/hosts && ansible-vault encrypt inventory/hosts"
-  }
-
-  depends_on = [local_file.ansible_inventory]
-}
 
 resource "null_resource" "run_ansible" {
   count = var.run_ansible ? 1 : 0
@@ -43,8 +30,8 @@ resource "null_resource" "run_ansible" {
   }
 
   provisioner "local-exec" {
-    command = "cd ${var.ansible_working_dir} && ansible-playbook -i inventory/hosts --private-key ${var.ssh_key_file} playbooks/site.yml"
+    command = "cd ${var.ansible_working_dir} && ansible-playbook -i ${var.inventory_file_path} --private-key ${var.ssh_key_file} playbooks/site.yml"
   }
 
-  depends_on = [local_file.ansible_inventory, null_resource.encrypt_inventory]
+  depends_on = [local_file.ansible_inventory]
 }
