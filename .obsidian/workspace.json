@@ -205,12 +205,12 @@
   },
   "active": "e8a8bfd7c13c69fd",
   "lastOpenFiles": [
+    "terraform/backend.tf",
     "terraform/live/dev/backend.tf",
     "terraform/live/backend.tf",
     "scripts/terraform/backend_setup.sh",
     "terraform/shared",
     "terraform/global",
-    "terraform/backend.tf",
     "terraform/modules/security/iam/policies.tf",
     "terraform/modules/security/iam/outputs.tf",
     "terraform/modules/security/iam/variables.tf",
