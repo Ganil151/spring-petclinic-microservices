@@ -192,7 +192,7 @@ done
 ```
 
 ```bash
-# 1. Create the Directory Tree
+# 1. Create Terraform Directory Tree
 mkdir -p terraform/modules/{vpc,k8s,rds,iam,monitoring,security}
 mkdir -p terraform/environments/{dev,staging,prod}
 
