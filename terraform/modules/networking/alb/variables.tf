@@ -9,8 +9,9 @@ variable "subnet_ids" {
 }
 
 variable "security_group_id" {
-  description = "Security group ID for ALB"
+  description = "Security group ID for ALB (optional - if not provided, one will be created)"
   type        = string
+  default     = null
 }
 
 variable "environment" {
@@ -52,4 +53,22 @@ variable "enable_deletion_protection" {
   description = "Enable deletion protection"
   type        = bool
   default     = false
+}
+
+variable "allowed_cidr_blocks" {
+  description = "CIDR blocks allowed to access ALB"
+  type        = list(string)
+  default     = ["0.0.0.0/0"]
+}
+
+variable "ssh_cidr_blocks" {
+  description = "CIDR blocks allowed SSH access (for bastion/debugging)"
+  type        = list(string)
+  default     = []
+}
+
+variable "enable_security_group" {
+  description = "Whether to create a security group for the ALB"
+  type        = bool
+  default     = true
 }
