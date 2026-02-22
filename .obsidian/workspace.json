@@ -205,6 +205,7 @@
   },
   "active": "e8a8bfd7c13c69fd",
   "lastOpenFiles": [
+    "terraform/backend.tf",
     "terraform/modules/security/iam/policies.tf",
     "terraform/modules/security/iam/outputs.tf",
     "terraform/modules/security/iam/variables.tf",
@@ -215,7 +216,6 @@
     "terraform/modules/compute/k8s-node/data.tf",
     "terraform/modules/compute/k8s-node/outputs.tf",
     "terraform/modules/compute/k8s-node/variables.tf",
-    "terraform/modules/compute/k8s-node/main.tf",
     "terraform/terraform/modules/security/iam/README.md",
     "terraform/terraform/modules/security/README.md",
     "terraform/terraform/modules/database/rds/README.md",
