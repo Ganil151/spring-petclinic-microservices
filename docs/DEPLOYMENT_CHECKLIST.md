@@ -103,7 +103,36 @@ ansible/
 ```
 
 ```bash
-mkdir -p ansible/{group_vars,host_vars,inventory/{aws,plugins},playbooks/{provisioning,security,deployment},roles/{kubernetes_setup/{tasks,handlers,templates,vars,defaults,files,meta},jenkins,vault_integration,trivy_scan,gitops_operator,security_tools,docker,java,kubectl,helm,awscli},scripts,vault/{policies,secrets,config},collections,plugins/{filter,lookup},tests/integration,meta}
+# 1. Create the directory tree
+mkdir -p ansible/{group_vars,host_vars,inventory/{aws,plugins},playbooks/{provisioning,security,deployment},roles/{kubernetes_setup,jenkins,vault_integration,trivy_scan,gitops_operator,security_tools,docker,java,kubectl,helm,awscli}/{tasks,handlers,templates,vars,defaults,meta},scripts,vault/{policies,secrets,config},collections,plugins/{filter,lookup},tests/integration,meta}
+
+# 2. Create the configuration and meta files
+touch ansible/ansible.cfg ansible/.ansible-lint.yml ansible/.gitignore ansible/README.md
+touch ansible/collections/requirements.yml ansible/meta/runtime.yml
+
+# 3. Create Variable files
+touch ansible/group_vars/{all,production,k8s_cluster}.yml
+touch ansible/host_vars/{jenkins-master,worker-node,sonarqube,k8s-control,k8s-worker-01}.yml
+
+# 4. Create Inventory and Plugin files
+touch ansible/inventory/aws/ec2.yml ansible/inventory/plugins/aws_ec2.yml ansible/inventory/hosts
+
+# 5. Create Playbooks
+touch ansible/playbooks/provisioning/{prerequisites,vpc-network,k8s-cluster,rds-provision}.yml
+touch ansible/playbooks/security/{vault-integration,trivy-scan,gitops-operator}.yml
+touch ansible/playbooks/deployment/{jenkins-setup,monitoring-stack,security-hardening}.yml
+touch ansible/playbooks/site.yml ansible/requirements.yml
+
+# 6. Create Scripts and Vault Secrets
+touch ansible/scripts/{bootstrap.sh,vault-unseal.sh}
+chmod +x ansible/scripts/*.sh
+touch ansible/vault/secrets/{prod-vault,db-creds}.yml
+touch ansible/vault/config/vault-connection.yml
+
+# 7. Initialize role main files (Essential for Ansible to recognize them)
+for role in kubernetes_setup jenkins vault_integration trivy_scan gitops_operator security_tools docker java kubectl helm awscli; do
+    touch ansible/roles/$role/tasks/main.yml
+done
 ```
 
 ```
