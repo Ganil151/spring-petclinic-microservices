@@ -43,12 +43,19 @@ remote_state {
     if_exists = "overwrite_terragrunt"
   }
   config = {
-    bucket         = "petclinic-state-${get_aws_account_id()}"
+    # Dev/Staging: Random suffix for privacy and simplicity
+    # Production: Account ID for audit trail and multi-account support
+    bucket         = local.env == "prod" ? "petclinic-state-${get_aws_account_id()}" : "petclinic-state-${local.env}-${substr(md5(uuid()), 0, 6)}"
     key            = "${path_relative_to_include()}/terraform.tfstate"
     region         = "us-east-1"
     encrypt        = true
     use_lockfile   = true
   }
+}
+
+# Helper locals for environment-specific configuration
+locals {
+  env = path_relative_to_include()
 }
 
 
