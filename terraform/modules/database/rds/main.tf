@@ -52,7 +52,8 @@ resource "aws_db_instance" "main" {
   maintenance_window      = "Mon:04:00-Mon:05:00"
 
   # Monitoring
-  performance_insights_enabled = true
+  performance_insights_enabled = var.db_instance_class == "db.t3.micro" ? false : true
+  performance_insights_retention_period = var.db_instance_class == "db.t3.micro" ? null : 7
   monitoring_interval          = 0  # Disabled by default (set to 60 for enhanced monitoring)
   monitoring_role_arn          = var.monitoring_interval > 0 ? var.monitoring_role_arn : null
 
