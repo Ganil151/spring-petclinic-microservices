@@ -192,22 +192,37 @@ done
 ```
 
 ```bash
-# 1. Create the Live and Module hierarchy
-mkdir -p terraform/{live/{dev,staging,prod}/{vpc,rds,k8s-cluster},modules/{networking/{vpc,alb},compute/{k8s-node,bastion},database/rds,security/iam}}
+# 1. Create the Directory Hierarchy (Modules and Live Environments)
+mkdir -p terraform/{live/{dev,staging,prod}/{vpc,alb,rds,bastion,k8s-cluster},modules/{networking/{vpc,alb},compute/{k8s-node,bastion},database/rds,security/iam}}
 
-# 2. Create the Terragrunt logic files
-touch terraform/terragrunt.hcl
+# 2. Create Root Terragrunt & Global Configs
+touch terraform/{terragrunt.hcl,providers.tf,versions.tf}
 touch terraform/live/common.yaml
+
+# 3. Create Live Environment Terragrunt Files
 for env in dev staging prod; do
     touch terraform/live/$env/env.yaml
     touch terraform/live/$env/vpc/terragrunt.hcl
+    touch terraform/live/$env/alb/terragrunt.hcl
     touch terraform/live/$env/rds/terragrunt.hcl
+    touch terraform/live/$env/bastion/terragrunt.hcl
     touch terraform/live/$env/k8s-cluster/terragrunt.hcl
 done
 
-# 3. Create the Base Module files (Main logic)
+# 4. Create Networking Module Files
 touch terraform/modules/networking/vpc/{main,variables,outputs}.tf
-touch terraform/modules/compute/k8s-node/{main,variables,outputs}.tf
+touch terraform/modules/networking/alb/{main,variables,outputs}.tf
+
+# 5. Create Compute Module Files
+touch terraform/modules/compute/k8s-node/{main,variables,outputs,data}.tf
+touch terraform/modules/compute/bastion/{main,variables,outputs}.tf
+
+# 6. Create Database & Security Module Files
+touch terraform/modules/database/rds/{main,variables,outputs,security-groups}.tf
+touch terraform/modules/security/iam/{main,variables,outputs,policies}.tf
+
+# 7. Add READMEs for Documentation
+find terraform/modules -type d -mindepth 1 -maxdepth 2 -exec touch {}/README.md \;
 ```
 
 ```
