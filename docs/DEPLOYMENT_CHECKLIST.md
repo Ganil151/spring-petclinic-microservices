@@ -138,57 +138,135 @@ done
 ```
 
 ├── terraform/
-│   ├── backend.hcl
-│   ├── terragrunt.hcl
-│   ├── modules/
-│   │   ├── vpc/
-│   │   │   ├── main.tf
-│   │   │   ├── variables.tf
-│   │   │   ├── outputs.tf
-│   │   │   └── README.md
-│   │   ├── k8s/
-│   │   │   ├── main.tf
-│   │   │   ├── variables.tf
-│   │   │   ├── outputs.tf
-│   │   │   ├── irsa.tf
-│   │   │   └── addons.tf
-│   │   ├── rds/
-│   │   │   ├── main.tf
-│   │   │   ├── variables.tf
-│   │   │   ├── outputs.tf
-│   │   │   └── security.tf
-│   │   ├── iam/
-│   │   │   ├── main.tf
-│   │   │   ├── variables.tf
-│   │   │   ├── outputs.tf
-│   │   │   └── policies.tf
-│   │   ├── monitoring/
-│   │   │   ├── main.tf
-│   │   │   ├── variables.tf
-│   │   │   └── outputs.tf
-│   │   └── security/
-│   │       ├── main.tf
-│   │       ├── variables.tf
-│   │       ├── outputs.tf
-│   │       └── waf.tf
-│   ├── environments/
-│   │   ├── dev/
-│   │   │   ├── terragrunt.hcl
-│   │   │   ├── backend.tf
-│   │   │   ├── main.tf
-│   │   │   └── terraform.tfvars
-│   │   ├── staging/
-│   │   │   ├── terragrunt.hcl
-│   │   │   ├── backend.tf
-│   │   │   ├── main.tf
-│   │   │   └── terraform.tfvars
-│   │   └── prod/
-│   │       ├── terragrunt.hcl
-│   │       ├── backend.tf
-│   │       ├── main.tf
-│   │       └── terraform.tfvars
-│   ├── providers.tf
-│   └── versions.tf
+├── live
+│   ├── common.yaml
+│   ├── dev
+│   │   ├── env.yaml
+│   │   ├── k8s-cluster
+│   │   │   └── terragrunt.hcl
+│   │   ├── rds
+│   │   │   └── terragrunt.hcl
+│   │   └── vpc
+│   │       └── terragrunt.hcl
+│   ├── prod
+│   │   ├── env.yaml
+│   │   ├── k8s-cluster
+│   │   │   └── terragrunt.hcl
+│   │   ├── rds
+│   │   │   └── terragrunt.hcl
+│   │   └── vpc
+│   │       └── terragrunt.hcl
+│   └── staging
+│       ├── env.yaml
+│       ├── k8s-cluster
+│       │   └── terragrunt.hcl
+│       ├── rds
+│       │   └── terragrunt.hcl
+│       └── vpc
+│           └── terragrunt.hcl
+├── modules
+│   ├── compute
+│   │   ├── bastion
+│   │   └── k8s-node
+│   │       ├── main.tf
+│   │       ├── outputs.tf
+│   │       └── variables.tf
+│   ├── database
+│   │   └── rds
+│   ├── networking
+│   │   ├── alb
+│   │   └── vpc
+│   │       ├── main.tf
+│   │       ├── outputs.tf
+│   │       └── variables.tf
+│   └── security
+│       └── iam
+├── terraform
+│   ├── live
+│   │   ├── common.yaml
+│   │   ├── dev
+│   │   │   ├── alb
+│   │   │   │   └── terragrunt.hcl
+│   │   │   ├── bastion
+│   │   │   │   └── terragrunt.hcl
+│   │   │   ├── env.yaml
+│   │   │   ├── k8s-cluster
+│   │   │   │   └── terragrunt.hcl
+│   │   │   ├── rds
+│   │   │   │   └── terragrunt.hcl
+│   │   │   └── vpc
+│   │   │       └── terragrunt.hcl
+│   │   ├── prod
+│   │   │   ├── alb
+│   │   │   │   └── terragrunt.hcl
+│   │   │   ├── bastion
+│   │   │   │   └── terragrunt.hcl
+│   │   │   ├── env.yaml
+│   │   │   ├── k8s-cluster
+│   │   │   │   └── terragrunt.hcl
+│   │   │   ├── rds
+│   │   │   │   └── terragrunt.hcl
+│   │   │   └── vpc
+│   │   │       └── terragrunt.hcl
+│   │   └── staging
+│   │       ├── alb
+│   │       │   └── terragrunt.hcl
+│   │       ├── bastion
+│   │       │   └── terragrunt.hcl
+│   │       ├── env.yaml
+│   │       ├── k8s-cluster
+│   │       │   └── terragrunt.hcl
+│   │       ├── rds
+│   │       │   └── terragrunt.hcl
+│   │       └── vpc
+│   │           └── terragrunt.hcl
+│   ├── modules
+│   │   ├── compute
+│   │   │   ├── bastion
+│   │   │   │   ├── main.tf
+│   │   │   │   ├── outputs.tf
+│   │   │   │   ├── README.md
+│   │   │   │   └── variables.tf
+│   │   │   ├── k8s-node
+│   │   │   │   ├── data.tf
+│   │   │   │   ├── main.tf
+│   │   │   │   ├── outputs.tf
+│   │   │   │   ├── README.md
+│   │   │   │   └── variables.tf
+│   │   │   └── README.md
+│   │   ├── database
+│   │   │   ├── rds
+│   │   │   │   ├── main.tf
+│   │   │   │   ├── outputs.tf
+│   │   │   │   ├── README.md
+│   │   │   │   ├── security-groups.tf
+│   │   │   │   └── variables.tf
+│   │   │   └── README.md
+│   │   ├── networking
+│   │   │   ├── alb
+│   │   │   │   ├── main.tf
+│   │   │   │   ├── outputs.tf
+│   │   │   │   ├── README.md
+│   │   │   │   └── variables.tf
+│   │   │   ├── README.md
+│   │   │   └── vpc
+│   │   │       ├── main.tf
+│   │   │       ├── outputs.tf
+│   │   │       ├── README.md
+│   │   │       └── variables.tf
+│   │   └── security
+│   │       ├── iam
+│   │       │   ├── main.tf
+│   │       │   ├── outputs.tf
+│   │       │   ├── policies.tf
+│   │       │   ├── README.md
+│   │       │   └── variables.tf
+│   │       └── README.md
+│   ├── providers.tf
+│   ├── terragrunt.hcl
+│   └── versions.tf
+└── terragrunt.hcl
+
 ```
 
 ```bash
