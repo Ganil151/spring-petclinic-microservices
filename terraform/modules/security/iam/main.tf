@@ -93,7 +93,7 @@ resource "aws_security_group" "config_server" {
     from_port   = 8888
     to_port     = 8888
     protocol    = "tcp"
-    cidr_blocks = [var.vpc_id]
+    cidr_blocks = [var.vpc_cidr]
   }
 
   egress {
@@ -157,7 +157,7 @@ resource "aws_security_group" "microservices" {
     from_port   = 8081
     to_port     = 8081
     protocol    = "tcp"
-    cidr_blocks = [var.vpc_id]
+    cidr_blocks = [var.vpc_cidr]
   }
 
   # Visits Service
@@ -166,7 +166,7 @@ resource "aws_security_group" "microservices" {
     from_port   = 8082
     to_port     = 8082
     protocol    = "tcp"
-    cidr_blocks = [var.vpc_id]
+    cidr_blocks = [var.vpc_cidr]
   }
 
   # Vets Service
@@ -175,7 +175,7 @@ resource "aws_security_group" "microservices" {
     from_port   = 8083
     to_port     = 8083
     protocol    = "tcp"
-    cidr_blocks = [var.vpc_id]
+    cidr_blocks = [var.vpc_cidr]
   }
 
   # GenAI Service
@@ -184,7 +184,7 @@ resource "aws_security_group" "microservices" {
     from_port   = 8084
     to_port     = 8084
     protocol    = "tcp"
-    cidr_blocks = [var.vpc_id]
+    cidr_blocks = [var.vpc_cidr]
   }
 
   # SSH from bastion (if configured)
@@ -409,7 +409,7 @@ resource "aws_security_group" "k8s_nodes" {
     from_port   = 6443
     to_port     = 6443
     protocol    = "tcp"
-    cidr_blocks = [var.vpc_id]
+    cidr_blocks = [var.vpc_cidr]
   }
 
   # Node ports range
@@ -418,7 +418,7 @@ resource "aws_security_group" "k8s_nodes" {
     from_port   = 30000
     to_port     = 32767
     protocol    = "tcp"
-    cidr_blocks = [var.vpc_id]
+    cidr_blocks = [var.vpc_cidr]
   }
 
   # SSH from bastion (if configured)
