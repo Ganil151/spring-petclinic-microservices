@@ -94,3 +94,9 @@ variable "tags" {
   type        = map(string)
   default     = {}
 }
+
+variable "allowed_cidr_blocks" {
+  description = "CIDR blocks allowed to access EC2 instances"
+  type        = list(string)
+  default     = ["0.0.0.0/0"]
+}

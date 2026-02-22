@@ -23,6 +23,43 @@ locals {
   ]
 }
 
+# =============================================================================
+# Security Group for EC2 Instances
+# =============================================================================
+resource "aws_security_group" "ec2_instances" {
+  name        = "${var.project_name}-${var.environment}-ec2-instances-sg"
+  description = "Security group for EC2 instances with all required ports"
+  vpc_id      = var.vpc_id
+
+  # Dynamic ingress rules for all allowed ports
+  dynamic "ingress" {
+    for_each = local.ingress_ports
+    content {
+      description = "Port ${ingress.value}"
+      from_port   = ingress.value
+      to_port     = ingress.value
+      protocol    = "tcp"
+      cidr_blocks = var.allowed_cidr_blocks
+    }
+  }
+
+  # Allow all outbound traffic
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+    description = "Allow all outbound traffic"
+  }
+
+  tags = merge({
+    Name        = "${var.project_name}-${var.environment}-ec2-instances-sg"
+    Environment = var.environment
+    Project     = var.project_name
+    Component   = "ec2-instances"
+  }, var.tags)
+}
+
 # Data source for latest Amazon Linux 2 AMI
 data "aws_ami" "amazon_linux_2" {
   most_recent = true
@@ -46,7 +83,7 @@ resource "aws_instance" "bastion" {
   ami                    = var.ami_id == "" ? data.aws_ami.amazon_linux_2.id : var.ami_id
   instance_type          = var.bastion_instance_type
   subnet_id              = var.subnet_ids[0]
-  vpc_security_group_ids = var.security_group_ids
+  vpc_security_group_ids = concat(var.security_group_ids, [aws_security_group.ec2_instances.id])
   key_name               = var.key_pair_name
 
   root_block_device {
@@ -96,7 +133,7 @@ resource "aws_instance" "jenkins" {
   ami                    = var.ami_id == "" ? data.aws_ami.amazon_linux_2.id : var.ami_id
   instance_type          = var.jenkins_instance_type
   subnet_id              = var.subnet_ids[0]
-  vpc_security_group_ids = var.security_group_ids
+  vpc_security_group_ids = concat(var.security_group_ids, [aws_security_group.ec2_instances.id])
   key_name               = var.key_pair_name
 
   root_block_device {
@@ -140,7 +177,7 @@ resource "aws_instance" "sonarqube" {
   ami                    = var.ami_id == "" ? data.aws_ami.amazon_linux_2.id : var.ami_id
   instance_type          = var.sonarqube_instance_type
   subnet_id              = var.subnet_ids[0]
-  vpc_security_group_ids = var.security_group_ids
+  vpc_security_group_ids = concat(var.security_group_ids, [aws_security_group.ec2_instances.id])
   key_name               = var.key_pair_name
 
   root_block_device {
@@ -184,7 +221,7 @@ resource "aws_instance" "worker_nodes" {
   ami                    = var.ami_id == "" ? data.aws_ami.amazon_linux_2.id : var.ami_id
   instance_type          = var.worker_node_type
   subnet_id              = var.subnet_ids[count.index % length(var.subnet_ids)]
-  vpc_security_group_ids = var.security_group_ids
+  vpc_security_group_ids = concat(var.security_group_ids, [aws_security_group.ec2_instances.id])
   key_name               = var.key_pair_name
 
   root_block_device {
