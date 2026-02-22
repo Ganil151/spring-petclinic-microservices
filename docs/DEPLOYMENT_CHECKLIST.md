@@ -222,7 +222,8 @@ touch terraform/modules/database/rds/{main,variables,outputs,security-groups}.tf
 touch terraform/modules/security/iam/{main,variables,outputs,policies}.tf
 
 # 7. Add READMEs for Documentation
-find terraform/modules -type d -mindepth 1 -maxdepth 2 -exec touch {}/README.md \;
+# Verify the list of folders before creating files
+find terraform/modules -mindepth 1 -maxdepth 2 -type d -print
 ```
 
 ```
