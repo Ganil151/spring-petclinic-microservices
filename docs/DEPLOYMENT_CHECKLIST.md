@@ -191,7 +191,33 @@ done
 │   └── versions.tf
 ```
 
+```bash
+# 1. Create the Directory Tree
+mkdir -p terraform/modules/{vpc,k8s,rds,iam,monitoring,security}
+mkdir -p terraform/environments/{dev,staging,prod}
 
+# 2. Create Root Configuration Files
+touch terraform/{backend.hcl,terragrunt.hcl,providers.tf,versions.tf}
+
+# 3. Create VPC Module Files
+touch terraform/modules/vpc/{main.tf,variables.tf,outputs.tf,README.md}
+
+# 4. Create K8s Module Files (Specific for self-managed k8s)
+touch terraform/modules/k8s/{main.tf,variables.tf,outputs.tf,irsa.tf,addons.tf}
+
+# 5. Create RDS Module Files
+touch terraform/modules/rds/{main.tf,variables.tf,outputs.tf,security.tf}
+
+# 6. Create IAM and Security Module Files
+touch terraform/modules/iam/{main.tf,variables.tf,outputs.tf,policies.tf}
+touch terraform/modules/monitoring/{main.tf,variables.tf,outputs.tf}
+touch terraform/modules/security/{main.tf,variables.tf,outputs.tf,waf.tf}
+
+# 7. Create Environment-Specific Files
+for env in dev staging prod; do
+    touch terraform/environments/$env/{terragrunt.hcl,backend.tf,main.tf,terraform.tfvars}
+done
+```
 
 ```
 ├── k8s/
