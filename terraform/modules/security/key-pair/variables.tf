@@ -21,9 +21,9 @@ variable "public_key" {
 }
 
 variable "key_algorithm" {
-  description = "Algorithm for key generation: ED25519 (recommended) or RSA"
+  description = "Algorithm for key generation: RSA (default) or ED25519"
   type        = string
-  default     = "ED25519"
+  default     = "RSA"
 
   validation {
     condition     = contains(["ED25519", "RSA"], var.key_algorithm)
