@@ -205,6 +205,8 @@
   },
   "active": "e8a8bfd7c13c69fd",
   "lastOpenFiles": [
+    "terraform/live/dev/backend.tf",
+    "terraform/live/backend.tf",
     "scripts/terraform/backend_setup.sh",
     "terraform/shared",
     "terraform/global",
@@ -214,8 +216,6 @@
     "terraform/modules/security/iam/variables.tf",
     "terraform/modules/security/iam/main.tf",
     "terraform/modules/compute/bastion/outputs.tf",
-    "terraform/modules/compute/bastion/variables.tf",
-    "terraform/modules/compute/bastion/main.tf",
     "terraform/terraform/modules/security/iam/README.md",
     "terraform/terraform/modules/security/README.md",
     "terraform/terraform/modules/database/rds/README.md",
