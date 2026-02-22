@@ -205,6 +205,7 @@
   },
   "active": "e8a8bfd7c13c69fd",
   "lastOpenFiles": [
+    "terraform/scripts",
     "terraform/live/dev/bastion/terragrunt.hcl",
     "terraform/live/dev/bastion",
     "terraform/live/dev/ec2-instances/terragrunt.hcl",
@@ -215,7 +216,6 @@
     "terraform/modules/compute/ec2-instances",
     "terraform/live/dev/compute/terragrunt.hcl",
     "terraform/live/dev/compute",
-    "terraform/live/dev/key-pair/spms-dev.pem",
     "docs/TERRAFORM_DEPLOYMENT.md",
     "terraform/terraform/modules/security/iam/README.md",
     "terraform/terraform/modules/security/README.md",
