@@ -35,7 +35,8 @@ ansible/
 │   └── k8s_cluster.yml
 ├── host_vars/
 │   ├── jenkins-master.yml
-|   ├── worker-no
+|   ├── worker-node.yml
+|   ├── sonarqube.yml
 │   ├── k8s-control-01.yml
 │   └── k8s-worker-01.yml
 ├── inventory/
