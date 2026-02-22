@@ -677,7 +677,7 @@ owner = "gsmash-team"
 
 ---
 
-## 🔄 CI/CD Pipeline Sequence Diagram (Commit to Cloud)
+
 
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
