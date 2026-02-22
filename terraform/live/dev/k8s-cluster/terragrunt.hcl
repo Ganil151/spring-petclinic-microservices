@@ -8,4 +8,9 @@ terraform {
   source = "../../../modules/compute/k8s-node"
 }
 
-# Pull 
+# Pull data from the VPC module deployed in the same dev
+dependency "vpc" {
+  config_path = "../vpc"
+}
+
+# Load environment var
