@@ -155,6 +155,6 @@ tfplan*
 # ==========================================
 # Terragrunt
 # ==========================================
-.terragrunt*
+.terragrunt-*
 terragrunt*
 terragrunt
