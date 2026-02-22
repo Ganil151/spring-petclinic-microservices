@@ -889,31 +889,31 @@ terragrunt --version
 
 ### 🔒 Security Groups Configuration
 
-| Service | Port | Protocol | Access From |
-|---------|------|----------|-------------|
-| **Public Access** | | | |
-| API Gateway | 8080 | TCP | 0.0.0.0/0 |
-| HTTP | 80 | TCP | 0.0.0.0/0 |
-| HTTPS | 443 | TCP | 0.0.0.0/0 |
-| **Internal Services (VPC Only)** | | | |
-| Config Server | 8888 | TCP | VPC CIDR |
-| Discovery Server (Eureka) | 8761 | TCP | VPC CIDR |
-| Customers Service | 8081 | TCP | VPC CIDR |
-| Visits Service | 8082 | TCP | VPC CIDR |
-| Vets Service | 8083 | TCP | VPC CIDR |
-| GenAI Service | 8084 | TCP | VPC CIDR |
-| Admin Server | 9090 | TCP | VPC CIDR |
-| Prometheus | 9090 | TCP | VPC CIDR |
-| Grafana | 3000 | TCP | Admin CIDR |
-| Zipkin | 9411 | TCP | Admin CIDR |
-| **Database** | | | |
-| MySQL | 3306 | TCP | Private Subnets |
-| PostgreSQL | 5432 | TCP | Private Subnets |
-| **Management** | | | |
-| SSH (Bastion) | 22 | TCP | Configurable CIDR |
-| SSH (Nodes) | 22 | TCP | Bastion SG Only |
-| K8s API | 6443 | TCP | VPC CIDR |
-| Node Ports | 30000-32767 | TCP | VPC CIDR |
+| Service                          | Port        | Protocol | Access From       |
+| -------------------------------- | ----------- | -------- | ----------------- |
+| **Public Access**                |             |          |                   |
+| API Gateway                      | 8080        | TCP      | 0.0.0.0/0         |
+| HTTP                             | 80          | TCP      | 0.0.0.0/0         |
+| HTTPS                            | 443         | TCP      | 0.0.0.0/0         |
+| **Internal Services (VPC Only)** |             |          |                   |
+| Config Server                    | 8888        | TCP      | VPC CIDR          |
+| Discovery Server (Eureka)        | 8761        | TCP      | VPC CIDR          |
+| Customers Service                | 8081        | TCP      | VPC CIDR          |
+| Visits Service                   | 8082        | TCP      | VPC CIDR          |
+| Vets Service                     | 8083        | TCP      | VPC CIDR          |
+| GenAI Service                    | 8084        | TCP      | VPC CIDR          |
+| Admin Server                     | 9090        | TCP      | VPC CIDR          |
+| Prometheus                       | 9090        | TCP      | VPC CIDR          |
+| Grafana                          | 3000        | TCP      | Admin CIDR        |
+| Zipkin                           | 9411        | TCP      | Admin CIDR        |
+| **Database**                     |             |          |                   |
+| MySQL                            | 3306        | TCP      | Private Subnets   |
+| PostgreSQL                       | 5432        | TCP      | Private Subnets   |
+| **Management**                   |             |          |                   |
+| SSH (Bastion)                    | 22          | TCP      | Configurable CIDR |
+| SSH (Nodes)                      | 22          | TCP      | Bastion SG Only   |
+| K8s API                          | 6443        | TCP      | VPC CIDR          |
+| Node Ports                       | 30000-32767 | TCP      | VPC CIDR          |
 
 - [x] **Compute Infrastructure**
   - EKS cluster with control plane and node groups
