@@ -137,8 +137,80 @@ done
 
 ```
 
-├── terraform/
-|   
+├── terraform/  
+├── live
+│   ├── common.yaml
+│   ├── dev
+│   │   ├── alb
+│   │   │   └── terragrunt.hcl
+│   │   ├── bastion
+│   │   │   └── terragrunt.hcl
+│   │   ├── env.yaml
+│   │   ├── k8s-cluster
+│   │   │   └── terragrunt.hcl
+│   │   ├── rds
+│   │   │   └── terragrunt.hcl
+│   │   └── vpc
+│   │       └── terragrunt.hcl
+│   ├── prod
+│   │   ├── alb
+│   │   │   └── terragrunt.hcl
+│   │   ├── bastion
+│   │   │   └── terragrunt.hcl
+│   │   ├── env.yaml
+│   │   ├── k8s-cluster
+│   │   │   └── terragrunt.hcl
+│   │   ├── rds
+│   │   │   └── terragrunt.hcl
+│   │   └── vpc
+│   │       └── terragrunt.hcl
+│   └── staging
+│       ├── alb
+│       │   └── terragrunt.hcl
+│       ├── bastion
+│       │   └── terragrunt.hcl
+│       ├── env.yaml
+│       ├── k8s-cluster
+│       │   └── terragrunt.hcl
+│       ├── rds
+│       │   └── terragrunt.hcl
+│       └── vpc
+│           └── terragrunt.hcl
+├── modules
+│   ├── compute
+│   │   ├── bastion
+│   │   │   ├── main.tf
+│   │   │   ├── outputs.tf
+│   │   │   └── variables.tf
+│   │   └── k8s-node
+│   │       ├── data.tf
+│   │       ├── main.tf
+│   │       ├── outputs.tf
+│   │       └── variables.tf
+│   ├── database
+│   │   └── rds
+│   │       ├── main.tf
+│   │       ├── outputs.tf
+│   │       ├── security-groups.tf
+│   │       └── variables.tf
+│   ├── networking
+│   │   ├── alb
+│   │   │   ├── main.tf
+│   │   │   ├── outputs.tf
+│   │   │   └── variables.tf
+│   │   └── vpc
+│   │       ├── main.tf
+│   │       ├── outputs.tf
+│   │       └── variables.tf
+│   └── security
+│       └── iam
+│           ├── main.tf
+│           ├── outputs.tf
+│           ├── policies.tf
+│           └── variables.tf
+├── providers.tf
+├── terragrunt.hcl
+└── versions.tf
 ```
 
 ```bash
