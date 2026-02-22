@@ -2,7 +2,7 @@
 
 # --- Configuration ---
 REGION="us-east-1"
-ENV_PATH="/home/gsmash/Documents/spring-petclinic-microservices/terraform/environments/$env/dev"
+ENV_PATH="/home/gsmash/Documents/spring-petclinic-microservices/terraform/environments/dev"
 STATE_KEY="tfstate/dev/terraform.tfstate"
 
 # --- Step 1: Create S3 Bucket (Storage Layer) ---
