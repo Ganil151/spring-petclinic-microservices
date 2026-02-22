@@ -4,8 +4,16 @@
 
 # Generate a new key pair if public_key is not provided
 resource "tls_private_key" "main" {
-  count     = var.public_key == null ? 1 : 0
-  algorithm = "ED25519"
+  count = var.public_key == null ? 1 : 0
+
+  # ED25519 is recommended for modern SSH (faster, smaller, equally secure)
+  # RSA 4096 for legacy compatibility
+  algorithm = var.key_algorithm
+  rsa_bits  = var.key_algorithm == "RSA" ? var.rsa_bits : null
+
+  lifecycle {
+    create_before_destroy = true
+  }
 }
 
 # Create the AWS key pair
@@ -13,11 +21,11 @@ resource "aws_key_pair" "main" {
   key_name   = var.key_pair_name
   public_key = var.public_key != null ? var.public_key : tls_private_key.main[0].public_key_openssh
 
-  tags = {
+  tags = merge({
     Name        = var.key_pair_name
     Environment = var.environment
     Project     = var.project_name
-  }
+  }, var.tags)
 }
 
 # Save private key to local file (if filename specified)
@@ -36,9 +44,9 @@ resource "aws_ssm_parameter" "private_key" {
   type  = "SecureString"
   value = tls_private_key.main[0].private_key_pem
 
-  tags = {
+  tags = merge({
     Name        = var.key_pair_name
     Environment = var.environment
     Project     = var.project_name
-  }
+  }, var.tags)
 }
