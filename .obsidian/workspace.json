@@ -205,6 +205,7 @@
   },
   "active": "e8a8bfd7c13c69fd",
   "lastOpenFiles": [
+    "terraform/live/dev/key-pair/spms-dev.pem",
     "docs/TERRAFORM_DEPLOYMENT.md",
     "terraform/live/dev/key-pair/terragrunt.hcl",
     "terraform/live/dev/key-pair",
@@ -249,7 +250,6 @@
     "docs/PORT_CONFIGURATION.md",
     "docs/microservices-architecture-diagram.jpg",
     "docs/JENKINS_TROUBLESHOOTING.md",
-    "docs/JAVA21_MIGRATION.md",
     "docs/grafana-custom-metrics-dashboard.png"
   ]
 }
