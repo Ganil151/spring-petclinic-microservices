@@ -608,6 +608,8 @@ owner = "gsmash-team"
 
 ## 🗺️ High-Level VPC and EKS Network Architecture
 
+**For complete deployment instructions, see:** [TERRAFORM_DEPLOYMENT.md](TERRAFORM_DEPLOYMENT.md)
+
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────┐
 │                           AWS CLOUD (us-east-1)                               │
@@ -754,6 +756,12 @@ owner = "gsmash-team"
   - S3 Backend for Terraform State with DynamoDB Locking
   - VPC Peering for hybrid connectivity (if required)
 
+- [x] **SSH Key Management**
+  - Key Pair: `spms-dev` (RSA 4096-bit)
+  - Private key stored in SSM Parameter Store
+  - Local backup: `live/dev/key-pair/spms-dev.pem` (permissions 0600)
+  - Key algorithm configurable (RSA or ED25519)
+
 - [x] **GitOps Foundation**
   - Repository structure setup with proper branching strategy
   - ArgoCD installation on EKS cluster
@@ -768,10 +776,38 @@ owner = "gsmash-team"
 ### Phase 2: Infrastructure Provisioning (Days 4-7)
 
 - [x] **Network Infrastructure**
-  - VPC with public/private subnets across 3 AZs
-  - NAT Gateways for outbound internet access
-  - Security groups with least-privilege access
+  - VPC with public/private subnets across 3 AZs (Dev: 2 AZs, Prod: 3 AZs)
+  - NAT Gateways for outbound internet access (Dev: 1 shared, Prod: HA)
+  - Security groups with least-privilege access (see table below)
   - WAF rules for ALB protection
+
+### 🔒 Security Groups Configuration
+
+| Service | Port | Protocol | Access From |
+|---------|------|----------|-------------|
+| **Public Access** | | | |
+| API Gateway | 8080 | TCP | 0.0.0.0/0 |
+| HTTP | 80 | TCP | 0.0.0.0/0 |
+| HTTPS | 443 | TCP | 0.0.0.0/0 |
+| **Internal Services (VPC Only)** | | | |
+| Config Server | 8888 | TCP | VPC CIDR |
+| Discovery Server (Eureka) | 8761 | TCP | VPC CIDR |
+| Customers Service | 8081 | TCP | VPC CIDR |
+| Visits Service | 8082 | TCP | VPC CIDR |
+| Vets Service | 8083 | TCP | VPC CIDR |
+| GenAI Service | 8084 | TCP | VPC CIDR |
+| Admin Server | 9090 | TCP | VPC CIDR |
+| Prometheus | 9090 | TCP | VPC CIDR |
+| Grafana | 3000 | TCP | Admin CIDR |
+| Zipkin | 9411 | TCP | Admin CIDR |
+| **Database** | | | |
+| MySQL | 3306 | TCP | Private Subnets |
+| PostgreSQL | 5432 | TCP | Private Subnets |
+| **Management** | | | |
+| SSH (Bastion) | 22 | TCP | Configurable CIDR |
+| SSH (Nodes) | 22 | TCP | Bastion SG Only |
+| K8s API | 6443 | TCP | VPC CIDR |
+| Node Ports | 30000-32767 | TCP | VPC CIDR |
 
 - [x] **Compute Infrastructure**
   - EKS cluster with control plane and node groups
