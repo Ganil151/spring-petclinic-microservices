@@ -153,6 +153,119 @@ aws dynamodb create-table \
 
 ---
 
+## 📋 Deployment Order
+
+### Option A: Deploy All at Once (Recommended)
+
+```bash
+cd terraform/live/dev
+
+# Initialize all modules (respects dependencies)
+terragrunt run-all init
+
+# Review the complete plan
+terragrunt run-all plan
+
+# Apply everything in correct order
+terragrunt run-all apply -auto-approve
+```
+
+### Option B: Step-by-Step Deployment
+
+```bash
+# Navigate to dev environment
+cd terraform/live/dev
+
+# ─────────────────────────────────────────────────────────────
+# 1. VPC (Network Foundation) - MUST BE FIRST
+# ─────────────────────────────────────────────────────────────
+cd vpc
+terragrunt init
+terragrunt plan
+terragrunt apply -auto-approve
+
+# ─────────────────────────────────────────────────────────────
+# 2. Key Pair (SSH Access) - Independent, can run anytime
+# ─────────────────────────────────────────────────────────────
+cd ../key-pair
+terragrunt init
+terragrunt plan
+terragrunt apply -auto-approve
+
+# ─────────────────────────────────────────────────────────────
+# 3. Security Groups (depends on VPC outputs)
+# ─────────────────────────────────────────────────────────────
+cd ../bastion
+terragrunt init
+terragrunt plan
+terragrunt apply -auto-approve
+
+# ─────────────────────────────────────────────────────────────
+# 4. ALB (depends on VPC + Security Groups)
+# ─────────────────────────────────────────────────────────────
+cd ../alb
+terragrunt init
+terragrunt plan
+terragrunt apply -auto-approve
+
+# ─────────────────────────────────────────────────────────────
+# 5. RDS Database (depends on VPC + Security Groups)
+# ─────────────────────────────────────────────────────────────
+cd ../rds
+terragrunt init
+terragrunt plan
+terragrunt apply -auto-approve
+
+# ─────────────────────────────────────────────────────────────
+# 6. Kubernetes Cluster (depends on VPC + Security Groups)
+# ─────────────────────────────────────────────────────────────
+cd ../k8s-cluster
+terragrunt init
+terragrunt plan
+terragrunt apply -auto-approve
+```
+
+### Deployment Flow Diagram
+
+```
+┌──────────────┐
+│  1. VPC      │ ──┬──────────────────────────────────────┐
+│  (vpc/)      │   │                                      │
+│  10.0.0.0/16 │   │                                      │
+└──────────────┘   │                                      │
+                   │                                      │
+┌──────────────┐   │                                      │
+│  2. Key Pair │   │                                      │
+│  (key-pair/) │   │                                      │
+│  spms-dev    │   │                                      │
+└──────────────┘   │                                      │
+                   ▼                                      │
+┌──────────────┐   │                                      │
+│  3. Security │◄──┘                                      │
+│  Groups      │                                         │
+│  (bastion/)  │                                         │
+└──────────────┘                                         │
+                   │                                      │
+                   ▼                                      │
+         ┌─────────┴─────────┐                           │
+         │                   │                           │
+         ▼                   ▼                           │
+┌──────────────┐    ┌──────────────┐                    │
+│  4. ALB      │    │  5. RDS      │                    │
+│  (alb/)      │    │  (rds/)      │                    │
+│  Port 80/443 │    │  Port 3306   │                    │
+└──────────────┘    └──────────────┘                    │
+                   │                                      │
+                   ▼                                      │
+         ┌──────────────────┐                            │
+         │  6. K8s Cluster  │◄───────────────────────────┘
+         │  (k8s-cluster/)  │
+         │  EKS + Nodes     │
+         └──────────────────┘
+```
+
+---
+
 ## 📋 Deployment Checklist
 
 ### Phase 1: Foundation (VPC + Key Pair)
