@@ -25,4 +25,8 @@ remote_state {
   }
 }
 
-# 
+# Global inputs (applies to all modules)
+inputs = {
+  project = "petclinic"
+  owner = "gsmash-team"
+}
