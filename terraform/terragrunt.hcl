@@ -19,6 +19,10 @@ remote_state {
   config = {
     bucket = "petclinic-state-${get_aws_account_id()}"
     key = ${path_relative_to_include()}/terraform.tfstate
-    region = 
+    region = "us-east-1"
+    encrypt = true
+    dynamodb_table = "terraform-lock-table"
   }
 }
+
+# 
