@@ -70,7 +70,7 @@ resource "aws_security_group" "alb" {
     from_port   = 8888
     to_port     = 8888
     protocol    = "tcp"
-    cidr_blocks = [var.vpc_id]
+    cidr_blocks = [var.vpc_cidr]
   }
 
   ingress {
@@ -78,7 +78,7 @@ resource "aws_security_group" "alb" {
     from_port   = 8761
     to_port     = 8761
     protocol    = "tcp"
-    cidr_blocks = [var.vpc_id]
+    cidr_blocks = [var.vpc_cidr]
   }
 
   # ==========================================================================
@@ -89,7 +89,7 @@ resource "aws_security_group" "alb" {
     from_port   = 8081
     to_port     = 8081
     protocol    = "tcp"
-    cidr_blocks = [var.vpc_id]
+    cidr_blocks = [var.vpc_cidr]
   }
 
   ingress {
@@ -97,7 +97,7 @@ resource "aws_security_group" "alb" {
     from_port   = 8082
     to_port     = 8082
     protocol    = "tcp"
-    cidr_blocks = [var.vpc_id]
+    cidr_blocks = [var.vpc_cidr]
   }
 
   ingress {
@@ -105,7 +105,7 @@ resource "aws_security_group" "alb" {
     from_port   = 8083
     to_port     = 8083
     protocol    = "tcp"
-    cidr_blocks = [var.vpc_id]
+    cidr_blocks = [var.vpc_cidr]
   }
 
   ingress {
@@ -113,7 +113,7 @@ resource "aws_security_group" "alb" {
     from_port   = 8084
     to_port     = 8084
     protocol    = "tcp"
-    cidr_blocks = [var.vpc_id]
+    cidr_blocks = [var.vpc_cidr]
   }
 
   # ==========================================================================
@@ -124,7 +124,7 @@ resource "aws_security_group" "alb" {
     from_port   = 9090
     to_port     = 9090
     protocol    = "tcp"
-    cidr_blocks = [var.vpc_id]
+    cidr_blocks = [var.vpc_cidr]
   }
 
   ingress {
@@ -132,7 +132,7 @@ resource "aws_security_group" "alb" {
     from_port   = 9090
     to_port     = 9090
     protocol    = "tcp"
-    cidr_blocks = [var.vpc_id]
+    cidr_blocks = [var.vpc_cidr]
   }
 
   ingress {
@@ -140,7 +140,7 @@ resource "aws_security_group" "alb" {
     from_port   = 3000
     to_port     = 3000
     protocol    = "tcp"
-    cidr_blocks = [var.vpc_id]
+    cidr_blocks = [var.vpc_cidr]
   }
 
   ingress {
@@ -148,7 +148,7 @@ resource "aws_security_group" "alb" {
     from_port   = 9411
     to_port     = 9411
     protocol    = "tcp"
-    cidr_blocks = [var.vpc_id]
+    cidr_blocks = [var.vpc_cidr]
   }
 
   # ==========================================================================
@@ -159,7 +159,7 @@ resource "aws_security_group" "alb" {
     from_port   = 3306
     to_port     = 3306
     protocol    = "tcp"
-    cidr_blocks = [var.vpc_id]
+    cidr_blocks = [var.vpc_cidr]
   }
 
   # ==========================================================================
