@@ -22,5 +22,5 @@ locals {
 inputs = {
   subnet_ids = dependency.vpc.outputs.private_subnets
   vpc_id = dependency.vpc.outputs.vpc_id
-  instance_type = 
+  instance_type = local.env_vars.instance
 }
