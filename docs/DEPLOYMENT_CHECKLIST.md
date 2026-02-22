@@ -767,6 +767,76 @@ owner = "gsmash-team"
 
 ## 🏛️ Multi-Phase Deployment Roadmap
 
+### 📋 Quick Start: Deployment Order
+
+**Deploy in this exact order** (or use `run-all` for automatic dependency management):
+
+```bash
+# Navigate to dev environment
+cd terraform/live/dev
+
+# Option A: Deploy All at Once (Recommended)
+# This respects dependencies automatically
+terragrunt run-all init
+terragrunt run-all plan
+terragrunt run-all apply -auto-approve
+
+# Option B: Deploy Step-by-Step (For Learning/Debugging)
+# 1. VPC (Network Foundation) - MUST BE FIRST
+cd vpc
+terragrunt init && terragrunt apply -auto-approve
+
+# 2. Key Pair (SSH Access) - Independent, can run anytime
+cd ../key-pair
+terragrunt init && terragrunt apply -auto-approve
+
+# 3. Security Groups (depends on VPC)
+cd ../bastion  # Security groups configured here
+terragrunt init && terragrunt apply -auto-approve
+
+# 4. ALB (depends on VPC + Security Groups)
+cd ../alb
+terragrunt init && terragrunt apply -auto-approve
+
+# 5. RDS Database (depends on VPC + Security Groups)
+cd ../rds
+terragrunt init && terragrunt apply -auto-approve
+
+# 6. Kubernetes Cluster (depends on VPC + Security Groups)
+cd ../k8s-cluster
+terragrunt init && terragrunt apply -auto-approve
+```
+
+### Deployment Dependency Graph
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    DEPLOYMENT ORDER                         │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  1️⃣  VPC (vpc/)                                            │
+│      └─ Creates: VPC, Subnets, IGW, NAT, Route Tables      │
+│                                                             │
+│  2️⃣  Key Pair (key-pair/) - Can run parallel with VPC      │
+│      └─ Creates: SSH Key (spms-dev)                        │
+│                                                             │
+│  3️⃣  Security Groups (bastion/) - After VPC                │
+│      └─ Creates: SGs for all services                      │
+│                                                             │
+│  4️⃣  ALB (alb/) - After VPC + Security Groups              │
+│      └─ Creates: Load Balancer + Target Group              │
+│                                                             │
+│  5️⃣  RDS (rds/) - After VPC + Security Groups              │
+│      └─ Creates: Aurora MySQL/PostgreSQL                   │
+│                                                             │
+│  6️⃣  K8s Cluster (k8s-cluster/) - After VPC + Security     │
+│      └─ Creates: EKS Cluster + Node Groups                 │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+---
+
 ### Phase 1: Zero-State Foundation (Days 1-3)
 
 - [x] **Infrastructure Prerequisites**
