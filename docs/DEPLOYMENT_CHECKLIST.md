@@ -67,6 +67,7 @@ spring-petclinic-microservices/
 │       ├── policies/
 │       ├── secrets/
 │       └── config/
+
 ├── terraform/
 │   ├── backend.hcl
 │   ├── terragrunt.hcl
