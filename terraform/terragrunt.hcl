@@ -1,8 +1,8 @@
 # Generate an AWS provider block
 generate "provider" {
-  path = "provider.tf"
+  path      = "provider.tf"
   if_exists = "overwrite_terragrunt"
-  contents = <<EOF
+  contents  = <<EOF
 provider "aws" {
   region = "us-east-1"
 
@@ -20,9 +20,9 @@ EOF
 
 # Also generate a versions file to pin the AWS provider version
 generate "version" {
-  path = "versions"
+  path      = "versions"
   if_exists = "overwrite_terragrunt"
-  contents = <<EOF
+  contents  = <<EOF
 terraform {
   required_version = ">= 1.10.0"
   required_providers {
@@ -38,15 +38,15 @@ EOF
 # Configure Terragrunt to automatically store state in S3
 remote_state {
   backend = "s3"
-  generate = { 
-    path = "backend.tf"
+  generate = {
+    path      = "backend.tf"
     if_exists = "overwrite_terragrunt"
   }
   config = {
-    bucket = "petclinic-state-${get_aws_account_id()}"
-    key = ${path_relative_to_include()}/terraform.tfstate
-    region = "us-east-1"
-    encrypt = true
+    bucket         = "petclinic-state-${get_aws_account_id()}"
+    key            = "${path_relative_to_include()}/terraform.tfstate"
+    region         = "us-east-1"
+    encrypt        = true
     dynamodb_table = "terraform-lock-table"
   }
 }

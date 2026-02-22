@@ -20,8 +20,8 @@ locals {
 
 # Pass inputs to the Terraform module
 inputs = {
-  subnet_ids = dependency.vpc.outputs.private_subnets
-  vpc_id = dependency.vpc.outputs.vpc_id
+  subnet_ids    = dependency.vpc.outputs.private_subnets
+  vpc_id        = dependency.vpc.outputs.vpc_id
   instance_type = local.env_vars.instance_type
-  node_count = local.env_vars.min_size
+  node_count    = local.env_vars.min_size
 }
