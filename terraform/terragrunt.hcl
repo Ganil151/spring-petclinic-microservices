@@ -56,7 +56,7 @@ remote_state {
 # Helper locals for environment-specific configuration
 locals {
   # Extract environment from path (e.g., "live/dev/vpc" -> "dev")
-  env = basename(path_relative_to_include())
+  env = element(split("/", path_relative_to_include()), 1)
   
   # Fixed random suffix for dev/staging (set once, never change)
   # Use different suffix for each environment to avoid state collisions
