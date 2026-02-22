@@ -125,7 +125,7 @@ resource "aws_security_group" "discovery_server" {
     from_port   = 8761
     to_port     = 8761
     protocol    = "tcp"
-    cidr_blocks = [var.vpc_id]
+    cidr_blocks = [var.vpc_cidr]
   }
 
   egress {
