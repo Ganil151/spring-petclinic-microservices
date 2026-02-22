@@ -205,6 +205,8 @@
   },
   "active": "e8a8bfd7c13c69fd",
   "lastOpenFiles": [
+    "terraform/live/dev/compute/terragrunt.hcl",
+    "terraform/live/dev/compute",
     "terraform/live/dev/key-pair/spms-dev.pem",
     "docs/TERRAFORM_DEPLOYMENT.md",
     "terraform/live/dev/key-pair/terragrunt.hcl",
@@ -215,8 +217,6 @@
     "terraform/modules/security/key-pair",
     "terraform/backend.tf",
     "terraform/live/dev/backend.tf",
-    "terraform/live/backend.tf",
-    "scripts/terraform/backend_setup.sh",
     "terraform/terraform/modules/security/iam/README.md",
     "terraform/terraform/modules/security/README.md",
     "terraform/terraform/modules/database/rds/README.md",
