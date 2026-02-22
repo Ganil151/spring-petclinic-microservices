@@ -25,48 +25,79 @@
 
 ```
 spring-petclinic-microservices/
-├── ansible/
-│   ├── ansible.cfg
-│   ├── group_vars/
-│   │   ├── all.yml
-│   │   └── production.yml
-│   ├── host_vars/
-│   │   └── jenkins-master.yml
-│   ├── inventory/
-│   │   ├── aws/
-│   │   │   └── ec2.yml
-│   │   └── hosts
-│   ├── playbooks/
-│   │   ├── provisioning/
-│   │   │   ├── 01-vpc-setup.yml
-│   │   │   ├── 02-eks-provision.yml
-│   │   │   └── 03-rds-provision.yml
-│   │   ├── security/
-│   │   │   ├── vault-integration.yml
-│   │   │   ├── trivy-scan.yml
-│   │   │   └── gitops-operator.yml
-│   │   ├── deployment/
-│   │   │   ├── 01-jenkins-setup.yml
-│   │   │   ├── 02-monitoring-stack.yml
-│   │   │   └── 03-security-hardening.yml
-│   │   ├── site.yml
-│   │   └── requirements.yml
-│   ├── roles/
-│   │   ├── vault_integration/
-│   │   ├── trivy_scan/
-│   │   ├── gitops_operator/
-│   │   ├── security_tools/
-│   │   ├── docker/
-│   │   ├── java/
-│   │   ├── kubectl/
-│   │   ├── helm/
-│   │   ├── awscli/
-│   │   ├── eks_setup/
-│   │   └── jenkins/
-│   └── vault/
-│       ├── policies/
-│       ├── secrets/
-│       └── config/
+ansible/
+├── ansible.cfg
+├── collections/
+│   └── requirements.yml
+├── group_vars/
+│   ├── all.yml
+│   ├── production.yml
+│   └── k8s_cluster.yml
+├── host_vars/
+│   ├── jenkins-master.yml
+│   ├── k8s-control-01.yml
+│   └── k8s-worker-01.yml
+├── inventory/
+│   ├── aws/
+│   │   └── ec2.yml
+│   ├── plugins/
+│   │   └── aws_ec2.yml
+│   └── hosts
+├── meta/
+│   └── runtime.yml
+├── playbooks/
+│   ├── provisioning/
+│   │   ├── 00-prerequisites.yml
+│   │   ├── 01-vpc-network.yml
+│   │   ├── 02-k8s-cluster.yml
+│   │   └── 03-rds-provision.yml
+│   ├── security/
+│   │   ├── vault-integration.yml
+│   │   ├── trivy-scan.yml
+│   │   └── gitops-operator.yml
+│   ├── deployment/
+│   │   ├── 01-jenkins-setup.yml
+│   │   ├── 02-monitoring-stack.yml
+│   │   └── 03-security-hardening.yml
+│   ├── site.yml
+│   └── requirements.yml
+├── plugins/
+│   ├── filter/
+│   └── lookup/
+├── roles/
+│   ├── vault_integration/
+│   ├── trivy_scan/
+│   ├── gitops_operator/
+│   ├── security_tools/
+│   ├── docker/
+│   ├── java/
+│   ├── kubectl/
+│   ├── helm/
+│   ├── awscli/
+│   ├── kubernetes_setup/
+│   │   ├── defaults/
+│   │   ├── files/
+│   │   ├── handlers/
+│   │   ├── meta/
+│   │   ├── tasks/
+│   │   ├── templates/
+│   │   └── vars/
+│   └── jenkins/
+├── scripts/
+│   ├── bootstrap.sh
+│   └── vault-unseal.sh
+├── tests/
+│   └── integration/
+├── vault/
+│   ├── policies/
+│   ├── secrets/
+│   │   ├── prod-vault.yml
+│   │   └── db-creds.yml
+│   └── config/
+│       └── vault-connection.yml
+├── .ansible-lint.yml
+├── .gitignore
+└── README.md
 ```
 
 ```
