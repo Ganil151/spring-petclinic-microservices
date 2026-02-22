@@ -53,7 +53,8 @@ resource "aws_db_instance" "main" {
 
   # Monitoring
   performance_insights_enabled = true
-  monitoring_interval          = 60
+  monitoring_interval          = 0  # Disabled by default (set to 60 for enhanced monitoring)
+  monitoring_role_arn          = var.monitoring_interval > 0 ? var.monitoring_role_arn : null
 
   # Deletion Configuration
   skip_final_snapshot  = var.skip_final_snapshot

@@ -113,3 +113,15 @@ variable "tags" {
   type        = map(string)
   default     = {}
 }
+
+variable "monitoring_interval" {
+  description = "Enhanced monitoring interval (0 = disabled, 60 = enabled)"
+  type        = number
+  default     = 0
+}
+
+variable "monitoring_role_arn" {
+  description = "IAM role ARN for enhanced monitoring"
+  type        = string
+  default     = null
+}
