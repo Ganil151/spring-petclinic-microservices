@@ -50,9 +50,9 @@ ansible/
 ├── playbooks/
 │   ├── provisioning/
 │   │   ├── prerequisites.yml
-│   │   ├── 01-vpc-network.yml
-│   │   ├── 02-k8s-cluster.yml
-│   │   └── 03-rds-provision.yml
+│   │   ├── vpc-network.yml
+│   │   ├── k8s-cluster.yml
+│   │   └── rds-provision.yml
 │   ├── security/
 │   │   ├── vault-integration.yml
 │   │   ├── trivy-scan.yml
