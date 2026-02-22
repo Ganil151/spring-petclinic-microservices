@@ -514,6 +514,7 @@ echo ${BUCKET_NAME} > .terraform_bucket_name
 ## Terragrunt Main Build
 ```groovy
 # terraform/terragrunt.hcl
+
 # Generate an AWS provider block
 
 generate "provider" {
