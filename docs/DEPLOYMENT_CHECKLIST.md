@@ -583,14 +583,37 @@ remote_state {
     if_exists = "overwrite_terragrunt"
   }
   config = {
-    bucket         = "petclinic-state-${get_aws_account_id()}"
+    # Dev/Staging: Random suffix for privacy and simplicity
+    # Production: Account ID for audit trail and multi-account support
+    bucket         = local.env == "prod" ? "petclinic-state-${get_aws_account_id()}" : "petclinic-state-${local.env}-${local.random_suffix}"
     key            = "${path_relative_to_include()}/terraform.tfstate"
     region         = "us-east-1"
     encrypt        = true
     use_lockfile   = true
   }
 }
+
+# Helper locals for environment-specific configuration
+locals {
+  env = path_relative_to_include()
+  
+  # Fixed random suffix for dev/staging (set once, never change)
+  random_suffix = "a7f3c2"  # Change this to your own 6-char random string
+}
 ```
+
+### S3 Bucket Naming Convention
+
+| Environment | Bucket Name | Rationale |
+|-------------|-------------|-----------|
+| **Dev** | `petclinic-state-dev-a7f3c2` | Random suffix (privacy) |
+| **Staging** | `petclinic-state-staging-b9d4e1` | Random suffix (privacy) |
+| **Prod** | `petclinic-state-<ACCOUNT_ID>` | Account ID (audit trail) |
+
+**Why Different Naming?**
+
+- **Dev/Staging**: Random suffix hides account ID, simpler for shared dev accounts
+- **Production**: Account ID ensures uniqueness across multi-account setups, audit compliance
 
   
 

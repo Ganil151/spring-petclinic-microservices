@@ -93,29 +93,51 @@ export AWS_PROFILE=<your-profile>
 aws sts get-caller-identity
 ```
 
-### Step 2: Create S3 Backend Bucket
+### Step 2: Create S3 Backend Buckets
+
+**Dev/Staging** use random suffixes (privacy), **Production** uses account ID (audit trail).
 
 ```bash
 #!/bin/bash
 REGION="us-east-1"
-RANDOM_SUFFIX=$(openssl rand -hex 4)
-BUCKET_NAME="petclinic-terraform-state-${RANDOM_SUFFIX}"
 
-# Create bucket with versioning and encryption
-aws s3 mb s3://${BUCKET_NAME} --region ${REGION}
-aws s3api put-bucket-versioning \
-  --bucket ${BUCKET_NAME} \
-  --versioning-configuration Status=Enabled
-aws s3api put-bucket-encryption \
-  --bucket ${BUCKET_NAME} \
+# Dev bucket with random suffix
+DEV_BUCKET="petclinic-state-dev-a7f3c2"  # Change 'a7f3c2' to your random string
+aws s3 mb s3://${DEV_BUCKET} --region ${REGION}
+aws s3api put-bucket-versioning --bucket ${DEV_BUCKET} --versioning-configuration Status=Enabled
+aws s3api put-bucket-encryption --bucket ${DEV_BUCKET} \
   --server-side-encryption-configuration '{
     "Rules": [{"ApplyServerSideEncryptionByDefault": {"SSEAlgorithm": "AES256"}}]
   }'
-aws s3api put-public-access-block \
-  --bucket ${BUCKET_NAME} \
+aws s3api put-public-access-block --bucket ${DEV_BUCKET} \
   --public-access-block-configuration "BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true"
 
-echo "Bucket created: ${BUCKET_NAME}"
+# Staging bucket with random suffix
+STAGING_BUCKET="petclinic-state-staging-b9d4e1"  # Change 'b9d4e1' to your random string
+aws s3 mb s3://${STAGING_BUCKET} --region ${REGION}
+aws s3api put-bucket-versioning --bucket ${STAGING_BUCKET} --versioning-configuration Status=Enabled
+aws s3api put-bucket-encryption --bucket ${STAGING_BUCKET} \
+  --server-side-encryption-configuration '{
+    "Rules": [{"ApplyServerSideEncryptionByDefault": {"SSEAlgorithm": "AES256"}}]
+  }'
+aws s3api put-public-access-block --bucket ${STAGING_BUCKET} \
+  --public-access-block-configuration "BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true"
+
+# Production bucket with account ID
+PROD_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+PROD_BUCKET="petclinic-state-${PROD_ACCOUNT_ID}"
+aws s3 mb s3://${PROD_BUCKET} --region ${REGION}
+aws s3api put-bucket-versioning --bucket ${PROD_BUCKET} --versioning-configuration Status=Enabled
+aws s3api put-bucket-encryption --bucket ${PROD_BUCKET} \
+  --server-side-encryption-configuration '{
+    "Rules": [{"ApplyServerSideEncryptionByDefault": {"SSEAlgorithm": "AES256"}}]
+  }'
+aws s3api put-public-access-block --bucket ${PROD_BUCKET} \
+  --public-access-block-configuration "BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true"
+
+echo "✓ Dev bucket: ${DEV_BUCKET}"
+echo "✓ Staging bucket: ${STAGING_BUCKET}"
+echo "✓ Prod bucket: ${PROD_BUCKET}"
 ```
 
 ### Step 3: Create DynamoDB Lock Table
