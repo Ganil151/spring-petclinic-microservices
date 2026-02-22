@@ -777,9 +777,14 @@ cd terraform/live/dev
 
 # Option A: Deploy All at Once (Recommended)
 # This respects dependencies automatically
-terragrunt run-all init
-terragrunt run-all plan
-terragrunt run-all apply -auto-approve
+# Note: Use 'terragrunt run --all' for Terragrunt 0.67+
+terragrunt run --all init
+terragrunt run --all plan
+terragrunt run --all apply -auto-approve
+
+# For older Terragrunt versions (< 0.67), use:
+# terragrunt run-all init
+# terragrunt run-all apply -auto-approve
 
 # Option B: Deploy Step-by-Step (For Learning/Debugging)
 # 1. VPC (Network Foundation) - MUST BE FIRST
@@ -805,6 +810,18 @@ terragrunt init && terragrunt apply -auto-approve
 # 6. Kubernetes Cluster (depends on VPC + Security Groups)
 cd ../k8s-cluster
 terragrunt init && terragrunt apply -auto-approve
+```
+
+### Terragrunt Version Commands
+
+| Terragrunt Version | Command |
+|-------------------|---------|
+| **0.67+** (New) | `terragrunt run --all <command>` |
+| **< 0.67** (Old) | `terragrunt run-all <command>` |
+
+```bash
+# Check your version
+terragrunt --version
 ```
 
 ### Deployment Dependency Graph

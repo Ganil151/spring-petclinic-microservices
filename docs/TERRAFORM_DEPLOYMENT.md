@@ -155,19 +155,28 @@ aws dynamodb create-table \
 
 ## 📋 Deployment Order
 
+### Check Your Terragrunt Version
+
+```bash
+terragrunt --version
+
+# Terragrunt 0.67+  → Use: terragrunt run --all
+# Terragrunt < 0.67 → Use: terragrunt run-all
+```
+
 ### Option A: Deploy All at Once (Recommended)
 
 ```bash
 cd terraform/live/dev
 
-# Initialize all modules (respects dependencies)
-terragrunt run-all init
+# For Terragrunt 0.67+ (new syntax)
+terragrunt run --all init
+terragrunt run --all plan
+terragrunt run --all apply -auto-approve
 
-# Review the complete plan
-terragrunt run-all plan
-
-# Apply everything in correct order
-terragrunt run-all apply -auto-approve
+# For Terragrunt < 0.67 (old syntax)
+# terragrunt run-all init
+# terragrunt run-all apply -auto-approve
 ```
 
 ### Option B: Step-by-Step Deployment

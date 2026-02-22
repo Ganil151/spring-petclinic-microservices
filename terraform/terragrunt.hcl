@@ -63,11 +63,4 @@ locals {
   random_suffix = local.env == "dev" ? "a7f3c2" : local.env == "staging" ? "b9d4e1" : "default"
 }
 
-# Include all child Terragrunt configurations for run-all commands
-# This enables deploying all modules with a single command
-include "root" {
-  path = find_in_parent_folders("root.hcl", "terragrunt.hcl")
-  expose = true
-}
-
 
