@@ -49,7 +49,7 @@ ansible/
 │   └── runtime.yml
 ├── playbooks/
 │   ├── provisioning/
-│   │   ├── 00-prerequisites.yml
+│   │   ├── prerequisites.yml
 │   │   ├── 01-vpc-network.yml
 │   │   ├── 02-k8s-cluster.yml
 │   │   └── 03-rds-provision.yml
