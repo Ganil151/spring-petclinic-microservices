@@ -13,4 +13,7 @@ dependency "vpc" {
   config_path = "../vpc"
 }
 
-# Load environment var
+# Load environment variables from the YAML
+locals {
+  env_vars = yamldecode(file(find_in_parent_folders("env.yaml")))
+}
