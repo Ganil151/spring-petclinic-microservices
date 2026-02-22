@@ -205,6 +205,17 @@
   },
   "active": "e8a8bfd7c13c69fd",
   "lastOpenFiles": [
+    "terraform/modules/security/iam/policies.tf",
+    "terraform/modules/security/iam/outputs.tf",
+    "terraform/modules/security/iam/variables.tf",
+    "terraform/modules/security/iam/main.tf",
+    "terraform/modules/compute/bastion/outputs.tf",
+    "terraform/modules/compute/bastion/variables.tf",
+    "terraform/modules/compute/bastion/main.tf",
+    "terraform/modules/compute/k8s-node/data.tf",
+    "terraform/modules/compute/k8s-node/outputs.tf",
+    "terraform/modules/compute/k8s-node/variables.tf",
+    "terraform/modules/compute/k8s-node/main.tf",
     "terraform/terraform/modules/security/iam/README.md",
     "terraform/terraform/modules/security/README.md",
     "terraform/terraform/modules/database/rds/README.md",
@@ -215,16 +226,6 @@
     "terraform/terraform/modules/networking/alb/README.md",
     "terraform/terraform/modules/networking/vpc/README.md",
     "terraform/terraform/modules/networking/README.md",
-    "terraform/terraform/modules/security/iam/policies.tf",
-    "terraform/terraform/modules/security/iam/outputs.tf",
-    "terraform/terraform/modules/security/iam/variables.tf",
-    "terraform/terraform/modules/security/iam/main.tf",
-    "terraform/terraform/modules/database/rds/security-groups.tf",
-    "terraform/terraform/modules/database/rds/outputs.tf",
-    "terraform/terraform/modules/database/rds/variables.tf",
-    "terraform/terraform/modules/database/rds/main.tf",
-    "terraform/terraform/modules/compute/bastion/outputs.tf",
-    "terraform/terraform/modules/compute/bastion/variables.tf",
     "docs/CI_CD_DIAGRAM.md",
     "docs/NETWORK_DIAGRAM.md",
     "docs/SECURITY_COMPLIANCE.md",
@@ -249,7 +250,6 @@
     "docs/microservices-architecture-diagram.jpg",
     "docs/JENKINS_TROUBLESHOOTING.md",
     "docs/JAVA21_MIGRATION.md",
-    "docs/grafana-custom-metrics-dashboard.png",
-    "docs/REFACTORING_SUMMARY.md"
+    "docs/grafana-custom-metrics-dashboard.png"
   ]
 }
