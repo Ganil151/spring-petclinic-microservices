@@ -8,7 +8,9 @@ provider "aws" {
 
   default_tags {
     tags = {
-      Proc
+      Project = "spring-petclinic"
+      Environment = "${path_relative_to_include()}"
+      Mana
     }
   }
 }
