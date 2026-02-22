@@ -1,9 +1,0 @@
----
-# ───────────────────────────────────────────────────────────────────
-# Master Site Playbook: Spring PetClinic Infrastructure
-# ───────────────────────────────────────────────────────────────────
-- import_playbook: 01-core.yml
-- import_playbook: 02-jenkins.yml
-- import_playbook: 03-workers.yml
-- import_playbook: 04-sonarqube.yml
-- import_playbook: 05-security.yml

@@ -1,5 +1,0 @@
----
-# ───────────────────────────────────────────────────────────────────
-# Legacy Entrypoint (Please use site.yml directly going forward)
-# ───────────────────────────────────────────────────────────────────
-- import_playbook: site.yml
