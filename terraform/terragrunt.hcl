@@ -10,12 +10,15 @@ provider "aws" {
     tags = {
       Project = "spring-petclinic"
       Environment = "${path_relative_to_include()}"
-      Mana
+      ManageBy = "Gsmash-DevTeam"
+      Owner = "gsmash"
     }
   }
 }
 EOF
 }
+
+# Also generate a version
 
 # Configure Terragrunt to automatically store state in S3
 remote_state {
