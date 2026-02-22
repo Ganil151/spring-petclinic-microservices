@@ -17,3 +17,8 @@ dependency "vpc" {
 locals {
   env_vars = yamldecode(file(find_in_parent_folders("env.yaml")))
 }
+
+# Pass inputs to the Terraform module
+inputs = {
+  subnet_ids = dependency.vpc.outputs.private
+}
