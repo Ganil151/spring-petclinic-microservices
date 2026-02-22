@@ -46,7 +46,7 @@ remote_state {
     # Dev/Staging: Random suffix for privacy and simplicity
     # Production: Account ID for audit trail and multi-account support
     bucket         = local.env == "prod" ? "petclinic-state-${get_aws_account_id()}" : "petclinic-state-${local.env}-${local.random_suffix}"
-    key            = "${local.env}/terraform.tfstate"
+    key            = "${path_relative_to_include()}/terraform.tfstate"
     region         = "us-east-1"
     encrypt        = true
     use_lockfile   = true
