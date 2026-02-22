@@ -45,7 +45,7 @@ remote_state {
   config = {
     # Dev/Staging: Random suffix for privacy and simplicity
     # Production: Account ID for audit trail and multi-account support
-    bucket         = local.env == "prod" ? "petclinic-state-${get_aws_account_id()}" : "petclinic-state-${local.env}-${substr(md5(uuid()), 0, 6)}"
+    bucket         = local.env == "prod" ? "petclinic-state-${get_aws_account_id()}" : "petclinic-state-${local.env}-${local.random_suffix}"
     key            = "${path_relative_to_include()}/terraform.tfstate"
     region         = "us-east-1"
     encrypt        = true
@@ -56,6 +56,11 @@ remote_state {
 # Helper locals for environment-specific configuration
 locals {
   env = path_relative_to_include()
+  
+  # Generate a consistent random suffix for dev/staging
+  # Replace with your own random 6-character string: e.g., "a7f3c2", "x9k2m4", etc.
+  # This should be set once and never changed
+  random_suffix = "a7f3c2"
 }
 
 
