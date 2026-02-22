@@ -511,7 +511,7 @@ echo ${BUCKET_NAME} > .terraform_bucket_name
 ## Provider Build
 
 
-## Terragrunt Build
+## Terragrunt Main Build
 
 
 ## 🗺️ High-Level VPC and EKS Network Architecture
