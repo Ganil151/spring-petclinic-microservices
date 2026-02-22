@@ -102,7 +102,7 @@ ansible/
 └── README.md
 ```
 
-```
+```bash
 mkdir -p ansible/{group_vars,host_vars,inventory/{aws,plugins},playbooks/{provisioning,security,deployment},roles/{kubernetes_setup/{tasks,handlers,templates,vars,defaults,files,meta},jenkins,vault_integration,trivy_scan,gitops_operator,security_tools,docker,java,kubectl,helm,awscli},scripts,vault/{policies,secrets,config},collections,plugins/{filter,lookup},tests/integration,meta}
 ```
 
