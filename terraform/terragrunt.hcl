@@ -18,7 +18,13 @@ provider "aws" {
 EOF
 }
 
-# Also generate a version
+# Also generate a versions file to pin the AWS provider version
+generate "version" {
+  path = "versions"
+  if_exists = "overwrite_terragrunt"
+  contents = <<EOF
+t
+}
 
 # Configure Terragrunt to automatically store state in S3
 remote_state {
