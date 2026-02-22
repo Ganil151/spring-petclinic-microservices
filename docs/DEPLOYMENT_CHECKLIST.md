@@ -355,7 +355,7 @@ chmod +x scripts/**/*.sh
 ```
 
 ---
-
+## 
 ## 🗺️ High-Level VPC and EKS Network Architecture
 
 ```
