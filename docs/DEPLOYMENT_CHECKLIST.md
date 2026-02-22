@@ -67,6 +67,9 @@ spring-petclinic-microservices/
 │       ├── policies/
 │       ├── secrets/
 │       └── config/
+```
+
+```
 
 ├── terraform/
 │   ├── backend.hcl
@@ -120,6 +123,9 @@ spring-petclinic-microservices/
 │   │       └── terraform.tfvars
 │   ├── providers.tf
 │   └── versions.tf
+```
+
+```
 ├── k8s/
 │   ├── base/
 │   │   ├── kustomization.yaml
