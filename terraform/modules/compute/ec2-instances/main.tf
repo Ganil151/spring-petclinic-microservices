@@ -3,6 +3,26 @@
 # Includes: Bastion Host, Jenkins Master, SonarQube, Worker Nodes
 # =============================================================================
 
+# Allowed ports for security groups
+locals {
+  ingress_ports = [
+    22,   # SSH
+    80,   # HTTP
+    443,  # HTTPS
+    8080, # Jenkins, API Gateway
+    9000, # SonarQube
+    8761, # Discovery Server
+    8888, # Config Server
+    9090, # Admin Server
+    8081, # Customers Service
+    8082, # Vets Service
+    8083, # Visits Service
+    9091, # Prometheus
+    3000, # Grafana
+    9411  # Zipkin
+  ]
+}
+
 # Data source for latest Amazon Linux 2 AMI
 data "aws_ami" "amazon_linux_2" {
   most_recent = true
