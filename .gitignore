@@ -151,3 +151,8 @@ docker-compose.override.yml
 plan_output.txt 
 tfplan_move_sonar 
 tfplan*
+
+# ==========================================
+# Terragrunt
+# ==========================================
+.terrag
