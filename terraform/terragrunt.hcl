@@ -18,6 +18,7 @@ remote_state {
   }
   config = {
     bucket = "petclinic-state-${get_aws_account_id()}"
-    key = ${}
+    key = ${path_relative_to_include()}/terraform.tfstate
+    region = 
   }
 }
