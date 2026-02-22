@@ -192,31 +192,22 @@ done
 ```
 
 ```bash
-# 1. Create Terraform Directory Tree
-mkdir -p terraform/modules/{vpc,k8s,rds,iam,monitoring,security}
-mkdir -p terraform/environments/{dev,staging,prod}
+# 1. Create the Live and Module hierarchy
+mkdir -p terraform/{live/{dev,staging,prod}/{vpc,rds,k8s-cluster},modules/{networking/{vpc,alb},compute/{k8s-node,bastion},database/rds,security/iam}}
 
-# 2. Create Root Configuration Files
-touch terraform/{backend.hcl,terragrunt.hcl,providers.tf,versions.tf}
-
-# 3. Create VPC Module Files
-touch terraform/modules/vpc/{main.tf,variables.tf,outputs.tf,README.md}
-
-# 4. Create K8s Module Files (Specific for self-managed k8s)
-touch terraform/modules/k8s/{main.tf,variables.tf,outputs.tf,irsa.tf,addons.tf}
-
-# 5. Create RDS Module Files
-touch terraform/modules/rds/{main.tf,variables.tf,outputs.tf,security.tf}
-
-# 6. Create IAM and Security Module Files
-touch terraform/modules/iam/{main.tf,variables.tf,outputs.tf,policies.tf}
-touch terraform/modules/monitoring/{main.tf,variables.tf,outputs.tf}
-touch terraform/modules/security/{main.tf,variables.tf,outputs.tf,waf.tf}
-
-# 7. Create Environment-Specific Files
+# 2. Create the Terragrunt logic files
+touch terraform/terragrunt.hcl
+touch terraform/live/common.yaml
 for env in dev staging prod; do
-    touch terraform/environments/$env/{terragrunt.hcl,backend.tf,main.tf,terraform.tfvars}
+    touch terraform/live/$env/env.yaml
+    touch terraform/live/$env/vpc/terragrunt.hcl
+    touch terraform/live/$env/rds/terragrunt.hcl
+    touch terraform/live/$env/k8s-cluster/terragrunt.hcl
 done
+
+# 3. Create the Base Module files (Main logic)
+touch terraform/modules/networking/vpc/{main,variables,outputs}.tf
+touch terraform/modules/compute/k8s-node/{main,variables,outputs}.tf
 ```
 
 ```
