@@ -958,7 +958,6 @@ filters:
 ```
 
 ### GitOps Implementation
-
 ```yaml
 # ArgoCD Application Definition
 apiVersion: argoproj.io/v1alpha1
