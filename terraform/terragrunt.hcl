@@ -17,6 +17,7 @@ remote_state {
     if_exists = "overwrite_terragrunt"
   }
   config = {
-    bucket = "p"
+    bucket = "petclinic-state-${get_aws_account_id()}"
+    key = ${}
   }
 }
