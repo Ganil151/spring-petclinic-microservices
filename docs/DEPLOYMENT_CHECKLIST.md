@@ -9,8 +9,8 @@
 
 ### Security Posture Assessment
 
-| Control Category                           | Status         | Coverage                              |
-| ------------------------------------------ | -------------- | ------------------------------------- |
+| Control Category                           | Status        | Coverage                              |
+| ------------------------------------------ | ------------- | ------------------------------------- |
 | SCA (Software Composition Analysis)        | ✅ IMPLEMENTED | OWASP Dependency Check                |
 | SAST (Static Application Security Testing) | ✅ IMPLEMENTED | SonarQube Enterprise                  |
 | Secret Management                          | ✅ IMPLEMENTED | HashiCorp Vault + AWS Secrets Manager |
