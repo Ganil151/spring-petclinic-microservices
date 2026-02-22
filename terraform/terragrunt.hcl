@@ -32,6 +32,7 @@ terraform {
     }
   }
 }
+EOF
 }
 
 # Configure Terragrunt to automatically store state in S3
