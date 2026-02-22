@@ -58,9 +58,9 @@ ansible/
 │   │   ├── trivy-scan.yml
 │   │   └── gitops-operator.yml
 │   ├── deployment/
-│   │   ├── 01-jenkins-setup.yml
-│   │   ├── 02-monitoring-stack.yml
-│   │   └── 03-security-hardening.yml
+│   │   ├── jenkins-setup.yml
+│   │   ├── monitoring-stack.yml
+│   │   └── security-hardening.yml
 │   ├── site.yml
 │   └── requirements.yml
 ├── plugins/
