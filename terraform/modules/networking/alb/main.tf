@@ -1,6 +1,30 @@
 # =============================================================================
-# Security Group for ALB and Spring Petclinic Infrastructure
+# EC2 Key Pair for SSH Access
 # =============================================================================
+
+resource "aws_key_pair" "main" {
+  count      = var.create_key_pair ? 1 : 0
+  key_name   = coalesce(var.key_pair_name, "${var.project_name}-${var.environment}-key")
+  public_key = var.key_pair_public_key != null ? var.key_pair_public_key : tls_private_key.main[0].public_key_openssh
+
+  tags = {
+    Name        = coalesce(var.key_pair_name, "${var.project_name}-${var.environment}-key")
+    Environment = var.environment
+    Project     = var.project_name
+  }
+}
+
+resource "tls_private_key" "main" {
+  count     = var.create_key_pair && var.key_pair_public_key == null ? 1 : 0
+  algorithm = "ED25519"
+}
+
+resource "local_file" "private_key" {
+  count           = var.create_key_pair && var.key_pair_public_key == null && var.key_pair_filename != "" ? 1 : 0
+  content         = tls_private_key.main[0].private_key_pem
+  filename        = var.key_pair_filename
+  file_permission = "0600"
+}
 
 resource "aws_security_group" "alb" {
   count       = var.enable_security_group && var.security_group_id == null ? 1 : 0

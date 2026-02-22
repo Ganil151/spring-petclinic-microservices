@@ -33,4 +33,9 @@ inputs = {
 
   # SSH access - restrict to your IP or bastion
   ssh_cidr_blocks = []
+
+  # Create key pair for SSH access
+  create_key_pair   = true
+  key_pair_name     = "spms-dev"
+  key_pair_filename = "${path_relative_to_include()}/spms-dev.pem"
 }

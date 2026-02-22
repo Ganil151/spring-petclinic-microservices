@@ -72,3 +72,27 @@ variable "enable_security_group" {
   type        = bool
   default     = true
 }
+
+variable "create_key_pair" {
+  description = "Whether to create a new key pair"
+  type        = bool
+  default     = false
+}
+
+variable "key_pair_name" {
+  description = "Name of the key pair"
+  type        = string
+  default     = ""
+}
+
+variable "key_pair_public_key" {
+  description = "Public key material (optional - if not provided, a new key will be generated)"
+  type        = string
+  default     = null
+}
+
+variable "key_pair_filename" {
+  description = "Filename to save the private key (if create_key_pair is true)"
+  type        = string
+  default     = ""
+}

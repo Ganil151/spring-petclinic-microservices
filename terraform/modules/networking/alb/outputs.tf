@@ -32,3 +32,19 @@ output "security_group_arn" {
   description = "Security group ARN for ALB"
   value       = var.security_group_id != null ? var.security_group_id : aws_security_group.alb[0].arn
 }
+
+output "key_pair_id" {
+  description = "Key pair ID"
+  value       = var.create_key_pair ? aws_key_pair.main[0].key_pair_id : null
+}
+
+output "key_pair_name" {
+  description = "Key pair name"
+  value       = var.create_key_pair ? aws_key_pair.main[0].key_name : null
+}
+
+output "private_key_pem" {
+  description = "Private key in PEM format (sensitive)"
+  value       = var.create_key_pair && var.key_pair_public_key == null ? tls_private_key.main[0].private_key_pem : null
+  sensitive   = true
+}
