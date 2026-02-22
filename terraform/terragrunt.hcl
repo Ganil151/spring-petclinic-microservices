@@ -23,7 +23,15 @@ generate "version" {
   path = "versions"
   if_exists = "overwrite_terragrunt"
   contents = <<EOF
-t
+terraform {
+  required_version = ">= 1.10.0"
+  required_providers {
+    aws = {
+      source = "hashicorp/aws"
+      version = ""
+    }
+  }
+}
 }
 
 # Configure Terragrunt to automatically store state in S3
