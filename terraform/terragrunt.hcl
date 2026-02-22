@@ -13,6 +13,6 @@ EOF
 remote_state {
   backend = "s3"
   generate = { 
-    
+    path = "backend.tf"
   }
 }
