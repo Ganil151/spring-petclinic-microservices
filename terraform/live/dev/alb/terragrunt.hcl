@@ -13,20 +13,24 @@ dependency "vpc" {
   config_path = "../vpc"
 }
 
-# Pull data from the security module
-dependency "security" {
-  config_path = "../bastion"
-}
-
 # Pass inputs to the Terraform module
 inputs = {
-  vpc_id            = dependency.vpc.outputs.vpc_id
-  subnet_ids        = dependency.vpc.outputs.public_subnets
-  security_group_id = dependency.security.outputs.alb_security_group_id
-  environment       = "dev"
-  project_name      = "spring-petclinic"
-  alb_name          = "petclinic-dev-alb"
-  internal          = false
-  target_port       = 8080
+  vpc_id     = dependency.vpc.outputs.vpc_id
+  subnet_ids = dependency.vpc.outputs.public_subnets
+  environment = "dev"
+  project_name = "spring-petclinic"
+  alb_name   = "petclinic-dev-alb"
+  internal   = false
+  target_port = 8080
   health_check_path = "/actuator/health"
+
+  # ALB will create its own security group
+  enable_security_group = true
+  security_group_id     = null
+
+  # Public access for ALB ports
+  allowed_cidr_blocks = ["0.0.0.0/0"]
+
+  # SSH access - restrict to your IP or bastion
+  ssh_cidr_blocks = []
 }
