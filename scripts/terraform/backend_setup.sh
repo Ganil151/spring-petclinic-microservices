@@ -1,6 +1,13 @@
 #!/bin/bash
 
 # --- Configuration ---
+# Check for AWS Identity
+echo "Checking AWS Identity..."
+if ! aws sts get-caller-identity > /dev/null 2>&1; then
+    echo "CRITICAL ERROR: No AWS credentials found. Please run 'aws configure' or 'aws sso login' first."
+    exit 1
+fi
+
 REGION="us-east-1"
 ENV_PATH="/home/gsmash/Documents/spring-petclinic-microservices/terraform/backend.tf"
 STATE_KEY="tfstate/dev/terraform.tfstate"
