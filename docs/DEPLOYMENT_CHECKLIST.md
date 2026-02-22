@@ -356,6 +356,9 @@ chmod +x scripts/**/*.sh
 
 ---
 ## 
+## Terragrunt Build
+
+
 ## 🗺️ High-Level VPC and EKS Network Architecture
 
 ```
