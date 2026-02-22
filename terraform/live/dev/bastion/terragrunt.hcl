@@ -5,7 +5,7 @@ include "root" {
 
 # Link to the actual Terraform code
 terraform {
-  source = "../../../modules/security/iam"
+  source = "../../../modules/compute/bastion"
 }
 
 # Pull data from the VPC module
@@ -13,28 +13,42 @@ dependency "vpc" {
   config_path = "../vpc"
 }
 
+# Pull data from the security module
+dependency "security" {
+  config_path = "../bastion"
+}
+
+# Pull data from the key-pair module
+dependency "keypair" {
+  config_path = "../key-pair"
+}
+
 # Pass inputs to the Terraform module
 inputs = {
-  vpc_id      = dependency.vpc.outputs.vpc_id
-  vpc_cidr    = dependency.vpc.outputs.vpc_cidr
-  environment = "dev"
-  project_name = "spring-petclinic"
+  vpc_id             = dependency.vpc.outputs.vpc_id
+  vpc_cidr           = dependency.vpc.outputs.vpc_cidr
+  subnet_ids         = dependency.vpc.outputs.public_subnets
+  security_group_ids = [
+    dependency.security.outputs.bastion_security_group_id,
+    dependency.security.outputs.k8s_nodes_security_group_id
+  ]
+  environment        = "dev"
+  project_name       = "spring-petclinic"
+  key_pair_name      = "spms-dev"
 
-  # Admin access from VPC and bastion
-  admin_cidr_blocks = ["10.0.0.0/8"]
+  # Instance Types
+  bastion_instance_type    = "t3.micro"
+  jenkins_instance_type    = "t3.medium"
+  sonarqube_instance_type  = "t3.medium"
+  worker_node_type         = "t3.large"
+  worker_node_count        = 2
 
-  # Public access for API Gateway
-  public_cidr_blocks = ["0.0.0.0/0"]
+  # Storage
+  root_volume_size    = 20
+  enable_monitoring   = true
 
-  # Database access from private subnets only
-  db_cidr_blocks = ["10.0.10.0/24", "10.0.11.0/24"]
-
-  # Enable monitoring components
-  enable_grafana    = true
-  enable_prometheus = true
-  enable_zipkin     = true
-
-  # These will be populated after bastion is deployed
-  bastion_security_group_id = null
-  alb_security_group_id     = null
+  tags = {
+    Environment = "dev"
+    ManagedBy   = "Terraform"
+  }
 }
