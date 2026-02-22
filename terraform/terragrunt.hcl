@@ -9,4 +9,10 @@ provider "aws" {
 EOF
 }
 
-# 
+# Configure Terragrunt to automatically store state in S3
+remote_state {
+  backend = "s3"
+  generate = { 
+    
+  }
+}
