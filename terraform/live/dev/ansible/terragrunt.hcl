@@ -86,6 +86,9 @@ locals {
   # Environment from path (e.g., live/dev/ansible -> dev)
   env = element(split("/", path_relative_to_include()), 1)
 
+  # Generate inventory name
+  inventory_name = "spring-petclinic-${local.env}-inventory"
+
   # Dependency Outputs (Robust evaluation)
   vpc_id               = dependency.vpc.outputs.vpc_id
   vpc_cidr             = dependency.vpc.outputs.vpc_cidr
@@ -213,14 +216,4 @@ inputs = {
   }
 }
 
-# =============================================================================
-# Local Configuration
-# =============================================================================
 
-locals {
-  # Generate inventory name
-  inventory_name = "spring-petclinic-${local.env}-inventory"
-
-  # Environment from path (e.g., live/dev/ansible -> dev)
-  env = element(split("/", path_relative_to_include()), 1)
-}
