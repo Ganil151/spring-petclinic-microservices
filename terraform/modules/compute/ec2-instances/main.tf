@@ -23,7 +23,7 @@ data "aws_ami" "amazon_linux_2" {
 # Bastion Host
 # Tier: Management
 # =============================================================================
-resource "aws_instance" "bastion-host" {
+resource "aws_instance" "bastion" {
   ami                    = var.ami_id == "" ? data.aws_ami.amazon_linux_2.id : var.ami_id
   instance_type          = var.bastion_instance_type
   subnet_id              = var.public_subnet_ids[0]
@@ -52,7 +52,7 @@ resource "aws_instance" "bastion-host" {
 
 # Elastic IP for Bastion
 resource "aws_eip" "bastion" {
-  instance = aws_instance.bastion-host.id
+  instance = aws_instance.bastion.id
   domain   = "vpc"
 
   tags = merge({
@@ -66,7 +66,7 @@ resource "aws_eip" "bastion" {
 # Jenkins Master
 # Tier: Application
 # =============================================================================
-resource "aws_instance" "jenkins-master" {
+resource "aws_instance" "jenkins" {
   ami                    = var.ami_id == "" ? data.aws_ami.amazon_linux_2.id : var.ami_id
   instance_type          = var.jenkins_instance_type
   subnet_id              = var.private_subnet_ids[0]
