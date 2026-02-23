@@ -15,8 +15,7 @@ galaxy_info:
   platforms:
     - name: Amazon
       versions:
-        - 2
-        - 2023
+        - all
   
   galaxy_tags:
     - security
