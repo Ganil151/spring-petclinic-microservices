@@ -93,10 +93,6 @@ remote_state {
     # Optional: Enable DynamoDB for state locking (already created)
     # dynamodb_table = "terraform-lock-table"
   }
-
-  # Configure retry settings for S3 operations
-  retry_max_attempts   = 3
-  retry_sleep_interval = 10
 }
 
 # =============================================================================
