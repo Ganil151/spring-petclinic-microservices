@@ -11,6 +11,10 @@ terraform {
 # Pull data from the VPC module deployed in the same dev
 dependency "vpc" {
   config_path = "../vpc"
+  mock_outputs = {
+    vpc_id          = "vpc-00000000"
+    private_subnets = ["subnet-00000001", "subnet-00000002"]
+  }
 }
 
 # Load environment variables from the YAML
