@@ -32,14 +32,21 @@ dependency "vpc" {
 dependency "ec2_instances" {
   config_path = "../ec2-instances"
 
-  # Mock outputs for plan/validate when EC2 not yet deployed
+  # Mock outputs for Management Tier
   mock_outputs = {
-    bastion_public_ip       = "52.0.0.1"
-    bastion_private_ip      = "10.0.1.1"
-    jenkins_public_ip       = "52.0.0.2"
-    jenkins_private_ip      = "10.0.1.2"
-    sonarqube_public_ip     = "52.0.0.3"
-    sonarqube_private_ip    = "10.0.1.3"
+    bastion_public_ip    = "52.0.0.1"
+    bastion_private_ip   = "10.0.1.1"
+    jenkins_public_ip    = "52.0.0.2"
+    jenkins_private_ip   = "10.0.1.2"
+    sonarqube_public_ip  = "52.0.0.3"
+    sonarqube_private_ip = "10.0.1.3"
+  }
+}
+
+dependency "k8s_nodes" {
+  config_path = "../k8s-cluster"
+
+  mock_outputs = {
     worker_node_public_ips  = ["52.0.0.4", "52.0.0.5"]
     worker_node_private_ips = ["10.0.1.4", "10.0.1.5"]
   }
@@ -88,18 +95,6 @@ locals {
 
   # Generate inventory name
   inventory_name = "spring-petclinic-${local.env}-inventory"
-
-  # Dependency Outputs (Robust evaluation)
-  vpc_id               = dependency.vpc.outputs.vpc_id
-  vpc_cidr             = dependency.vpc.outputs.vpc_cidr
-  bastion_ip           = try(dependency.ec2_instances.outputs.bastion_public_ip, "")
-  bastion_priv_ip      = try(dependency.ec2_instances.outputs.bastion_private_ip, "")
-  jenkins_master_ip    = try(dependency.ec2_instances.outputs.jenkins_public_ip, "")
-  jenkins_master_priv  = try(dependency.ec2_instances.outputs.jenkins_private_ip, "")
-  sonarqube_ip         = try(dependency.ec2_instances.outputs.sonarqube_public_ip, "")
-  sonarqube_priv       = try(dependency.ec2_instances.outputs.sonarqube_private_ip, "")
-  worker_node_ips      = try(dependency.ec2_instances.outputs.worker_node_public_ips, [])
-  worker_node_priv_ips = try(dependency.ec2_instances.outputs.worker_node_private_ips, [])
 }
 
 # =============================================================================
@@ -117,20 +112,22 @@ inputs = {
   ssh_key_file        = "${get_parent_terragrunt_dir()}/live/dev/key-pair/spms-dev.pem"
 
   # VPC Information
-  vpc_id     = local.vpc_id
-  vpc_cidr   = local.vpc_cidr
+  vpc_id     = dependency.vpc.outputs.vpc_id
+  vpc_cidr   = dependency.vpc.outputs.vpc_cidr
   aws_region = "us-east-1"
   account_id = get_aws_account_id()
 
-  # EC2 Instance Information
-  bastion_ip           = local.bastion_ip
-  bastion_priv_ip      = local.bastion_priv_ip
-  jenkins_master_ip    = local.jenkins_master_ip
-  jenkins_master_priv  = local.jenkins_master_priv
-  sonarqube_ip         = local.sonarqube_ip
-  sonarqube_priv       = local.sonarqube_priv
-  worker_node_ips      = local.worker_node_ips
-  worker_node_priv_ips = local.worker_node_priv_ips
+  # EC2 Instance Information (Management Tier)
+  bastion_ip          = try(dependency.ec2_instances.outputs.bastion_public_ip, "")
+  bastion_priv_ip     = try(dependency.ec2_instances.outputs.bastion_private_ip, "")
+  jenkins_master_ip   = try(dependency.ec2_instances.outputs.jenkins_public_ip, "")
+  jenkins_master_priv = try(dependency.ec2_instances.outputs.jenkins_private_ip, "")
+  sonarqube_ip        = try(dependency.ec2_instances.outputs.sonarqube_public_ip, "")
+  sonarqube_priv      = try(dependency.ec2_instances.outputs.sonarqube_private_ip, "")
+
+  # Kubernetes Cluster (Worker Tier)
+  worker_node_ips      = try(dependency.k8s_nodes.outputs.worker_node_public_ips, [])
+  worker_node_priv_ips = try(dependency.k8s_nodes.outputs.worker_node_private_ips, [])
 
   # Security Groups
   security_groups = {

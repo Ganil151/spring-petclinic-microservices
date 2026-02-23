@@ -66,7 +66,7 @@ inputs = {
   jenkins_instance_type   = local.env_vars.instances.jenkins_master.type
   sonarqube_instance_type = local.env_vars.instances.sonarqube.type
   worker_node_type        = local.env_vars.k8s_cluster.worker_node_type
-  worker_node_count       = local.env_vars.k8s_cluster.desired_capacity
+  worker_node_count       = 0 # Moved to k8s-cluster module to avoid duplication
 
   # Storage Configuration
   root_volume_size            = 20
