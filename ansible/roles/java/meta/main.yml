@@ -5,7 +5,7 @@
 galaxy_info:
   role_name: java
   author: Spring Petclinic Team
-  description: Install Amazon Corretto 17 (Java 17)
+  description: Install Amazon Corretto 21 (Java 21)
   company: Spring Petclinic
   
   license: MIT

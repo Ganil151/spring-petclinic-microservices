@@ -132,7 +132,7 @@ Applies security hardening to all instances:
 | `git` | Git installation | `git`, `vcs` |
 | `gitops_operator` | ArgoCD/FluxCD installation | `gitops`, `argocd` |
 | `helm` | Helm 3 installation | `helm`, `k8s` |
-| `java` | Java 17 (Amazon Corretto) | `java`, `jdk` |
+| `java` | Java 21 (Amazon Corretto) | `java`, `jdk` |
 | `jenkins` | Jenkins master deployment | `jenkins`, `cicd` |
 | `kubectl` | kubectl installation | `kubectl`, `k8s` |
 | `kubernetes_setup` | Kubernetes worker configuration | `kubernetes`, `k8s` |
