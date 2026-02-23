@@ -1,135 +1,99 @@
 ---
 # =============================================================================
-# Security Tools Role for Spring Petclinic Microservices
+# Security Tools Role — tasks/main.yml
+# Installs fail2ban, audit, and hardens sysctl on Amazon Linux 2
 # =============================================================================
 
-- name: Install Security Tools
-  hosts: "{{ target_hosts | default('all') }}"
-  become: true
-  gather_facts: true
-  
-  vars:
-    security_tools:
+# ── Package Installation ──────────────────────────────────────────────────────
+- name: Install security packages
+  ansible.builtin.yum:
+    name:
       - fail2ban
+      - fail2ban-systemd
       - audit
-      - aide
-    fail2ban_enabled: true
-    audit_enabled: true
-  
-  tasks:
-    - name: Display security tools installation start
-      ansible.builtin.debug:
-        msg: "Starting security tools installation on {{ inventory_hostname }}"
-      tags: always
+    state: present
+  tags: security
 
-    - name: Install security packages
-      ansible.builtin.yum:
-        name: "{{ security_tools }}"
-        state: present
-      tags: security
+# ── Fail2ban ──────────────────────────────────────────────────────────────────
+- name: Create fail2ban jail.local
+  ansible.builtin.copy:
+    dest: /etc/fail2ban/jail.local
+    content: |
+      [DEFAULT]
+      bantime  = 3600
+      findtime = 600
+      maxretry = 3
+      backend  = systemd
 
-    # =============================================================================
-    # Fail2ban Configuration
-    # =============================================================================
-    - name: Configure fail2ban
-      when: fail2ban_enabled | bool
-      tags:
-        - security
-        - fail2ban
+      [sshd]
+      enabled  = true
+      port     = ssh
+      logpath  = %(sshd_log)s
+    mode: '0644'
+    owner: root
+    group: root
+  notify: Restart fail2ban
+  tags:
+    - security
+    - fail2ban
 
-      block:
-        - name: Create fail2ban configuration directory
-          ansible.builtin.file:
-            path: /etc/fail2ban
-            state: directory
-            mode: '0755'
+- name: Enable and start fail2ban
+  ansible.builtin.systemd:
+    name: fail2ban
+    state: started
+    enabled: true
+  tags:
+    - security
+    - fail2ban
 
-        - name: Configure fail2ban jail.local
-          ansible.builtin.template:
-            src: templates/fail2ban_jail_local.j2
-            dest: /etc/fail2ban/jail.local
-            mode: '0644'
-          notify: Restart fail2ban
+# ── Audit Daemon ──────────────────────────────────────────────────────────────
+- name: Enable and start auditd
+  ansible.builtin.systemd:
+    name: auditd
+    state: started
+    enabled: true
+  tags:
+    - security
+    - audit
 
-        - name: Enable and start fail2ban
-          ansible.builtin.systemd:
-            name: fail2ban
-            state: started
-            enabled: true
+- name: Configure audit rules
+  ansible.builtin.lineinfile:
+    path: /etc/audit/rules.d/audit.rules
+    line: "{{ item }}"
+    create: true
+    mode: '0600'
+  loop:
+    - "-w /etc/ssh/sshd_config -p wa -k sshd_config"
+    - "-w /var/log/secure -p wa -k secure_log"
+    - "-w /etc/passwd -p wa -k passwd_changes"
+    - "-w /etc/group -p wa -k group_changes"
+    - "-w /etc/shadow -p wa -k shadow_changes"
+    - "-w /etc/sudoers -p wa -k sudoers_changes"
+  notify: Reload auditd rules
+  tags:
+    - security
+    - audit
 
-    # =============================================================================
-    # Audit Configuration
-    # =============================================================================
-    - name: Configure auditd
-      when: audit_enabled | bool
-      tags:
-        - security
-        - audit
-
-      block:
-        - name: Enable and start auditd
-          ansible.builtin.systemd:
-            name: auditd
-            state: started
-            enabled: true
-
-        - name: Configure audit rules
-          ansible.builtin.lineinfile:
-            path: /etc/audit/rules.d/audit.rules
-            line: "{{ item }}"
-            create: true
-            mode: '0600'
-          loop:
-            - "-w /etc/ssh/sshd_config -p wa -k sshd_config"
-            - "-w /var/log/secure -p wa -k secure_log"
-            - "-w /etc/passwd -p wa -k passwd_changes"
-            - "-w /etc/group -p wa -k group_changes"
-            - "-w /etc/shadow -p wa -k shadow_changes"
-            - "-w /etc/sudoers -p wa -k sudoers_changes"
-
-    # =============================================================================
-    # System Hardening
-    # =============================================================================
-    - name: Set kernel security parameters
-      ansible.posix.sysctl:
-        name: "{{ item.name }}"
-        value: "{{ item.value }}"
-        sysctl_set: true
-        state: present
-        reload: true
-      loop:
-        - { name: 'net.ipv4.tcp_syncookies', value: '1' }
-        - { name: 'net.ipv4.conf.all.accept_redirects', value: '0' }
-        - { name: 'net.ipv4.conf.default.accept_redirects', value: '0' }
-        - { name: 'net.ipv4.conf.all.send_redirects', value: '0' }
-        - { name: 'net.ipv4.conf.default.send_redirects', value: '0' }
-        - { name: 'net.ipv4.conf.all.accept_source_route', value: '0' }
-        - { name: 'net.ipv4.conf.default.accept_source_route', value: '0' }
-        - { name: 'net.ipv4.icmp_echo_ignore_broadcasts', value: '1' }
-        - { name: 'net.ipv4.conf.all.log_martians', value: '1' }
-        - { name: 'net.ipv4.conf.default.log_martians', value: '1' }
-        - { name: 'kernel.randomize_va_space', value: '2' }
-      tags:
-        - security
-        - hardening
-
-    - name: Verify security tools installation
-      ansible.builtin.command: "{{ item }} --version"
-      loop:
-        - fail2ban-client
-        - auditctl
-      register: security_tools_check
-      changed_when: false
-      failed_when: false
-      tags: security
-
-    - name: Display security tools versions
-      ansible.builtin.debug:
-        var: security_tools_check.results
-      tags: security
-
-  handlers:
-    - name: Restart fail2ban
-      ansible.builtin.systemd:
-        name: fail2ban
-        state: restarted
+# ── Sysctl Hardening ─────────────────────────────────────────────────────────
+- name: Apply kernel security parameters
+  ansible.posix.sysctl:
+    name: "{{ item.name }}"
+    value: "{{ item.value }}"
+    sysctl_set: true
+    state: present
+    reload: true
+  loop:
+    - { name: 'net.ipv4.tcp_syncookies', value: '1' }
+    - { name: 'net.ipv4.conf.all.accept_redirects', value: '0' }
+    - { name: 'net.ipv4.conf.default.accept_redirects', value: '0' }
+    - { name: 'net.ipv4.conf.all.send_redirects', value: '0' }
+    - { name: 'net.ipv4.conf.default.send_redirects', value: '0' }
+    - { name: 'net.ipv4.conf.all.accept_source_route', value: '0' }
+    - { name: 'net.ipv4.conf.default.accept_source_route', value: '0' }
+    - { name: 'net.ipv4.icmp_echo_ignore_broadcasts', value: '1' }
+    - { name: 'net.ipv4.conf.all.log_martians', value: '1' }
+    - { name: 'net.ipv4.conf.default.log_martians', value: '1' }
+    - { name: 'kernel.randomize_va_space', value: '2' }
+  tags:
+    - security
+    - hardening

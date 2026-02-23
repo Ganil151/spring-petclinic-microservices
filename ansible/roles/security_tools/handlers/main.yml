@@ -1,0 +1,13 @@
+---
+# Security Tools Role Handlers
+
+- name: Restart fail2ban
+  ansible.builtin.systemd:
+    name: fail2ban
+    state: restarted
+
+- name: Reload auditd rules
+  ansible.builtin.command:
+    cmd: augenrules --load
+  changed_when: false
+  failed_when: false
