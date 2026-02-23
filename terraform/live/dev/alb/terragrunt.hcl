@@ -28,9 +28,9 @@ dependency "security" {
 
 # Pass inputs to the Terraform module
 inputs = {
-  vpc_id            = dependency.vpc.outputs.vpc_id
-  vpc_cidr          = dependency.vpc.outputs.vpc_cidr
-  subnet_ids        = dependency.vpc.outputs.public_subnets
+  vpc_id            = try(dependency.vpc.outputs.vpc_id, "")
+  vpc_cidr          = try(dependency.vpc.outputs.vpc_cidr, "")
+  subnet_ids        = try(dependency.vpc.outputs.public_subnets, [])
   environment       = "dev"
   project_name      = "spring-petclinic"
   alb_name          = "petclinic-dev-alb"
@@ -40,7 +40,7 @@ inputs = {
 
   # Use existing security group from security module
   enable_security_group = false
-  security_group_id     = dependency.security.outputs.web_sg_id
+  security_group_id     = try(dependency.security.outputs.web_sg_id, "")
 
   # Public access for ALB ports
   allowed_cidr_blocks = ["0.0.0.0/0"]

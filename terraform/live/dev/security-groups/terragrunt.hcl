@@ -21,8 +21,8 @@ dependency "vpc" {
 
 # Pass inputs to the Terraform module
 inputs = {
-  vpc_id       = dependency.vpc.outputs.vpc_id
-  vpc_cidr     = dependency.vpc.outputs.vpc_cidr
+  vpc_id       = try(dependency.vpc.outputs.vpc_id, "vpc-mock")
+  vpc_cidr     = try(dependency.vpc.outputs.vpc_cidr, "10.0.0.0/16")
   environment  = "dev"
   project_name = "spring-petclinic"
 

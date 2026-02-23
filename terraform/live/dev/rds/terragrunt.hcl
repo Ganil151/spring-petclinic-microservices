@@ -28,9 +28,9 @@ dependency "security" {
 
 # Pass inputs to the Terraform module
 inputs = {
-  vpc_id       = dependency.vpc.outputs.vpc_id
-  vpc_cidr     = dependency.vpc.outputs.vpc_cidr
-  subnet_ids   = dependency.vpc.outputs.private_subnets
+  vpc_id       = try(dependency.vpc.outputs.vpc_id, "")
+  vpc_cidr     = try(dependency.vpc.outputs.vpc_cidr, "")
+  subnet_ids   = try(dependency.vpc.outputs.private_subnets, [])
   environment  = "dev"
   project_name = "spring-petclinic"
 
@@ -48,7 +48,7 @@ inputs = {
 
   # Security
   publicly_accessible = false
-  security_group_ids  = [dependency.security.outputs.data_sg_id]
+  security_group_ids  = [try(dependency.security.outputs.data_sg_id, "")]
 
   # Backup
   backup_retention_period = 7
