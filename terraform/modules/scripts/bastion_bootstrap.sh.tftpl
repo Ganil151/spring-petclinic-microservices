@@ -209,12 +209,12 @@ log "Setting up MOTD..."
 sudo tee /etc/motd > /dev/null <<EOF
 ╔══════════════════════════════════════════════════════════════════════════════╗
 ║                    Spring Petclinic Microservices                            ║
-║                           Bastion Host - ${ENVIRONMENT^^}                              ║
+║                           Bastion Host - $${ENVIRONMENT^^}                              ║
 ╠══════════════════════════════════════════════════════════════════════════════╣
-║  Project: ${PROJECT_NAME}
-║  Environment: ${ENVIRONMENT}
-║  Hostname: $(hostname)
-║  Private IP: $(hostname -I | awk '{print $1}')
+║  Project: $${PROJECT_NAME}
+║  Environment: $${ENVIRONMENT}
+║  Hostname: \$(hostname)
+║  Private IP: \$(hostname -I | awk '{print \$1}')
 ╠══════════════════════════════════════════════════════════════════════════════╣
 ║  Quick Start:                                                                ║
 ║    • Terraform: cd /opt/spring-petclinic/terraform/live/dev                 ║
