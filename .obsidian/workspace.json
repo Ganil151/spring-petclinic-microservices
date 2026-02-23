@@ -205,6 +205,7 @@
   },
   "active": "e8a8bfd7c13c69fd",
   "lastOpenFiles": [
+    "docs/DESTRUCTION_GUIDE.md",
     "PROJECT_UPDATE_SUMMARY.md",
     "terraform/live/dev/ansible/terragrunt.hcl",
     "terraform/live/dev/ansible",
@@ -249,7 +250,6 @@
     "docs/PORT_SUMMARY.md",
     "docs/PORT_CONFIGURATION.md",
     "docs/microservices-architecture-diagram.jpg",
-    "docs/JENKINS_TROUBLESHOOTING.md",
     "docs/grafana-custom-metrics-dashboard.png"
   ]
 }
