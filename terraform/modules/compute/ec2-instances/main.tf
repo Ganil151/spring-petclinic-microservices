@@ -129,14 +129,7 @@ resource "aws_instance" "bastion" {
 
   monitoring = var.enable_monitoring
 
-  user_data = <<-EOF
-              #!/bin/bash
-              yum update -y
-              yum install -y docker git wget
-              systemctl start docker
-              systemctl enable docker
-              usermod -aG docker ec2-user
-              EOF
+  user_data = "terraform/scripts/bastion_bootstrap.sh"
 
   tags = merge({
     Name        = "${var.project_name}-${var.environment}-${var.bastion_instance_name}"
