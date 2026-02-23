@@ -23,11 +23,11 @@ ansible_ssh_private_key_file=${var.ssh_key_file}
 ansible_python_interpreter=/usr/bin/python3
 
 # 🧪 Industrial Rigor: SSH Proxy Tunneling through Bastion
-%{~ if var.bastion_ip != "" ~}
+%{ if var.bastion_ip != "" }
 ansible_ssh_common_args='-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ProxyCommand="ssh -W %%h:%%p -q ${var.ssh_user}@${var.bastion_ip} -i ${var.ssh_key_file} -o StrictHostKeyChecking=no"'
-%{~ else ~}
+%{ else }
 ansible_ssh_common_args='-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
-%{~ endif ~}
+%{ endif }
 
 # AWS Configuration
 aws_region=${var.aws_region}
@@ -62,9 +62,9 @@ sonarqube_http_port=9000
 # ─────────────────────────────────────────────────────────────────────────────
 
 [k8s_workers]
-%{~ for idx, ip in var.worker_node_priv_ips ~}
+%{ for idx, ip in var.worker_node_priv_ips }
 worker-node-${idx + 1} ansible_host=${ip} private_ip=${ip}
-%{~ endfor ~}
+%{ endfor }
 
 [k8s_workers:vars]
 ansible_roles=java,docker,awscli,maven,kubectl,helm
@@ -75,9 +75,9 @@ kubernetes_role=worker
 # ─────────────────────────────────────────────────────────────────────────────
 
 [bastion_hosts]
-%{~ if var.bastion_ip != "" ~}
+%{ if var.bastion_ip != "" }
 bastion-host ansible_host=${var.bastion_ip} private_ip=${var.bastion_priv_ip} ansible_ssh_common_args='-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
-%{~ endif ~}
+%{ endif }
 
 [bastion_hosts:vars]
 ansible_roles=docker,git
@@ -96,18 +96,18 @@ k8s_workers
 [${var.environment}_all:children]
 ${var.environment}_cicd
 ${var.environment}_k8s
-%{~ if var.bastion_ip != "" ~}
+%{ if var.bastion_ip != "" }
 bastion_hosts
-%{~ endif ~}
+%{ endif }
 
 # ─────────────────────────────────────────────────────────────────────────────
 # EKS Cluster Configuration
 # ─────────────────────────────────────────────────────────────────────────────
 
-%{~ if var.eks_cluster_name != "" ~}
+%{ if var.eks_cluster_name != "" }
 [eks_clusters]
 ${var.eks_cluster_name}-${var.cluster_suffix} region=${var.aws_region} vpc=${var.vpc_id}
-%{~ endif ~}
+%{ endif }
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Spring Petclinic Microservices
