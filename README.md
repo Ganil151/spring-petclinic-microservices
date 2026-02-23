@@ -17,6 +17,7 @@ For production-grade deployment on AWS, this project uses **Terragrunt** for inf
 - **Infrastructure Blueprint:** [ARCHITECTURE.md](docs/ARCHITECTURE.md)
 - **Terragrunt & Security Guide:** [TERRAGRUNT_MIGRATION.md](docs/TERRAGRUNT_MIGRATION.md)
 - **Security Compliance:** [SECURITY_COMPLIANCE.md](docs/SECURITY_COMPLIANCE.md)
+- **Infrastructure Cost Management:** [INFRASTRUCTURE_COST.md](docs/INFRASTRUCTURE_COST.md)
 
 ---
 

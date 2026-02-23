@@ -12,3 +12,4 @@
     - terragrunt
     - kubectl
     - helm
+    - infracost

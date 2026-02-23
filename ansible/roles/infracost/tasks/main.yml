@@ -1,0 +1,28 @@
+---
+# =============================================================================
+# Infracost Role - tasks/main.yml
+# =============================================================================
+
+- name: Check if Infracost is already installed
+  ansible.builtin.command: infracost --version
+  register: infracost_check
+  changed_when: false
+  failed_when: false
+  tags: infracost
+
+- name: Install Infracost via official script
+  ansible.builtin.shell: |
+    curl -fsSL https://raw.githubusercontent.com/infracost/infracost/master/scripts/install.sh | sh
+  when: infracost_check.rc != 0
+  tags: infracost
+
+- name: Verify Infracost installation
+  ansible.builtin.command: infracost --version
+  register: infracost_version
+  changed_when: false
+  tags: infracost
+
+- name: Display Infracost version
+  ansible.builtin.debug:
+    var: infracost_version.stdout
+  tags: infracost
