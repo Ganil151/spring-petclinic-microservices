@@ -31,6 +31,12 @@ variable "app_security_group_id" {
   default     = null
 }
 
+variable "bashrc_content" {
+  description = "Content of the shared .bashrc file"
+  type        = string
+  default     = ""
+}
+
 variable "environment" {
   description = "Environment name"
   type        = string
