@@ -205,9 +205,9 @@
   },
   "active": "e8a8bfd7c13c69fd",
   "lastOpenFiles": [
+    "terraform/live/dev/key-pair/spms-dev.pem",
     "terraform/live/dev/ec2-instances/sedWP92r8",
     "terraform/live/dev/spms-dev.pem",
-    "terraform/live/dev/key-pair/spms-dev.pem",
     "terraform/live/dev/ec2-instances/plan2.err",
     "inputs.txt",
     "vars.txt",
