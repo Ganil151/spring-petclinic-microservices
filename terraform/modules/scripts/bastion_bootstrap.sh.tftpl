@@ -40,6 +40,8 @@ error() {
 log "Starting bastion host bootstrap..."
 log "Project: $${PROJECT_NAME}"
 log "Environment: $${ENVIRONMENT}"
+log "Setting hostname to $${HOSTNAME}..."
+sudo hostnamectl set-hostname "$${HOSTNAME}"
 
 log "Updating system packages..."
 sudo yum update -y || error "Failed to update system packages"
