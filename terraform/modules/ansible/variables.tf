@@ -111,8 +111,3 @@ variable "enable_ansible_inventory" {
   default     = true
 }
 
-variable "run_ansible" {
-  description = "Whether to run Ansible playbooks automatically after generation"
-  type        = bool
-  default     = false
-}
