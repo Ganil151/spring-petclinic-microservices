@@ -8,6 +8,14 @@ terraform {
   source = "../../../modules/compute/k8s-node"
 }
 
+# Pull data from the security module
+dependency "security" {
+  config_path = "../bastion"
+  mock_outputs = {
+    app_sg_id  = "sg-10000002"
+  }
+}
+
 # Pull data from the VPC module deployed in the same dev
 dependency "vpc" {
   config_path = "../vpc"
@@ -28,5 +36,6 @@ inputs = {
   vpc_id        = dependency.vpc.outputs.vpc_id
   instance_type = local.env_vars.k8s_cluster.worker_node_type
   node_count    = local.env_vars.k8s_cluster.min_size
-  project_name  = "spring-petclinic"
+  project_name      = "spring-petclinic"
+  security_group_id = dependency.security.outputs.app_sg_id
 }
