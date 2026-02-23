@@ -1,0 +1,30 @@
+---
+# =============================================================================
+# Maven Role — tasks/main.yml
+# Installs Apache Maven on Amazon Linux 2
+# =============================================================================
+
+- name: Check if Maven is already installed
+  ansible.builtin.command: mvn -version
+  register: maven_check
+  changed_when: false
+  failed_when: false
+  tags: maven
+
+- name: Install Apache Maven from yum
+  ansible.builtin.yum:
+    name: maven
+    state: present
+  when: maven_check.rc != 0
+  tags: maven
+
+- name: Verify Maven installation
+  ansible.builtin.command: mvn -version
+  register: maven_version_check
+  changed_when: false
+  tags: maven
+
+- name: Display Maven version
+  ansible.builtin.debug:
+    msg: "Maven installed: {{ maven_version_check.stdout_lines | first }}"
+  tags: maven
