@@ -1,0 +1,82 @@
+---
+# =============================================================================
+# Java Role for Spring Petclinic Microservices
+# =============================================================================
+# Installs Amazon Corretto 17 (Java 17)
+# =============================================================================
+
+- name: Install Java (Amazon Corretto 17)
+  hosts: "{{ target_hosts | default('all') }}"
+  become: true
+  gather_facts: true
+  
+  vars:
+    java_version: "17"
+    java_distribution: "amazon"
+    java_home: "/usr/lib/jvm/java-17-amazon-corretto"
+  
+  tasks:
+    - name: Display Java installation start
+      ansible.builtin.debug:
+        msg: "Starting Java {{ java_version }} installation on {{ inventory_hostname }}"
+      tags: always
+
+    - name: Remove existing Java installations
+      ansible.builtin.yum:
+        name:
+          - java-1.8.0-openjdk
+          - java-11-openjdk
+        state: absent
+      tags: java
+
+    - name: Install Amazon Corretto 17
+      ansible.builtin.yum:
+        name: java-17-amazon-corretto
+        state: present
+      tags: java
+
+    - name: Set JAVA_HOME
+      ansible.builtin.lineinfile:
+        path: /etc/environment
+        line: "JAVA_HOME={{ java_home }}"
+        create: true
+        mode: '0644'
+      tags: java
+
+    - name: Create java symlink
+      ansible.builtin.file:
+        src: "{{ java_home }}"
+        dest: /usr/lib/jvm/java
+        state: link
+        force: true
+      tags: java
+
+    - name: Configure alternatives for java
+      ansible.builtin.command:
+        cmd: alternatives --set java {{ java_home }}/bin/java
+      tags: java
+      changed_when: false
+      failed_when: false
+
+    - name: Configure alternatives for javac
+      ansible.builtin.command:
+        cmd: alternatives --set javac {{ java_home }}/bin/javac
+      tags: java
+      changed_when: false
+      failed_when: false
+
+    - name: Verify Java installation
+      ansible.builtin.command: java -version
+      register: java_version_check
+      changed_when: false
+      tags: java
+
+    - name: Display Java version
+      ansible.builtin.debug:
+        var: java_version_check.stderr_lines
+      tags: java
+
+  handlers:
+    - name: Update alternatives
+      ansible.builtin.command:
+        cmd: update-alternatives --auto java

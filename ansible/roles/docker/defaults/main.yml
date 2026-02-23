@@ -1,0 +1,15 @@
+---
+# Docker Role Defaults
+# =============================================================================
+
+docker_version: "latest"
+docker_storage_driver: "overlay2"
+docker_users:
+  - ec2-user
+docker_daemon_options:
+  storage-driver: overlay2
+  log-driver: json-file
+  log-opts:
+    max-size: "10m"
+    max-file: "3"
+  live-restore: true

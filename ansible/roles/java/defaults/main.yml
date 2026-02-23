@@ -1,0 +1,7 @@
+---
+# Java Role Defaults
+# =============================================================================
+
+java_version: "17"
+java_distribution: "amazon"
+java_home: "/usr/lib/jvm/java-17-amazon-corretto"

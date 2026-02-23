@@ -1,0 +1,31 @@
+---
+# Docker Role Variables
+# =============================================================================
+
+# Docker version (default: latest)
+docker_version: "latest"
+
+# Storage driver
+docker_storage_driver: "overlay2"
+
+# Users to add to Docker group
+docker_users:
+  - ec2-user
+
+# Docker daemon configuration
+docker_daemon_options:
+  storage-driver: overlay2
+  log-driver: json-file
+  log-opts:
+    max-size: "10m"
+    max-file: "3"
+  live-restore: true
+
+# Docker registries to configure
+docker_registries: []
+
+# Docker networks to create
+docker_networks: []
+
+# Docker volumes to create
+docker_volumes: []

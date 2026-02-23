@@ -1,0 +1,28 @@
+---
+# Java Role Metadata
+# =============================================================================
+
+galaxy_info:
+  role_name: java
+  author: Spring Petclinic Team
+  description: Install Amazon Corretto 17 (Java 17)
+  company: Spring Petclinic
+  
+  license: MIT
+  
+  min_ansible_version: "2.14"
+  
+  platforms:
+    - name: Amazon
+      versions:
+        - 2
+        - 2023
+  
+  galaxy_tags:
+    - java
+    - corretto
+    - jdk
+    - system
+    - aws
+
+dependencies: []
