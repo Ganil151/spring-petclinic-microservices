@@ -1,41 +1,7 @@
 # =============================================================================
-# Terraform → Ansible Integration: Auto-Generated Inventory
+# EC2 Instances Module for Spring Petclinic
+# Includes: Bastion Host, Jenkins Master, SonarQube, Worker Nodes
 # =============================================================================
-# This module creates the Ansible inventory file from live Terraform outputs.
-# Every `terraform apply` keeps the inventory in sync with actual infrastructure.
-
-module "ansible_inventory" {
-  source = "../../../ansible"
-
-  project_name             = var.project_name
-  environment              = var.environment
-  inventory_file_path      = var.ansible_inventory_path
-  ansible_working_dir      = "${path.module}/../../../../ansible"
-  jenkins_master_ip        = aws_instance.jenkins.public_ip
-  jenkins_master_priv      = aws_instance.jenkins.private_ip
-  worker_node_ips          = aws_instance.worker_nodes[*].public_ip
-  worker_node_priv_ips     = aws_instance.worker_nodes[*].private_ip
-  sonarqube_ip             = aws_instance.sonarqube.public_ip
-  sonarqube_priv           = aws_instance.sonarqube.private_ip
-  bastion_ip               = aws_instance.bastion.public_ip
-  bastion_priv_ip          = aws_instance.bastion.private_ip
-  ssh_user                 = "ec2-user"
-  ssh_key_file             = var.ssh_private_key_path
-  eks_cluster_name         = var.eks_cluster_name
-  cluster_suffix           = "primary"
-  aws_region               = var.aws_region
-  aws_account_id           = var.aws_account_id
-  vpc_id                   = var.vpc_id
-  enable_ansible_inventory = var.enable_ansible_inventory
-  run_ansible              = var.run_ansible
-
-  depends_on = [
-    aws_instance.bastion,
-    aws_instance.jenkins,
-    aws_instance.sonarqube,
-    aws_instance.worker_nodes
-  ]
-}
 
 # Allowed ports for security groups
 locals {
