@@ -1,12 +1,13 @@
-# =============================================================================
-# Terragrunt Configuration for Ansible Inventory Generation
-# =============================================================================
-# This module generates the Ansible inventory file from Terraform outputs.
-# Every `terragrunt apply` keeps the inventory in sync with infrastructure.
-# =============================================================================
-
 include "root" {
   path = find_in_parent_folders("root.hcl")
+}
+
+locals {
+  # Environment from path (e.g., live/dev/ansible -> dev)
+  env = element(split("/", path_relative_to_include()), 1)
+
+  # Generate inventory name
+  inventory_name = "spring-petclinic-${local.env}-inventory"
 }
 
 terraform {
@@ -89,13 +90,7 @@ dependency "alb" {
   }
 }
 
-locals {
-  # Environment from path (e.g., live/dev/ansible -> dev)
-  env = element(split("/", path_relative_to_include()), 1)
 
-  # Generate inventory name
-  inventory_name = "spring-petclinic-${local.env}-inventory"
-}
 
 # =============================================================================
 # Inputs for Ansible Inventory Module
@@ -112,8 +107,8 @@ inputs = {
   ssh_key_file        = "${get_parent_terragrunt_dir()}/live/dev/key-pair/spms-dev.pem"
 
   # VPC Information
-  vpc_id     = dependency.vpc.outputs.vpc_id
-  vpc_cidr   = dependency.vpc.outputs.vpc_cidr
+  vpc_id     = try(dependency.vpc.outputs.vpc_id, "")
+  vpc_cidr   = try(dependency.vpc.outputs.vpc_cidr, "")
   aws_region = "us-east-1"
   account_id = get_aws_account_id()
 
