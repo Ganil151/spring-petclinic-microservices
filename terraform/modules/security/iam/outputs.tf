@@ -27,3 +27,18 @@ output "all_security_group_ids" {
     data  = aws_security_group.data.id
   }
 }
+
+output "ec2_common_role_name" {
+  description = "Name of the common EC2 IAM role"
+  value       = aws_iam_role.ec2_common_role.name
+}
+
+output "ec2_common_instance_profile_name" {
+  description = "Name of the common EC2 instance profile"
+  value       = aws_iam_instance_profile.ec2_common_profile.name
+}
+
+output "ec2_common_instance_profile_arn" {
+  description = "ARN of the common EC2 instance profile"
+  value       = aws_iam_instance_profile.ec2_common_profile.arn
+}

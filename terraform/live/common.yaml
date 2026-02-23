@@ -1,0 +1,13 @@
+# =============================================================================
+# Global Configuration for Spring Petclinic
+# =============================================================================
+project_name: "spring-petclinic"
+owner: "gsmash"
+organization: "DevOps-Labs"
+aws_region: "us-east-1"
+
+# Common Tags
+tags:
+  ManagedBy: "Terragrunt"
+  Project: "spring-petclinic"
+  BusinessUnit: "Platform Engineering"
