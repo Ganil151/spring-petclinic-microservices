@@ -29,3 +29,31 @@ variable "security_group_id" {
   description = "Security group ID to attach to the node"
   type        = string
 }
+
+variable "node_count" {
+  description = "Number of nodes"
+  type        = number
+  default     = 1
+}
+
+variable "environment" {
+  description = "Environment name"
+  type        = string
+}
+
+variable "key_name" {
+  description = "SSH key name"
+  type        = string
+}
+
+variable "root_volume_size" {
+  description = "Root volume size"
+  type        = number
+  default     = 50
+}
+
+variable "user_data" {
+  description = "Base64 encoded user data"
+  type        = string
+  default     = ""
+}
