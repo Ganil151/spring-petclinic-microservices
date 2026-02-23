@@ -5,12 +5,12 @@
 # Every `terraform apply` keeps the inventory in sync with actual infrastructure.
 
 module "ansible_inventory" {
-  source = "../../ansible"
+  source = "../../../ansible"
 
   project_name           = var.project_name
   environment            = var.environment
   inventory_file_path    = var.ansible_inventory_path
-  ansible_working_dir    = pathexpand(var.ansible_inventory_path)
+  ansible_working_dir    = "${path.module}/../../../../ansible"
   jenkins_master_ip      = aws_instance.jenkins.public_ip
   jenkins_master_priv    = aws_instance.jenkins.private_ip
   worker_node_ips        = aws_instance.worker_nodes[*].public_ip
@@ -20,7 +20,7 @@ module "ansible_inventory" {
   bastion_ip             = aws_instance.bastion.public_ip
   bastion_priv_ip        = aws_instance.bastion.private_ip
   ssh_user               = "ec2-user"
-  ssh_key_file           = pathexpand(var.ssh_private_key_path)
+  ssh_key_file           = var.ssh_private_key_path
   eks_cluster_name       = var.eks_cluster_name
   cluster_suffix         = "primary"
   aws_region             = var.aws_region
@@ -192,7 +192,7 @@ resource "aws_instance" "jenkins" {
 
   monitoring = var.enable_monitoring
 
-  user_data = ""
+  user_data = "terraform/scripts/jenkins_bootstrap.sh"
 
   tags = merge({
     Name        = "${var.project_name}-${var.environment}-${var.jenkins_instance_name}"
