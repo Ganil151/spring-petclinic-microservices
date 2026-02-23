@@ -105,7 +105,7 @@ resource "aws_instance" "bastion" {
               EOF
 
   tags = merge({
-    Name        = "${var.project_name}-${var.environment}-bastion"
+    Name        = "${var.project_name}-${var.environment}-${var.bastion_instance_name}"
     Environment = var.environment
     Project     = var.project_name
     Component   = "bastion"
@@ -128,6 +128,7 @@ resource "aws_eip" "bastion" {
 
 # =============================================================================
 # Jenkins Master
+# Ansible Roles: java, docker, awscli, jenkins, security_tools
 # =============================================================================
 resource "aws_instance" "jenkins" {
   ami                    = var.ami_id == "" ? data.aws_ami.amazon_linux_2.id : var.ami_id
@@ -137,7 +138,17 @@ resource "aws_instance" "jenkins" {
   key_name               = var.key_pair_name
 
   root_block_device {
-    volume_size           = 50
+    volume_size           = var.jenkins_root_volume_size
+    volume_type           = "gp3"
+    encrypted             = true
+    delete_on_termination = true
+  }
+
+  # Extra volume for Jenkins builds/workspace
+  ebs_block_device {
+    count                 = var.jenkins_extra_volume_size > 0 ? 1 : 0
+    device_name           = "/dev/sdh"
+    volume_size           = var.jenkins_extra_volume_size
     volume_type           = "gp3"
     encrypted             = true
     delete_on_termination = true
@@ -147,6 +158,7 @@ resource "aws_instance" "jenkins" {
 
   user_data = <<-EOF
               #!/bin/bash
+              set -e
               yum update -y
               # Install Docker
               yum install -y docker
@@ -158,11 +170,12 @@ resource "aws_instance" "jenkins" {
               # Install Jenkins (via Docker)
               docker run -d -p 8080:8080 -p 50000:50000 --name jenkins \
                 -v jenkins_home:/var/jenkins_home \
-                jenkins/jenkins:lts
+                -v /var/run/docker.sock:/var/run/docker.sock \
+                jenkins/jenkins:lts-jdk17
               EOF
 
   tags = merge({
-    Name        = "${var.project_name}-${var.environment}-jenkins-master"
+    Name        = "${var.project_name}-${var.environment}-${var.jenkins_instance_name}"
     Environment = var.environment
     Project     = var.project_name
     Component   = "jenkins"
@@ -172,6 +185,7 @@ resource "aws_instance" "jenkins" {
 
 # =============================================================================
 # SonarQube Server
+# Ansible Roles: java, docker, awscli, sonarqube, security_tools
 # =============================================================================
 resource "aws_instance" "sonarqube" {
   ami                    = var.ami_id == "" ? data.aws_ami.amazon_linux_2.id : var.ami_id
@@ -181,16 +195,29 @@ resource "aws_instance" "sonarqube" {
   key_name               = var.key_pair_name
 
   root_block_device {
-    volume_size           = 30
+    volume_size           = var.sonarqube_root_volume_size
     volume_type           = "gp3"
     encrypted             = true
     delete_on_termination = true
+  }
+
+  # Extra volume for SonarQube data
+  dynamic "ebs_block_device" {
+    for_each = var.sonarqube_extra_volume_size > 0 ? [1] : []
+    content {
+      device_name           = "/dev/sdh"
+      volume_size           = var.sonarqube_extra_volume_size
+      volume_type           = "gp3"
+      encrypted             = true
+      delete_on_termination = true
+    }
   }
 
   monitoring = var.enable_monitoring
 
   user_data = <<-EOF
               #!/bin/bash
+              set -e
               yum update -y
               # Install Docker
               yum install -y docker
@@ -201,11 +228,12 @@ resource "aws_instance" "sonarqube" {
                 -v sonarqube_data:/opt/sonarqube/data \
                 -v sonarqube_extensions:/opt/sonarqube/extensions \
                 -v sonarqube_logs:/opt/sonarqube/logs \
+                -e SONAR_ES_BOOTSTRAP_CHECKS_DISABLE=true \
                 sonarqube:lts-community
               EOF
 
   tags = merge({
-    Name        = "${var.project_name}-${var.environment}-sonarqube"
+    Name        = "${var.project_name}-${var.environment}-${var.sonarqube_instance_name}"
     Environment = var.environment
     Project     = var.project_name
     Component   = "sonarqube"
@@ -215,6 +243,7 @@ resource "aws_instance" "sonarqube" {
 
 # =============================================================================
 # Worker Nodes (Auto Scaling Group style - manual for now)
+# Ansible Roles: java, docker, awscli, maven, kubectl, helm
 # =============================================================================
 resource "aws_instance" "worker_nodes" {
   count                  = var.worker_node_count
@@ -225,7 +254,17 @@ resource "aws_instance" "worker_nodes" {
   key_name               = var.key_pair_name
 
   root_block_device {
-    volume_size           = var.root_volume_size
+    volume_size           = var.worker_root_volume_size
+    volume_type           = "gp3"
+    encrypted             = true
+    delete_on_termination = true
+  }
+
+  # Extra volume for Docker images and containers
+  ebs_block_device {
+    count                 = var.worker_extra_volume_size > 0 ? 1 : 0
+    device_name           = "/dev/sdh"
+    volume_size           = var.worker_extra_volume_size
     volume_type           = "gp3"
     encrypted             = true
     delete_on_termination = true
@@ -235,6 +274,7 @@ resource "aws_instance" "worker_nodes" {
 
   user_data = <<-EOF
               #!/bin/bash
+              set -e
               yum update -y
               yum install -y docker git wget curl
               systemctl start docker
@@ -254,7 +294,7 @@ resource "aws_instance" "worker_nodes" {
               EOF
 
   tags = merge({
-    Name        = "${var.project_name}-${var.environment}-worker-node-${count.index + 1}"
+    Name        = "${var.project_name}-${var.environment}-${var.worker_instance_name}-${count.index + 1}"
     Environment = var.environment
     Project     = var.project_name
     Component   = "worker-node"
