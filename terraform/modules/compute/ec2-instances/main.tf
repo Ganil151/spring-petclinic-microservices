@@ -158,23 +158,7 @@ resource "aws_instance" "jenkins" {
 
   monitoring = var.enable_monitoring
 
-  user_data = <<-EOF
-              #!/bin/bash
-              set -e
-              yum update -y
-              # Install Docker
-              yum install -y docker
-              systemctl start docker
-              systemctl enable docker
-              usermod -aG docker ec2-user
-              # Install Java 17
-              amazon-linux-extras install java-openjdk17 -y
-              # Install Jenkins (via Docker)
-              docker run -d -p 8080:8080 -p 50000:50000 --name jenkins \
-                -v jenkins_home:/var/jenkins_home \
-                -v /var/run/docker.sock:/var/run/docker.sock \
-                jenkins/jenkins:lts-jdk17
-              EOF
+  user_data = "../"
 
   tags = merge({
     Name        = "${var.project_name}-${var.environment}-${var.jenkins_instance_name}"
