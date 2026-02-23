@@ -1,64 +1,52 @@
 ---
 # =============================================================================
-# Kubectl Role for Spring Petclinic Microservices
+# kubectl Role — tasks/main.yml
+# Installs kubectl on Amazon Linux 2 worker nodes
 # =============================================================================
 
+- name: Check if kubectl is already installed
+  ansible.builtin.command: kubectl version --client --output=json
+  register: kubectl_check
+  changed_when: false
+  failed_when: false
+  tags: kubectl
+
+- name: Add Kubernetes yum repository
+  ansible.builtin.copy:
+    dest: /etc/yum.repos.d/kubernetes.repo
+    content: |
+      [kubernetes]
+      name=Kubernetes
+      baseurl=https://pkgs.k8s.io/core:/stable:/v{{ kubernetes_version | default('1.28') }}/rpm/
+      enabled=1
+      gpgcheck=1
+      gpgkey=https://pkgs.k8s.io/core:/stable:/v{{ kubernetes_version | default('1.28') }}/rpm/repodata/repomd.xml.key
+      exclude=kubelet kubeadm kubectl cri-tools kubernetes-cni
+    mode: '0644'
+  when: kubectl_check.rc != 0
+  tags: kubectl
+
 - name: Install kubectl
-  hosts: "{{ target_hosts | default('all') }}"
-  become: true
-  gather_facts: true
-  
-  vars:
-    kubernetes_version: "1.28"
-  
-  tasks:
-    - name: Display kubectl installation start
-      ansible.builtin.debug:
-        msg: "Starting kubectl installation on {{ inventory_hostname }}"
-      tags: always
+  ansible.builtin.yum:
+    name: kubectl
+    state: present
+    disable_excludes: kubernetes
+  tags: kubectl
 
-    - name: Check if kubectl is already installed
-      ansible.builtin.command: kubectl version --client --short
-      register: kubectl_check
-      changed_when: false
-      failed_when: false
-      tags: kubectl
+- name: Enable kubectl bash completion
+  ansible.builtin.shell:
+    cmd: kubectl completion bash > /etc/bash_completion.d/kubectl
+    creates: /etc/bash_completion.d/kubectl
+  tags: kubectl
 
-    - name: Create Kubernetes repository config
-      ansible.builtin.copy:
-        dest: /etc/yum.repos.d/kubernetes.repo
-        content: |
-          [kubernetes]
-          name=Kubernetes
-          baseurl=https://pkgs.k8s.io/core:/stable:/v{{ kubernetes_version }}/rpm/
-          enabled=1
-          gpgcheck=1
-          gpgkey=https://pkgs.k8s.io/core:/stable:/v{{ kubernetes_version }}/rpm/repodata/repomd.xml.key
-          exclude=kubelet kubeadm kubectl cri-tools kubernetes-cni
-        mode: '0644'
-      when: kubectl_check.rc != 0
-      tags: kubectl
+- name: Verify kubectl installation
+  ansible.builtin.command: kubectl version --client --short
+  register: kubectl_version_check
+  changed_when: false
+  failed_when: false
+  tags: kubectl
 
-    - name: Install kubectl
-      ansible.builtin.yum:
-        name: kubectl
-        state: present
-      tags: kubectl
-
-    - name: Verify kubectl installation
-      ansible.builtin.command: kubectl version --client --short
-      register: kubectl_version_check
-      changed_when: false
-      tags: kubectl
-
-    - name: Display kubectl version
-      ansible.builtin.debug:
-        var: kubectl_version_check.stdout_lines
-      tags: kubectl
-
-    - name: Enable kubectl bash completion
-      ansible.builtin.shell: |
-        kubectl completion bash > /etc/bash_completion.d/kubectl
-      args:
-        creates: /etc/bash_completion.d/kubectl
-      tags: kubectl
+- name: Show kubectl version
+  ansible.builtin.debug:
+    msg: "kubectl installed: {{ kubectl_version_check.stdout_lines }}"
+  tags: kubectl

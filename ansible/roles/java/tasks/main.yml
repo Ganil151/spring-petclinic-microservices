@@ -1,84 +1,62 @@
 ---
 # =============================================================================
-# Java Role for Spring Petclinic Microservices
+# Java Role — tasks/main.yml
+# Installs Amazon Corretto 21 (Java 21 LTS)
 # =============================================================================
-# Installs Amazon Corretto 21 (Java 21)
-# =============================================================================
 
-- name: Install Java (Amazon Corretto 21)
-  hosts: "{{ target_hosts | default('all') }}"
-  become: true
-  gather_facts: true
-  
-  vars:
-    java_version: "21"
-    java_distribution: "amazon"
-    java_home: "/usr/lib/jvm/java-21-amazon-corretto"
-  
-  tasks:
-    - name: Display Java installation start
-      ansible.builtin.debug:
-        msg: "Starting Java {{ java_version }} installation on {{ inventory_hostname }}"
-      tags: always
+- name: Check if Java 21 is already installed
+  ansible.builtin.command: java -version
+  register: java_installed
+  changed_when: false
+  failed_when: false
+  tags: java
 
-    - name: Remove existing Java installations
-      ansible.builtin.yum:
-        name:
-          - java-1.8.0-openjdk
-          - java-11-openjdk
-          - java-17-amazon-corretto
-          - java-21-amazon-corretto
-        state: absent
-      tags: java
+- name: Install Amazon Corretto 21
+  ansible.builtin.yum:
+    name: java-21-amazon-corretto
+    state: present
+  when: java_installed.rc != 0 or '21' not in (java_installed.stderr | default(''))
+  tags: java
 
-    - name: Install Amazon Corretto 21
-      ansible.builtin.yum:
-        name: java-21-amazon-corretto
-        state: present
-      tags: java
+- name: Set JAVA_HOME system-wide
+  ansible.builtin.lineinfile:
+    path: /etc/environment
+    line: "JAVA_HOME=/usr/lib/jvm/java-21-amazon-corretto"
+    regexp: "^JAVA_HOME="
+    create: true
+    mode: '0644'
+  tags: java
 
-    - name: Set JAVA_HOME
-      ansible.builtin.lineinfile:
-        path: /etc/environment
-        line: "JAVA_HOME={{ java_home }}"
-        create: true
-        mode: '0644'
-      tags: java
+- name: Create JAVA_HOME profile script
+  ansible.builtin.copy:
+    dest: /etc/profile.d/java.sh
+    content: |
+      export JAVA_HOME=/usr/lib/jvm/java-21-amazon-corretto
+      export PATH=$JAVA_HOME/bin:$PATH
+    mode: '0644'
+  tags: java
 
-    - name: Create java symlink
-      ansible.builtin.file:
-        src: "{{ java_home }}"
-        dest: /usr/lib/jvm/java
-        state: link
-        force: true
-      tags: java
+- name: Set java alternative
+  ansible.builtin.command:
+    cmd: alternatives --set java /usr/lib/jvm/java-21-amazon-corretto/bin/java
+  changed_when: false
+  failed_when: false
+  tags: java
 
-    - name: Configure alternatives for java
-      ansible.builtin.command:
-        cmd: alternatives --set java {{ java_home }}/bin/java
-      tags: java
-      changed_when: false
-      failed_when: false
+- name: Set javac alternative
+  ansible.builtin.command:
+    cmd: alternatives --set javac /usr/lib/jvm/java-21-amazon-corretto/bin/javac
+  changed_when: false
+  failed_when: false
+  tags: java
 
-    - name: Configure alternatives for javac
-      ansible.builtin.command:
-        cmd: alternatives --set javac {{ java_home }}/bin/javac
-      tags: java
-      changed_when: false
-      failed_when: false
+- name: Verify Java installation
+  ansible.builtin.command: java -version
+  register: java_version_check
+  changed_when: false
+  tags: java
 
-    - name: Verify Java installation
-      ansible.builtin.command: java -version
-      register: java_version_check
-      changed_when: false
-      tags: java
-
-    - name: Display Java version
-      ansible.builtin.debug:
-        var: java_version_check.stderr_lines
-      tags: java
-
-  handlers:
-    - name: Update alternatives
-      ansible.builtin.command:
-        cmd: update-alternatives --auto java
+- name: Show Java version
+  ansible.builtin.debug:
+    msg: "Java installed: {{ java_version_check.stderr_lines | first | default('unknown') }}"
+  tags: java

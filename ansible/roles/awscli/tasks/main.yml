@@ -1,72 +1,64 @@
 ---
 # =============================================================================
-# AWS CLI Role for Spring Petclinic Microservices
+# AWS CLI Role — tasks/main.yml
+# Installs AWS CLI v2 on Amazon Linux 2
 # =============================================================================
 
+- name: Check if AWS CLI v2 is already installed
+  ansible.builtin.command: aws --version
+  register: awscli_check
+  changed_when: false
+  failed_when: false
+  tags: awscli
+
+- name: Download AWS CLI v2 installer
+  ansible.builtin.get_url:
+    url: https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip
+    dest: /tmp/awscliv2.zip
+    mode: '0644'
+    timeout: 60
+  when: awscli_check.rc != 0 or 'aws-cli/2' not in (awscli_check.stdout | default(''))
+  tags: awscli
+
+- name: Extract AWS CLI v2 installer
+  ansible.builtin.unarchive:
+    src: /tmp/awscliv2.zip
+    dest: /tmp
+    remote_src: true
+  when: awscli_check.rc != 0 or 'aws-cli/2' not in (awscli_check.stdout | default(''))
+  tags: awscli
+
 - name: Install AWS CLI v2
-  hosts: "{{ target_hosts | default('all') }}"
-  become: true
-  gather_facts: true
-  
-  tasks:
-    - name: Display AWS CLI installation start
-      ansible.builtin.debug:
-        msg: "Starting AWS CLI v2 installation on {{ inventory_hostname }}"
-      tags: always
+  ansible.builtin.command:
+    cmd: /tmp/aws/install --update
+  when: awscli_check.rc != 0 or 'aws-cli/2' not in (awscli_check.stdout | default(''))
+  tags: awscli
 
-    - name: Check if AWS CLI is already installed
-      ansible.builtin.command: aws --version
-      register: aws_cli_check
-      changed_when: false
-      failed_when: false
-      tags: awscli
+- name: Clean up installer files
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: absent
+  loop:
+    - /tmp/awscliv2.zip
+    - /tmp/aws
+  tags: awscli
 
-    - name: Download AWS CLI v2 installer
-      ansible.builtin.get_url:
-        url: https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip
-        dest: /tmp/awscliv2.zip
-        mode: '0644'
-      when: aws_cli_check.rc != 0
-      tags: awscli
+- name: Add AWS CLI tab-completion to ec2-user bashrc
+  ansible.builtin.lineinfile:
+    path: /home/ec2-user/.bashrc
+    line: "complete -C '/usr/local/bin/aws_completer' aws"
+    regexp: "aws_completer"
+    create: true
+    mode: '0644'
+  tags: awscli
 
-    - name: Extract AWS CLI v2 installer
-      ansible.builtin.unarchive:
-        src: /tmp/awscliv2.zip
-        dest: /tmp
-        remote_src: true
-      when: aws_cli_check.rc != 0
-      tags: awscli
+- name: Verify AWS CLI v2 installation
+  ansible.builtin.command: aws --version
+  register: awscli_version_check
+  changed_when: false
+  tags: awscli
 
-    - name: Install AWS CLI v2
-      ansible.builtin.command:
-        cmd: /tmp/aws/install
-      when: aws_cli_check.rc != 0
-      tags: awscli
-
-    - name: Clean up installer files
-      ansible.builtin.file:
-        path: "{{ item }}"
-        state: absent
-      loop:
-        - /tmp/awscliv2.zip
-        - /tmp/aws
-      tags: awscli
-
-    - name: Verify AWS CLI installation
-      ansible.builtin.command: aws --version
-      register: aws_cli_version
-      changed_when: false
-      tags: awscli
-
-    - name: Display AWS CLI version
-      ansible.builtin.debug:
-        var: aws_cli_version.stdout
-      tags: awscli
-
-    - name: Configure AWS CLI completion
-      ansible.builtin.lineinfile:
-        path: "~{{ ansible_user_id }}/.bashrc"
-        line: "complete -C '/usr/local/bin/aws_completer' aws"
-        create: true
-        mode: '0644'
-      tags: awscli
+- name: Show AWS CLI version
+  ansible.builtin.debug:
+    msg: "AWS CLI: {{ awscli_version_check.stdout }}"
+  tags: awscli
