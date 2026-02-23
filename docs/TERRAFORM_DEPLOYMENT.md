@@ -1,5 +1,9 @@
 # Terraform & Terragrunt Deployment Guide
 
+**Last Updated:** February 22, 2026  
+**Java Version:** 21 (Amazon Corretto)  
+**SonarQube:** 10.4-community (Latest LTS)
+
 ## 📁 Current Infrastructure Structure
 
 ```
@@ -97,6 +101,11 @@ aws sts get-caller-identity
 
 **Dev/Staging** use random suffixes (privacy), **Production** uses account ID (audit trail).
 
+**Bucket Names:**
+- Dev: `petclinic-state-dev-a7f3c2`
+- Staging: `petclinic-state-staging-b9d4e1`
+- Prod: `petclinic-state-<ACCOUNT_ID>`
+
 ```bash
 #!/bin/bash
 REGION="us-east-1"
@@ -163,6 +172,41 @@ terragrunt --version
 # Terragrunt 0.67+  → Use: terragrunt run --all
 # Terragrunt < 0.67 → Use: terragrunt run-all
 ```
+
+### ⚠️ Complete Destruction (Start Over)
+
+To fully destroy the project and start over:
+
+```bash
+cd terraform/live/dev
+
+# Option 1: Destroy all at once (respects dependencies)
+terragrunt run --all destroy -auto-approve
+
+# Option 2: Destroy in reverse order
+cd ansible && terragrunt destroy -auto-approve && cd ..
+cd alb && terragrunt destroy -auto-approve && cd ..
+cd rds && terragrunt destroy -auto-approve && cd ..
+cd ec2-instances && terragrunt destroy -auto-approve && cd ..
+cd bastion && terragrunt destroy -auto-approve && cd ..
+cd key-pair && terragrunt destroy -auto-approve && cd ..
+cd vpc && terragrunt destroy -auto-approve
+
+# Clean up S3 buckets
+aws s3 rb s3://petclinic-state-dev-a7f3c2 --force
+aws s3 rb s3://petclinic-state-staging-b9d4e1 --force
+
+# Clean up DynamoDB
+aws dynamodb delete-table --table-name terraform-lock-table --region us-east-1
+
+# Clean local files
+cd ../../
+find . -type d -name ".terragrunt-cache" -exec rm -rf {} + 2>/dev/null
+find . -type d -name ".terraform" -exec rm -rf {} + 2>/dev/null
+find . -name ".terraform.lock.hcl" -delete
+```
+
+For complete destruction instructions, see: [DESTRUCTION_GUIDE.md](DESTRUCTION_GUIDE.md)
 
 ### Option A: Deploy All at Once (Recommended)
 
@@ -260,17 +304,29 @@ terragrunt apply -auto-approve
          │                   │                           │
          ▼                   ▼                           │
 ┌──────────────┐    ┌──────────────┐                    │
-│  4. ALB      │    │  5. RDS      │                    │
-│  (alb/)      │    │  (rds/)      │                    │
-│  Port 80/443 │    │  Port 3306   │                    │
-└──────────────┘    └──────────────┘                    │
-                   │                                      │
-                   ▼                                      │
-         ┌──────────────────┐                            │
-         │  6. K8s Cluster  │◄───────────────────────────┘
-         │  (k8s-cluster/)  │
-         │  EKS + Nodes     │
-         └──────────────────┘
+│  4. EC2      │    │  5. RDS      │                    │
+│  Instances   │    │  (rds/)      │                    │
+│  (ec2-instances)│  │  Port 3306   │                    │
+│  Ports: 22,  │    │              │                    │
+│  8080, 9000  │    └──────────────┘                    │
+└──────────────┘           │                              │
+         │                 │                              │
+         ▼                 ▼                              │
+         └──────┬──────────┘                              │
+                │                                         │
+                ▼                                         │
+         ┌──────────────┐                                │
+         │  6. ALB      │◄───────────────────────────────┘
+         │  (alb/)      │
+         │  Port 80/443 │
+         └──────────────┘
+                │
+                ▼
+         ┌──────────────┐
+         │  7. Ansible  │
+         │  (ansible/)  │
+         │  Inventory   │
+         └──────────────┘
 ```
 
 ---
