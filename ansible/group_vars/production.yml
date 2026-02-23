@@ -6,7 +6,7 @@
 # =============================================================================
 
 # Environment
-environment: "prod"
+app_env: "prod"
 environment_name: "Production"
 
 # Instance Configuration

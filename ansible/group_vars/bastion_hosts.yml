@@ -47,7 +47,7 @@ bastion_proxy:
 bastion_logging:
   cloudwatch:
     enabled: true
-    log_group: "/spring-petclinic/{{ environment }}/bastion"
+    log_group: "/spring-petclinic/{{ app_env }}/bastion"
     log_streams:
       - secure
       - commands

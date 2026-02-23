@@ -6,7 +6,7 @@
 # =============================================================================
 
 # Environment
-environment: "dev"
+app_env: "dev"
 environment_name: "Development"
 
 # Instance Configuration

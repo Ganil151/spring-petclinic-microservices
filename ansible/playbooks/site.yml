@@ -37,7 +37,7 @@
           ║                                                                      ║
           ║          Spring Petclinic Microservices - Ansible Deployment         ║
           ║                                                                      ║
-          ║          Environment: {{ environment | default('dev') }}                                   ║
+          ║          Environment: {{ app_env | default('dev') }}                                   ║
           ║          Target: {{ inventory_hostname }}                                   ║
           ║          Ansible Version: {{ ansible_version.full }}                          ║
           ║                                                                      ║
