@@ -1,3 +1,17 @@
+# =============================================================================
+# 🛡️ SPRING PETCLINIC - INDUSTRIAL RIGOR .bashrc
+# =============================================================================
+
+# --- Colorized Prompt (Industrial Style) ---
+# Format: [TIME] [USER@HOST] [CWD] $
+export PS1="\[\e[32m\][\t] \[\e[36m\]\u@\h \[\e[33m\]\w \[\e[0m\]\$ "
+
+# --- Enhanced History ---
+export HISTSIZE=10000
+export HISTFILESIZE=20000
+export HISTTIMEFORMAT="%F %T " # Timestamps for audit trails
+shopt -s histappend            # Append to history, don't overwrite
+
 # ==========================================
 #        01. System & Navigation
 # ==========================================
@@ -10,9 +24,10 @@ alias ..='cd ..'
 alias ...='cd ../..'
 alias .3='cd ../../../'
 alias h='history | grep'
-alias ports='netstat -tulanp'
+alias ports='sudo netstat -tulanp'
 alias myip='curl -s https://ifconfig.me; echo'
-
+alias df='df -h'
+alias free='free -m'
 
 # ==========================================
 #        02. Build & Microservices (Java/Maven)
@@ -34,18 +49,9 @@ alias dkill='docker rm -f $(docker ps -aq)'
 alias dex='docker exec -it'
 alias dimg='docker images'
 alias dprune='docker system prune -af --volumes'
-alias dclean='docker rmi $(docker images -q -f dangling=true)'
 
-# Docker Compose
-alias dco='docker-compose'
-alias dcup='docker-compose up -d'
-alias dcdn='docker-compose down'
-alias dcl='docker-compose logs -f'
-
-# Kubernetes
+# Kubernetes (The DevSecOps Core)
 alias k='kubectl'
-alias kctx='kubectx'
-alias kns='kubens'
 alias kgp='kubectl get pods'
 alias kgpw='kubectl get pods -o wide'
 alias kgs='kubectl get svc'
@@ -54,58 +60,53 @@ alias kga='kubectl get all'
 alias kd='kubectl describe'
 alias kl='kubectl logs -f'
 alias kexec='kubectl exec -it'
-alias kdelp='kubectl delete pod'
-alias kw='watch kubectl get pods'
-ksh() { kubectl exec -it "$1" -- /bin/bash || kubectl exec -it "$1" -- /bin/sh; }
+alias kw='watch -n 1 kubectl get pods'
+alias k-ps='kubectl get pods --all-namespaces'
+
+# PetClinic EKS Contexts
+alias k-pet='kubectl -n spring-petclinic'
+alias kgp-pet='kubectl get pods -n spring-petclinic'
+alias kl-pet='kubectl logs -f -n spring-petclinic'
 
 # ==========================================
-#        04. Infrastructure as Code
+#        04. Infrastructure (Terragrunt/Terraform)
 # ==========================================
-# Terraform
 alias tf='terraform'
-alias tfi='terraform init'
-alias tfp='terraform plan'
-alias tfa='terraform apply'
-alias tfa-auto='terraform apply -auto-approve'
-alias tfd='terraform destroy'
-alias tfv='terraform validate'
-alias tfo='terraform output'
-alias tfw='terraform workspace'
-alias tff='terraform fmt -recursive'
+alias tg='terragrunt'
+alias tgrall='terragrunt run-all'
+alias tgp='terragrunt plan'
+alias tga='terragrunt apply'
+alias tgd='terragrunt destroy'
 
 # ==========================================
-#        05. Cloud Platforms
+#        05. AWS Cloud Ops
 # ==========================================
-# --- AWS ---
 alias aws-who='aws sts get-caller-identity'
 alias aws-ls='aws s3 ls'
-alias aws-logs='aws logs tail --follow'
-asp() { export AWS_PROFILE=$1; echo "AWS Profile set to: $AWS_PROFILE"; }
-
-# AWS Inventory Suite
-alias ec2-ls='aws ec2 describe-instances --region us-east-1 --filters "Name=instance-state-name,Values=running" --query "Reservations[*].Instances[*].{ID:InstanceId,Name:Tags[?Key==\`Name\`].Value|[0],Type:InstanceType,IP:PrivateIpAddress,SG:SecurityGroups[0].GroupName}" --output table'
-alias ec2-audit='aws ec2 describe-instances --region us-east-1 --filters "Name=instance-state-name,Values=running" --query "Reservations[*].Instances[*].{ID:InstanceId,Name:Tags[?Key==\`Name\`].Value|[0],Type:InstanceType,PubIP:PublicIpAddress,PrivIP:PrivateIpAddress,Launched:LaunchTime,SG:SecurityGroups[0].GroupName}" --output table'
-alias ec2-cost='aws ec2 describe-instances --region us-east-1 --query "Reservations[*].Instances[*].{ID:InstanceId,Name:Tags[?Key==\`Name\`].Value|[0],Type:InstanceType,State:State.Name}" --output table'
-alias ec2-ls-all='aws ec2 describe-instances --region us-east-1 --query "Reservations[*].Instances[*].{ID:InstanceId,Name:Tags[?Key==\`Name\`].Value|[0],Type:InstanceType,State:State.Name,IP:PrivateIpAddress,SG:SecurityGroups[0].GroupName}" --output table'
-
-# Connect via SSM
-ec2-connect() {
-    echo "Starting SSM Session for $1..."
-    aws ssm start-session --target "$1"
-}
+alias ec2-ls='aws ec2 describe-instances --filters "Name=instance-state-name,Values=running" --query "Reservations[*].Instances[*].{ID:InstanceId,Name:Tags[?Key==\`Name\`].Value|[0],Type:InstanceType,IP:PrivateIpAddress}" --output table'
 
 # ==========================================
-#        06. Jenkins & Sonar Node Ops
+#        06. Service Management
 # ==========================================
-# Service status and logs (tailoring for our ec2-user)
+# Jenkins
 alias sys-j='sudo systemctl status jenkins'
 alias logs-j='sudo journalctl -u jenkins -f'
 alias rest-j='sudo systemctl restart jenkins'
-alias sys-sonar='cd /opt/sonarqube && sudo docker-compose ps'
-alias logs-sonar='cd /opt/sonarqube && sudo docker-compose logs -f'
 
-# PetClinic EKS Quick Context
-alias k-pet='kubectl -n petclinic'
-alias kgp-pet='kubectl get pods -n petclinic'
-alias kgpw-pet='kubectl get pods -n petclinic -o wide'
-alias kgs-pet='kubectl get svc -n petclinic'
+# SonarQube (Docker Managed)
+alias sys-sonar='docker ps | grep sonarqube'
+alias logs-sonar='docker logs -f sonarqube'
+
+# App Logs (Journald)
+alias logs-app='sudo journalctl -f'
+
+# --- Industrial Rigor Functions ---
+# Find and Kill process by port
+kill-port() {
+    sudo fuser -k "$1"/tcp
+}
+
+# Quick Search in logs
+search-logs() {
+    sudo journalctl | grep -i "$1"
+}
