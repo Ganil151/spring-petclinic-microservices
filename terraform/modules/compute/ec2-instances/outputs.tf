@@ -82,3 +82,21 @@ output "ec2_instances_security_group_arn" {
   description = "Security group ARN for EC2 instances"
   value       = aws_security_group.ec2_instances.arn
 }
+
+# =============================================================================
+# Ansible Integration Outputs
+# =============================================================================
+output "ansible_inventory" {
+  description = "Generated Ansible inventory"
+  value       = module.ansible_inventory.ansible_targets
+}
+
+output "ansible_inventory_file" {
+  description = "Path to generated Ansible inventory file"
+  value       = module.ansible_inventory.inventory_file_path
+}
+
+output "ansible_ready" {
+  description = "Whether Ansible inventory is ready"
+  value       = module.ansible_inventory.ansible_ready
+}
