@@ -73,10 +73,12 @@ alias kl-pet='kubectl logs -f -n spring-petclinic'
 # ==========================================
 alias tf='terraform'
 alias tg='terragrunt'
-alias tgrall='terragrunt run-all'
-alias tgp='terragrunt plan'
 alias tga='terragrunt apply'
+alias tgaa='terragrunt apply --all'
+alias tgp='terragrunt plan'
+alias tgpa='terragrunt plan --all'
 alias tgd='terragrunt destroy'
+alias tgda='terragrunt destroy --all'
 
 # ==========================================
 #        05. AWS Cloud Ops
