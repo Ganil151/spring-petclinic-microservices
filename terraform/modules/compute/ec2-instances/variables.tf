@@ -169,3 +169,48 @@ variable "allowed_cidr_blocks" {
   type        = list(string)
   default     = ["0.0.0.0/0"]
 }
+
+# =============================================================================
+# Ansible Integration Variables
+# =============================================================================
+variable "enable_ansible_inventory" {
+  description = "Enable automatic Ansible inventory generation"
+  type        = bool
+  default     = true
+}
+
+variable "ansible_inventory_path" {
+  description = "Path to Ansible inventory file"
+  type        = string
+  default     = "../../../ansible/inventory/hosts"
+}
+
+variable "ssh_private_key_path" {
+  description = "Path to SSH private key for Ansible"
+  type        = string
+  default     = "../../../terraform/live/dev/key-pair/spms-dev.pem"
+}
+
+variable "run_ansible" {
+  description = "Automatically run Ansible playbooks after infrastructure creation"
+  type        = bool
+  default     = false
+}
+
+variable "aws_region" {
+  description = "AWS region"
+  type        = string
+  default     = "us-east-1"
+}
+
+variable "aws_account_id" {
+  description = "AWS account ID"
+  type        = string
+  default     = ""
+}
+
+variable "eks_cluster_name" {
+  description = "EKS cluster name"
+  type        = string
+  default     = ""
+}
