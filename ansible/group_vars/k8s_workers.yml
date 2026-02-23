@@ -80,3 +80,12 @@ worker_monitoring:
 registry_mirrors:
   - "https://mirror.gcr.io"
   - "https://public.ecr.aws"
+
+# Docker Configuration
+docker_daemon_options:
+  data_root: "/mnt/data/docker"
+  log_driver: "json-file"
+  log_max_size: "10m"
+  log_max_file: "3"
+  live_restore: true
+  userland_proxy: false

@@ -44,19 +44,9 @@
   tags: docker
 
 - name: Configure Docker daemon
-  ansible.builtin.copy:
+  ansible.builtin.template:
+    src: daemon.json.j2
     dest: /etc/docker/daemon.json
-    content: |
-      {
-        "storage-driver": "overlay2",
-        "log-driver": "json-file",
-        "log-opts": {
-          "max-size": "10m",
-          "max-file": "3"
-        },
-        "live-restore": true,
-        "userland-proxy": false
-      }
     mode: '0644'
   notify: Restart Docker
   tags: docker
