@@ -10,6 +10,9 @@ jenkins_master:
   agent_port: 50000
   memory_limit: "2g"
   cpu_limit: "2.0"
+  
+  # Docker Configuration - JDK 21 for Java 21 support
+  docker_image: "jenkins/jenkins:lts-jdk21"
 
 # Docker volumes for Jenkins
 jenkins_volumes:
