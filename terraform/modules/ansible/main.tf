@@ -24,7 +24,7 @@ ansible_python_interpreter=/usr/bin/python3
 
 # 🧪 Industrial Rigor: SSH Proxy Tunneling through Bastion
 %{ if var.bastion_ip != "" }
-ansible_ssh_common_args='-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ProxyCommand="ssh -W %%h:%%p -q ${var.ssh_user}@${var.bastion_ip} -i ${var.ssh_key_file} -o StrictHostKeyChecking=no"'
+ansible_ssh_common_args='-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ProxyCommand="ssh -W %h:%p -q ${var.ssh_user}@${var.bastion_ip} -i ${var.ssh_key_file} -o StrictHostKeyChecking=no"'
 %{ else }
 ansible_ssh_common_args='-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
 %{ endif }
