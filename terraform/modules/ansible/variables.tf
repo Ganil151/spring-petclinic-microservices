@@ -104,3 +104,15 @@ variable "bastion_priv_ip" {
   type        = string
   default     = ""
 }
+
+variable "enable_ansible_inventory" {
+  description = "Enable Ansible inventory generation"
+  type        = bool
+  default     = true
+}
+
+variable "run_ansible" {
+  description = "Whether to run Ansible playbooks automatically after generation"
+  type        = bool
+  default     = false
+}
