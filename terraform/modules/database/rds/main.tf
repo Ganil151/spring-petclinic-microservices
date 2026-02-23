@@ -76,6 +76,7 @@ resource "aws_ssm_parameter" "db_username" {
   name  = "/${var.project_name}/${var.environment}/database/username"
   type  = "String"
   value = var.db_username
+  overwrite = true
 
   tags = merge({
     Name        = "${var.project_name}-${var.environment}-db-username"
@@ -88,6 +89,7 @@ resource "aws_ssm_parameter" "db_password" {
   name  = "/${var.project_name}/${var.environment}/database/password"
   type  = "SecureString"
   value = var.db_password == "" ? random_password.db_password[0].result : var.db_password
+  overwrite = true
 
   tags = merge({
     Name        = "${var.project_name}-${var.environment}-db-password"
@@ -100,6 +102,7 @@ resource "aws_ssm_parameter" "db_endpoint" {
   name  = "/${var.project_name}/${var.environment}/database/endpoint"
   type  = "String"
   value = aws_db_instance.main.endpoint
+  overwrite = true
 
   tags = merge({
     Name        = "${var.project_name}-${var.environment}-db-endpoint"
