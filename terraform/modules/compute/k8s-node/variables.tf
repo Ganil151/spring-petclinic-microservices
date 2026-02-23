@@ -24,3 +24,8 @@ variable "ami_id" {
   type        = string
   default     = ""
 }
+
+variable "security_group_id" {
+  description = "Security group ID to attach to the node"
+  type        = string
+}
