@@ -4,12 +4,6 @@
 # =============================================================================
 # This script configures the bastion host with essential tools and security
 # settings for secure access to the private infrastructure.
-#
-# Usage: 
-#   1. Copy this script to the bastion host
-#   2. Run: sudo bash bastion_bootstrap.sh
-#
-# Ansible Roles Applied: docker, git, awscli, security_tools
 # =============================================================================
 
 set -e
@@ -27,15 +21,15 @@ NC='\033[0m' # No Color
 
 # Logging function
 log() {
-    echo -e "${GREEN}[$(date '+%Y-%m-%d %H:%M:%S')]${NC} $1" | tee -a "$LOG_FILE"
+    echo -e "$${GREEN}[$(date '+%Y-%m-%d %H:%M:%S')]$${NC} $1" | tee -a "$LOG_FILE"
 }
 
 warn() {
-    echo -e "${YELLOW}[$(date '+%Y-%m-%d %H:%M:%S')] WARNING:${NC} $1" | tee -a "$LOG_FILE"
+    echo -e "$${YELLOW}[$(date '+%Y-%m-%d %H:%M:%S')] WARNING:$${NC} $1" | tee -a "$LOG_FILE"
 }
 
 error() {
-    echo -e "${RED}[$(date '+%Y-%m-%d %H:%M:%S')] ERROR:${NC} $1" | tee -a "$LOG_FILE"
+    echo -e "$${RED}[$(date '+%Y-%m-%d %H:%M:%S')] ERROR:$${NC} $1" | tee -a "$LOG_FILE"
     exit 1
 }
 
@@ -43,8 +37,8 @@ error() {
 # System Update & Security Hardening
 # =============================================================================
 log "Starting bastion host bootstrap..."
-log "Project: ${PROJECT_NAME}"
-log "Environment: ${ENVIRONMENT}"
+log "Project: $${PROJECT_NAME}"
+log "Environment: $${ENVIRONMENT}"
 
 log "Updating system packages..."
 sudo yum update -y || error "Failed to update system packages"
@@ -133,10 +127,10 @@ log "Installing Terragrunt..."
 
 if ! command -v terragrunt &> /dev/null; then
     TERRAGRUNT_VERSION="0.67.0"
-    curl -Lo /tmp/terragrunt https://github.com/gruntwork-io/terragrunt/releases/download/v${TERRAGRUNT_VERSION}/terragrunt_linux_amd64
+    curl -Lo /tmp/terragrunt https://github.com/gruntwork-io/terragrunt/releases/download/v$${TERRAGRUNT_VERSION}/terragrunt_linux_amd64
     chmod +x /tmp/terragrunt
     sudo mv /tmp/terragrunt /usr/local/bin/terragrunt
-    log "Terragrunt ${TERRAGRUNT_VERSION} installed successfully"
+    log "Terragrunt $${TERRAGRUNT_VERSION} installed successfully"
 else
     log "Terragrunt already installed"
 fi
@@ -213,8 +207,8 @@ sudo tee /etc/motd > /dev/null <<EOF
 ╠══════════════════════════════════════════════════════════════════════════════╣
 ║  Project: $${PROJECT_NAME}
 ║  Environment: $${ENVIRONMENT}
-║  Hostname: $(hostname)
-║  Private IP: $(hostname -I | awk '{print $1}')
+║  Hostname: \$(hostname)
+║  Private IP: \$(hostname -I | awk '{print \$1}')
 ╠══════════════════════════════════════════════════════════════════════════════╣
 ║  Quick Start:                                                                ║
 ║    • Terraform: cd /opt/spring-petclinic/terraform/live/dev                 ║
@@ -256,12 +250,12 @@ sudo tee /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json > /de
         "collect_list": [
           {
             "file_path": "/var/log/bastion_bootstrap.log",
-            "log_group_name": "/spring-petclinic/${ENVIRONMENT}/bastion",
+            "log_group_name": "/spring-petclinic/$${ENVIRONMENT}/bastion",
             "log_stream_name": "{instance_id}/bootstrap"
           },
           {
             "file_path": "/var/log/secure",
-            "log_group_name": "/spring-petclinic/${ENVIRONMENT}/bastion",
+            "log_group_name": "/spring-petclinic/$${ENVIRONMENT}/bastion",
             "log_stream_name": "{instance_id}/secure"
           }
         ]
@@ -302,10 +296,10 @@ log "  ✓ Audit logging enabled"
 log ""
 log "Next Steps:"
 log "  1. Copy your SSH key to the bastion:"
-log "     scp -i <your-key.pem> <your-key.pem> ec2-user@$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4):~/.ssh/"
+log "     scp -i <your-key.pem> <your-key.pem> ec2-user@\$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4):~/.ssh/"
 log ""
 log "  2. SSH to bastion:"
-log "     ssh -i <your-key.pem> ec2-user@$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4)"
+log "     ssh -i <your-key.pem> ec2-user@\$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4)"
 log ""
 log "  3. From bastion, SSH to private instances:"
 log "     ssh -i ~/.ssh/<your-key.pem> ec2-user@<private-instance-ip>"
@@ -314,7 +308,7 @@ log "  4. Access Terraform configurations:"
 log "     cd /opt/spring-petclinic/terraform/live/dev"
 log ""
 log "═══════════════════════════════════════════════════════════════"
-log "Log file: ${LOG_FILE}"
+log "Log file: $${LOG_FILE}"
 log "═══════════════════════════════════════════════════════════════"
 
 # Reboot to apply all changes
