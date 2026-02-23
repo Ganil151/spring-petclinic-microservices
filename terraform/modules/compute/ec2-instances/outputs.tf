@@ -73,13 +73,5 @@ output "all_instance_ids" {
   }
 }
 
-output "ec2_instances_security_group_id" {
-  description = "Security group ID for EC2 instances"
-  value       = aws_security_group.ec2_instances.id
-}
-
-output "ec2_instances_security_group_arn" {
-  description = "Security group ARN for EC2 instances"
-  value       = aws_security_group.ec2_instances.arn
-}
+# Security groups are managed in the security/iam module
 
