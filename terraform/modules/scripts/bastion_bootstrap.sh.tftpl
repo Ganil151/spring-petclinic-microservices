@@ -213,8 +213,8 @@ sudo tee /etc/motd > /dev/null <<EOF
 ╠══════════════════════════════════════════════════════════════════════════════╣
 ║  Project: $${PROJECT_NAME}
 ║  Environment: $${ENVIRONMENT}
-║  Hostname: \$(hostname)
-║  Private IP: \$(hostname -I | awk '{print \$1}')
+║  Hostname: $(hostname)
+║  Private IP: $(hostname -I | awk '{print $1}')
 ╠══════════════════════════════════════════════════════════════════════════════╣
 ║  Quick Start:                                                                ║
 ║    • Terraform: cd /opt/spring-petclinic/terraform/live/dev                 ║
