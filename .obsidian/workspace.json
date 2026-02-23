@@ -205,6 +205,8 @@
   },
   "active": "e8a8bfd7c13c69fd",
   "lastOpenFiles": [
+    "terraform/live/dev/security-groups/terragrunt.hcl",
+    "terraform/live/dev/security-groups",
     "ansible/300/worker-node-1",
     "ansible/300/worker-node-2",
     "ansible/300/sonarqube-server",
@@ -215,8 +217,6 @@
     "ansible/roles/infracost/tasks",
     "ansible/roles/infracost",
     "ansible/300/bastion-host",
-    "ansible/300",
-    "ansible/roles/maven/tasks/main.yml",
     "spring-petclinic-api-gateway/target/classes/static/images/spring-pivotal-logo.png",
     "spring-petclinic-api-gateway/target/classes/static/images/spring-logo-dataflow.png",
     "spring-petclinic-api-gateway/target/classes/static/images/spring-logo-dataflow-mobile.png",
