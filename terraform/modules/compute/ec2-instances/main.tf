@@ -283,26 +283,7 @@ resource "aws_instance" "worker_nodes" {
 
   monitoring = var.enable_monitoring
 
-  user_data = <<-EOF
-              #!/bin/bash
-              set -e
-              yum update -y
-              yum install -y docker git wget curl
-              systemctl start docker
-              systemctl enable docker
-              usermod -aG docker ec2-user
-              # Install Kubernetes tools
-              cat <<EOT > /etc/yum.repos.d/kubernetes.repo
-              [kubernetes]
-              name=Kubernetes
-              baseurl=https://pkgs.k8s.io/core:/stable:/v1.28/rpm/
-              enabled=1
-              gpgcheck=1
-              gpgkey=https://pkgs.k8s.io/core:/stable:/v1.28/rpm/repodata/repomd.xml.key
-              EOT
-              yum install -y kubelet kubeadm kubectl
-              systemctl enable kubelet
-              EOF
+  user_data = "terraform/scripts/worker_bootstrap.sh"
 
   tags = merge({
     Name        = "${var.project_name}-${var.environment}-${var.worker_instance_name}-${count.index + 1}"
