@@ -82,6 +82,23 @@ dependency "alb" {
   }
 }
 
+locals {
+  # Environment from path (e.g., live/dev/ansible -> dev)
+  env = element(split("/", path_relative_to_include()), 1)
+
+  # Dependency Outputs (Robust evaluation)
+  vpc_id               = dependency.vpc.outputs.vpc_id
+  vpc_cidr             = dependency.vpc.outputs.vpc_cidr
+  bastion_ip           = try(dependency.ec2_instances.outputs.bastion_public_ip, "")
+  bastion_priv_ip      = try(dependency.ec2_instances.outputs.bastion_private_ip, "")
+  jenkins_master_ip    = try(dependency.ec2_instances.outputs.jenkins_public_ip, "")
+  jenkins_master_priv  = try(dependency.ec2_instances.outputs.jenkins_private_ip, "")
+  sonarqube_ip         = try(dependency.ec2_instances.outputs.sonarqube_public_ip, "")
+  sonarqube_priv       = try(dependency.ec2_instances.outputs.sonarqube_private_ip, "")
+  worker_node_ips      = try(dependency.ec2_instances.outputs.worker_node_public_ips, [])
+  worker_node_priv_ips = try(dependency.ec2_instances.outputs.worker_node_private_ips, [])
+}
+
 # =============================================================================
 # Inputs for Ansible Inventory Module
 # =============================================================================
@@ -97,20 +114,20 @@ inputs = {
   ssh_key_file        = "${get_parent_terragrunt_dir()}/live/dev/key-pair/spms-dev.pem"
 
   # VPC Information
-  vpc_id     = dependency.vpc.outputs.vpc_id
-  vpc_cidr   = dependency.vpc.outputs.vpc_cidr
+  vpc_id     = local.vpc_id
+  vpc_cidr   = local.vpc_cidr
   aws_region = "us-east-1"
   account_id = get_aws_account_id()
 
   # EC2 Instance Information
-  bastion_ip           = try(dependency.ec2_instances.outputs.bastion_public_ip, "")
-  bastion_priv_ip      = try(dependency.ec2_instances.outputs.bastion_private_ip, "")
-  jenkins_master_ip    = try(dependency.ec2_instances.outputs.jenkins_public_ip, "")
-  jenkins_master_priv  = try(dependency.ec2_instances.outputs.jenkins_private_ip, "")
-  sonarqube_ip         = try(dependency.ec2_instances.outputs.sonarqube_public_ip, "")
-  sonarqube_priv       = try(dependency.ec2_instances.outputs.sonarqube_private_ip, "")
-  worker_node_ips      = try(dependency.ec2_instances.outputs.worker_node_public_ips, [])
-  worker_node_priv_ips = try(dependency.ec2_instances.outputs.worker_node_private_ips, [])
+  bastion_ip           = local.bastion_ip
+  bastion_priv_ip      = local.bastion_priv_ip
+  jenkins_master_ip    = local.jenkins_master_ip
+  jenkins_master_priv  = local.jenkins_master_priv
+  sonarqube_ip         = local.sonarqube_ip
+  sonarqube_priv       = local.sonarqube_priv
+  worker_node_ips      = local.worker_node_ips
+  worker_node_priv_ips = local.worker_node_priv_ips
 
   # Security Groups
   security_groups = {
