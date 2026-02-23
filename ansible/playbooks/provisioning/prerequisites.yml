@@ -25,3 +25,5 @@
       when: "'bastion_hosts' in group_names or 'k8s_workers' in group_names or 'jenkins_masters' in group_names"
     - role: git
       when: "'bastion_hosts' in group_names or 'jenkins_masters' in group_names"
+    - role: maven
+      when: "'k8s_workers' in group_names"

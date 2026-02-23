@@ -58,6 +58,14 @@
     enabled: true
   tags: docker
 
+- name: Create docker-compose symlink for compatibility
+  ansible.builtin.file:
+    src: /usr/libexec/docker/cli-plugins/docker-compose
+    dest: /usr/local/bin/docker-compose
+    state: link
+    force: true
+  tags: docker
+
 - name: Add ec2-user to Docker group
   ansible.builtin.user:
     name: ec2-user
