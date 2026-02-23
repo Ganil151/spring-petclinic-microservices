@@ -1,6 +1,10 @@
-# Inherit the root terragrunt.hcl (providers/backend)
 include "root" {
   path = find_in_parent_folders("root.hcl")
+}
+
+# Load environment configuration
+locals {
+  env_vars = yamldecode(file(find_in_parent_folders("env.yaml")))
 }
 
 # Link to the actual Terraform code
@@ -26,17 +30,14 @@ dependency "vpc" {
 }
 
 # Pull data from the key-pair module
-dependency "keypair" {
+dependency "key_pair" {
   config_path = "../key-pair"
   mock_outputs = {
-    key_name = "spms-mock-key"
+    key_pair_name = "spms-mock-key"
   }
 }
 
-# Load environment variables from the YAML
-locals {
-  env_vars = yamldecode(file(find_in_parent_folders("env.yaml")))
-}
+
 
 # Pass inputs to the Terraform module
 inputs = {
@@ -46,7 +47,7 @@ inputs = {
   vpc_id            = dependency.vpc.outputs.vpc_id
   subnet_ids        = dependency.vpc.outputs.private_subnets
   security_group_id = dependency.security.outputs.app_sg_id
-  key_name          = dependency.keypair.outputs.key_name
+  key_name          = dependency.key_pair.outputs.key_pair_name
   
   instance_type     = local.env_vars.k8s_cluster.worker_node_type
   node_count        = local.env_vars.k8s_cluster.desired_capacity

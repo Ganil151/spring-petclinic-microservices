@@ -1,6 +1,10 @@
-# Inherit the root terragrunt.hcl (providers/backend)
 include "root" {
   path = find_in_parent_folders("root.hcl")
+}
+
+# 🧪 Industrial Rigor: Load environment configuration
+locals {
+  env_vars = yamldecode(file(find_in_parent_folders("env.yaml")))
 }
 
 # Link to the actual Terraform code
@@ -38,10 +42,7 @@ dependency "key_pair" {
   }
 }
 
-# 🧪 Industrial Rigor: Load environment configuration
-locals {
-  env_vars = yamldecode(file(find_in_parent_folders("env.yaml")))
-}
+
 
 # Pass inputs to the Terraform module
 inputs = {
