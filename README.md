@@ -11,6 +11,15 @@ and the Eureka Service Discovery from the [Spring Cloud Netflix](https://github.
 
 [![Open in Codeanywhere](https://codeanywhere.com/img/open-in-codeanywhere-btn.svg)](https://app.codeanywhere.com/#https://github.com/spring-petclinic/spring-petclinic-microservices)
 
+## ☁️ Cloud-Native Deployment (EKS & Terragrunt)
+For production-grade deployment on AWS, this project uses **Terragrunt** for infrastructure provisioning and **Kubernetes** for orchestration.
+
+- **Infrastructure Blueprint:** [ARCHITECTURE.md](docs/ARCHITECTURE.md)
+- **Terragrunt & Security Guide:** [TERRAGRUNT_MIGRATION.md](docs/TERRAGRUNT_MIGRATION.md)
+- **Security Compliance:** [SECURITY_COMPLIANCE.md](docs/SECURITY_COMPLIANCE.md)
+
+---
+
 ## Starting services locally without Docker
 
 Every microservice is a Spring Boot application and can be started locally using IDE or `../mvnw spring-boot:run` command.

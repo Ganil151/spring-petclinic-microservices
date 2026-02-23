@@ -2,10 +2,15 @@
 
 This directory contains key documentation, runbooks, references, and diagrams for the Spring PetClinic Microservices project.
 
+## 🛡️ High-Rigor Infrastructure (Latest Migration)
+* [ARCHITECTURE.md](./ARCHITECTURE.md) - **Master Blueprint**: Detailed tiered design, microservice mesh, and automation stack.
+* [TERRAGRUNT_MIGRATION.md](./TERRAGRUNT_MIGRATION.md) - Details the 4-tier security group refactor and Terragrunt SSOT implementation.
+* [SECURITY_COMPLIANCE.md](./SECURITY_COMPLIANCE.md) - Our "Security-First" standards, including the "Bubble" strategy and identity-based access.
+
 ## 📄 Core Documentation
 * [QUICK_REFERENCE.md](./QUICK_REFERENCE.md) - High-level quick reference for Terraform commands, Ansible playbooks, Helm chart deployments, and environment sizing.
-* [REFACTORING_SUMMARY.md](./REFACTORING_SUMMARY.md) - Summarizes structural refactoring of Terraform and Ansible for full DRY compliance.
-* [JAVA21_MIGRATION.md](./JAVA21_MIGRATION.md) - Details the ongoing Spring Boot 4 and Java 21 migration checklist and implementation status.
+* [REFACTORING_SUMMARY.md](./REFACTORING_SUMMARY.md) - Historical summary of structural refactorings.
+* [JAVA21_MIGRATION.md](./JAVA21_MIGRATION.md) - Details the ongoing Spring Boot 4 and Java 21 migration checklist.
 
 ## 🚀 Deployment & Operations
 * [RUNBOOK_AWS_DEPLOY.md](./RUNBOOK_AWS_DEPLOY.md) - The primary step-by-step master runbook detailing end-to-end AWS deployment of the environment.
