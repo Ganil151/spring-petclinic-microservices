@@ -1,0 +1,28 @@
+---
+# Helm Role Metadata
+# =============================================================================
+
+galaxy_info:
+  role_name: helm
+  author: Spring Petclinic Team
+  description: Install Helm 3
+  company: Spring Petclinic
+  
+  license: MIT
+  
+  min_ansible_version: "2.14"
+  
+  platforms:
+    - name: Amazon
+      versions:
+        - 2
+        - 2023
+  
+  galaxy_tags:
+    - helm
+    - kubernetes
+    - k8s
+    - package
+    - charts
+
+dependencies: []

@@ -1,0 +1,15 @@
+---
+# Security Tools Role Defaults
+# =============================================================================
+
+security_tools:
+  - fail2ban
+  - audit
+  - aide
+
+fail2ban_enabled: true
+audit_enabled: true
+
+fail2ban_bantime: 3600
+fail2ban_findtime: 600
+fail2ban_maxretry: 3

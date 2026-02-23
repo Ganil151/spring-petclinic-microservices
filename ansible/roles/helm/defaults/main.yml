@@ -1,0 +1,16 @@
+---
+# Helm Role Defaults
+# =============================================================================
+
+helm_version: "3.13.0"
+helm_install_dir: "/usr/local/bin"
+
+helm_repositories:
+  - name: bitnami
+    url: https://charts.bitnami.com/bitnami
+  - name: prometheus-community
+    url: https://prometheus-community.github.io/helm-charts
+  - name: grafana
+    url: https://grafana.github.io/helm-charts
+  - name: ingress-nginx
+    url: https://kubernetes.github.io/ingress-nginx

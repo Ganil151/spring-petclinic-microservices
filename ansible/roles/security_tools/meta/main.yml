@@ -1,0 +1,29 @@
+---
+# Security Tools Role Metadata
+# =============================================================================
+
+galaxy_info:
+  role_name: security_tools
+  author: Spring Petclinic Team
+  description: Install and configure security tools (fail2ban, auditd)
+  company: Spring Petclinic
+  
+  license: MIT
+  
+  min_ansible_version: "2.14"
+  
+  platforms:
+    - name: Amazon
+      versions:
+        - 2
+        - 2023
+  
+  galaxy_tags:
+    - security
+    - hardening
+    - fail2ban
+    - audit
+    - system
+
+dependencies:
+  - role: ansible.posix
