@@ -194,28 +194,12 @@ log "SSH hardened successfully"
 # =============================================================================
 log "Configuring bash environment..."
 
-sudo tee /home/ec2-user/.bash_aliases > /dev/null <<'EOF'
-# Spring Petclinic Bastion Aliases
-alias ll='ls -alF'
-alias la='ls -A'
-alias l='ls -CF'
-alias tf='terraform'
-alias tg='terragrunt'
-alias k='kubectl'
-alias ks='kubectl get pods --all-namespaces'
-alias kg='kubectl get nodes'
-
-# Project-specific aliases
-alias petclinic-dev='cd /opt/spring-petclinic/terraform/live/dev'
-alias petclinic-logs='journalctl -u docker -f'
-
-# AWS shortcuts
-alias aws-whoami='aws sts get-caller-identity'
-alias aws-regions='aws ec2 describe-regions --query "Regions[].RegionName" --output text'
+cat << 'EOF' > /home/ec2-user/.bashrc
+${bashrc_content}
 EOF
 
-sudo chown ec2-user:ec2-user /home/ec2-user/.bash_aliases
-sudo chmod 644 /home/ec2-user/.bash_aliases
+sudo chown ec2-user:ec2-user /home/ec2-user/.bashrc
+sudo chmod 644 /home/ec2-user/.bashrc
 
 # =============================================================================
 # MOTD (Message of the Day)
