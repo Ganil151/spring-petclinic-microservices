@@ -1,0 +1,230 @@
+---
+# =============================================================================
+# Global Variables for Spring Petclinic Ansible Configuration
+# =============================================================================
+# These variables apply to all hosts unless overridden in group_vars or host_vars
+# =============================================================================
+
+# Project Configuration
+project_name: "spring-petclinic"
+environment: "{{ lookup('env', 'ENVIRONMENT') | default('dev', true) }}"
+aws_region: "{{ lookup('env', 'AWS_REGION') | default('us-east-1', true) }}"
+
+# =============================================================================
+# SSH Configuration
+# =============================================================================
+ansible_user: ec2-user
+ansible_ssh_private_key_file: "{{ lookup('env', 'HOME') }}/spring-petclinic-microservices/terraform/live/dev/key-pair/spms-dev.pem"
+ansible_python_interpreter: /usr/bin/python3
+ansible_ssh_common_args: '-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
+
+# =============================================================================
+# System Configuration
+# =============================================================================
+timezone: "UTC"
+ntp_servers:
+  - 0.amazon.pool.ntp.org
+  - 1.amazon.pool.ntp.org
+  - 2.amazon.pool.ntp.org
+  - 3.amazon.pool.ntp.org
+
+# =============================================================================
+# Security Configuration
+# =============================================================================
+security:
+  ssh:
+    port: 22
+    permit_root_login: "no"
+    password_authentication: "no"
+    pubkey_authentication: "yes"
+    max_auth_tries: 3
+    client_alive_interval: 300
+    client_alive_count_max: 2
+  
+  fail2ban:
+    enabled: true
+    bantime: 3600
+    findtime: 600
+    maxretry: 3
+  
+  firewall:
+    enabled: true
+    allowed_tcp_ports:
+      - 22    # SSH
+      - 80    # HTTP
+      - 443   # HTTPS
+  
+  audit:
+    enabled: true
+    log_retention_days: 90
+
+# =============================================================================
+# Docker Configuration
+# =============================================================================
+docker:
+  version: "latest"
+  storage_driver: "overlay2"
+  log_driver: "json-file"
+  log_opts:
+    max-size: "10m"
+    max-file: "3"
+  
+  # Docker groups
+  groups:
+    - name: docker
+      gid: 999
+  
+  # Docker daemon options
+  daemon_options:
+    storage-driver: overlay2
+    log-driver: json-file
+    log-opts:
+      max-size: 10m
+      max-file: "3"
+    live-restore: true
+    userland-proxy: false
+
+# =============================================================================
+# Java Configuration
+# =============================================================================
+java:
+  version: "17"
+  distribution: "amazon"
+  home: "/usr/lib/jvm/java-17-amazon-corretto"
+
+# =============================================================================
+# Jenkins Configuration
+# =============================================================================
+jenkins:
+  http_port: 8080
+  agent_port: 50000
+  home: "/var/jenkins_home"
+  docker_image: "jenkins/jenkins:lts-jdk17"
+  plugins:
+    - aws-java-sdk
+    - docker
+    - docker-compose
+    - docker-build-step
+    - kubernetes
+    - kubernetes-cli
+    - git
+    - github
+    - maven-plugin
+    - pipeline
+    - blueocean
+    - sonarqube
+    - ssh-agent
+    - credentials-binding
+    - timestamper
+    - ansicolor
+    - build-timeout
+    - workspace-cleanup
+
+# =============================================================================
+# SonarQube Configuration
+# =============================================================================
+sonarqube:
+  http_port: 9000
+  docker_image: "sonarqube:lts-community"
+  home: "/opt/sonarqube"
+  data_dir: "/opt/sonarqube/data"
+  extensions_dir: "/opt/sonarqube/extensions"
+  logs_dir: "/opt/sonarqube/logs"
+  
+  # Default credentials (CHANGE IN PRODUCTION!)
+  admin_user: admin
+  admin_password: admin
+  
+  # Plugins
+  plugins:
+    - sonar-java-plugin
+    - sonar-javascript-plugin
+    - sonar-python-plugin
+
+# =============================================================================
+# Kubernetes Configuration
+# =============================================================================
+kubernetes:
+  version: "1.28"
+  cni: "calico"
+  pod_network_cidr: "10.244.0.0/16"
+  service_cidr: "10.96.0.0/12"
+  
+  # Kubelet configuration
+  kubelet:
+    max_pods: 110
+    pod_infra_container_image: "public.ecr.aws/eks-distro/kubernetes/pause:3.9"
+  
+  # Addons
+  addons:
+    - metrics-server
+    - coredns
+    - kube-proxy
+
+# =============================================================================
+# Helm Configuration
+# =============================================================================
+helm:
+  version: "3.13.0"
+  repositories:
+    - name: bitnami
+      url: https://charts.bitnami.com/bitnami
+    - name: prometheus-community
+      url: https://prometheus-community.github.io/helm-charts
+    - name: grafana
+      url: https://grafana.github.io/helm-charts
+    - name: ingress-nginx
+      url: https://kubernetes.github.io/ingress-nginx
+
+# =============================================================================
+# AWS Configuration
+# =============================================================================
+aws:
+  cli_version: "2"
+  region: "{{ aws_region }}"
+  
+  # ECR
+  ecr:
+    repository_prefix: "spring-petclinic"
+  
+  # S3
+  s3:
+    backup_bucket: "spring-petclinic-backups-{{ environment }}"
+    state_bucket: "petclinic-state-{{ environment }}"
+
+# =============================================================================
+# Monitoring Configuration
+# =============================================================================
+monitoring:
+  prometheus:
+    enabled: true
+    port: 9090
+    scrape_interval: 15s
+  
+  grafana:
+    enabled: true
+    port: 3000
+    admin_user: admin
+    admin_password: admin
+  
+  node_exporter:
+    enabled: true
+    port: 9100
+
+# =============================================================================
+# Logging Configuration
+# =============================================================================
+logging:
+  centralized: true
+  driver: "awslogs"
+  region: "{{ aws_region }}"
+  group: "/spring-petclinic/{{ environment }}"
+
+# =============================================================================
+# Backup Configuration
+# =============================================================================
+backup:
+  enabled: true
+  schedule: "0 2 * * *"  # Daily at 2 AM
+  retention_days: 30
+  destination: "s3://{{ aws.s3.backup_bucket }}/{{ environment }}"

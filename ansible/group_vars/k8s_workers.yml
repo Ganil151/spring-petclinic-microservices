@@ -1,0 +1,82 @@
+---
+# =============================================================================
+# Group Variables for Kubernetes Worker Nodes
+# =============================================================================
+
+# Kubernetes worker configuration
+k8s_worker:
+  name_prefix: "worker-node"
+  max_pods: 110
+  kubelet_max_pods: 110
+  
+  # Container runtime
+  container_runtime: "containerd"
+  containerd_version: "1.7.11"
+  
+  # Network configuration
+  network:
+    plugin: "calico"
+    pod_cidr: "10.244.0.0/16"
+    service_cidr: "10.96.0.0/12"
+    mtu: 9001  # For enhanced networking
+
+# Kubernetes system configuration
+kubernetes_system:
+  # Sysctl settings
+  sysctl:
+    net.bridge.bridge-nf-call-iptables: 1
+    net.bridge.bridge-nf-call-ip6tables: 1
+    net.ipv4.ip_forward: 1
+    net.ipv4.conf.all.forwarding: 1
+    net.ipv6.conf.all.forwarding: 1
+  
+  # Kernel modules
+  kernel_modules:
+    - br_netfilter
+    - overlay
+    - ip_vs
+    - ip_vs_rr
+    - ip_vs_wrr
+    - ip_vs_sh
+    - nf_conntrack
+
+# Containerd configuration
+containerd_config:
+  config_path: "/etc/containerd/config.toml"
+  systemd_cgroup: true
+  sandbox_image: "public.ecr.aws/eks-distro/kubernetes/pause:3.9"
+
+# Kubelet configuration
+kubelet_config:
+  config_path: "/var/lib/kubelet/config.yaml"
+  cgroup_driver: "systemd"
+  serialize_image_pulls: false
+  max_open_files: 1000000
+  max_pods: 110
+  eviction_hard:
+    memory.available: "100Mi"
+    nodefs.available: "10%"
+    nodefs.inodesFree: "5%"
+    imagefs.available: "15%"
+
+# Kubernetes addons for worker nodes
+k8s_addons:
+  metrics_server:
+    enabled: true
+  node_local_dns:
+    enabled: true
+  aws_node:
+    enabled: true
+
+# Monitoring for worker nodes
+worker_monitoring:
+  node_exporter:
+    enabled: true
+    port: 9100
+  cadvisor:
+    enabled: true
+
+# Docker/Container registry mirrors
+registry_mirrors:
+  - "https://mirror.gcr.io"
+  - "https://public.ecr.aws"

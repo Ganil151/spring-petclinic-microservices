@@ -1,0 +1,76 @@
+---
+# =============================================================================
+# Group Variables for SonarQube Servers
+# =============================================================================
+
+# SonarQube-specific configuration
+sonarqube_server:
+  name: "sonarqube-server"
+  http_port: 9000
+  memory_limit: "2g"
+  cpu_limit: "2.0"
+  
+  # Database configuration (embedded H2 for dev, PostgreSQL for prod)
+  database:
+    type: "h2"  # Change to 'postgresql' for production
+    host: "localhost"
+    port: 5432
+    name: "sonarqube"
+    username: "sonar"
+    # password: Set via Ansible Vault in production
+
+# SonarQube quality gates
+sonarqube_quality_gates:
+  - name: "Spring Petclinic Default"
+    conditions:
+      - metric: "new_coverage"
+        operator: "LT"
+        threshold: "80"
+      - metric: "new_bugs"
+        operator: "GT"
+        threshold: "0"
+      - metric: "new_vulnerabilities"
+        operator: "GT"
+        threshold: "0"
+      - metric: "new_code_smells"
+        operator: "GT"
+        threshold: "10"
+      - metric: "new_security_rating"
+        operator: "GT"
+        threshold: "1"
+      - metric: "new_reliability_rating"
+        operator: "GT"
+        threshold: "1"
+
+# SonarQube quality profiles
+sonarqube_quality_profiles:
+  java:
+    name: "Spring Petclinic Java"
+    parent: "Sonar way"
+    rules:
+      - key: "java:S125"  # Comments should not be located at the end of a line of code
+        severity: "MINOR"
+      - key: "java:S1134"  # Track uses of "TODO" tags
+        severity: "MAJOR"
+      - key: "java:S1135"  # Track uses of "FIXME" tags
+        severity: "MAJOR"
+
+# SonarQube webhooks
+sonarqube_webhooks:
+  - name: "Jenkins"
+    url: "http://jenkins-master:8080/sonarqube-webhook/"
+    secret: "{{ sonarqube_webhook_secret | default('') }}"
+
+# SonarQube plugins (additional to default)
+sonarqube_plugins:
+  - "sonar-java-plugin"
+  - "sonar-javascript-plugin"
+  - "sonar-python-plugin"
+  - "sonar-findbugs-plugin"
+  - "sonar-checkstyle-plugin"
+
+# Backup configuration
+sonarqube_backup:
+  enabled: true
+  schedule: "0 4 * * *"  # Daily at 4 AM
+  destination: "/backup/sonarqube"

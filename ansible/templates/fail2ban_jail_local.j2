@@ -1,0 +1,81 @@
+# Fail2ban jail.local configuration template
+# Managed by Ansible - DO NOT EDIT MANUALLY
+
+[DEFAULT]
+# Ban hosts for 1 hour
+bantime = {{ security_fail2ban_bantime | default(3600) }}
+# Find time window (10 minutes)
+findtime = {{ security_fail2ban_findtime | default(600) }}
+# Max retry attempts before ban
+maxretry = {{ security_fail2ban_maxretry | default(3) }}
+# Ignore localhost and internal networks
+ignoreip = 127.0.0.1/8 ::1 10.0.0.0/8 172.16.0.0/12 192.168.0.0/16
+# Ban action
+banaction = firewalld
+# Email notifications (optional)
+# destemail = admin@example.com
+# sender = fail2ban@example.com
+# mta = sendmail
+# Enable email notifications
+# action = %(action_mwl)s
+
+# Default backend
+backend = systemd
+
+# =============================================================================
+# SSH Jail
+# =============================================================================
+[sshd]
+enabled = true
+port = ssh
+filter = sshd
+logpath = /var/log/secure
+maxretry = 3
+bantime = {{ security_fail2ban_bantime | default(3600) }}
+
+[sshd-ddos]
+enabled = true
+port = ssh
+filter = sshd-ddos
+logpath = /var/log/secure
+maxretry = 6
+bantime = {{ security_fail2ban_bantime | default(3600) }}
+
+# =============================================================================
+# HTTP/HTTPS Jails (for Jenkins, SonarQube, etc.)
+# =============================================================================
+[nginx-http-auth]
+enabled = false
+port = http,https
+filter = nginx-http-auth
+logpath = /var/log/nginx/error.log
+maxretry = 3
+
+[apache-auth]
+enabled = false
+port = http,https
+filter = apache-auth
+logpath = /var/log/httpd/*error.log
+maxretry = 3
+
+# =============================================================================
+# Docker Jail
+# =============================================================================
+[docker]
+enabled = true
+filter = docker
+logpath = /var/log/docker.log
+maxretry = 5
+bantime = {{ security_fail2ban_bantime | default(3600) }}
+
+# =============================================================================
+# Recidive Jail - Ban repeat offenders longer
+# =============================================================================
+[recidive]
+enabled = true
+filter = recidive
+logpath = /var/log/fail2ban.log
+action = firewalld
+bantime = 604800  # 1 week
+findtime = 86400  # 1 day
+maxretry = 3

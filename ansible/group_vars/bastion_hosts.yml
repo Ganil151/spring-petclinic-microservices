@@ -1,0 +1,54 @@
+---
+# =============================================================================
+# Group Variables for Bastion Hosts
+# =============================================================================
+
+# Bastion-specific configuration
+bastion:
+  name: "bastion-host"
+  ssh_port: 22
+  session_timeout: 300  # 5 minutes idle timeout
+  
+  # Session logging
+  session_logging:
+    enabled: true
+    log_path: "/var/log/bastion/sessions"
+    retention_days: 90
+
+# Allowed users for bastion access
+bastion_users:
+  - name: admin
+    groups:
+      - wheel
+      - docker
+    ssh_keys: []  # Add public keys here
+
+# Bastion security settings
+bastion_security:
+  # IP whitelist (optional - if empty, allows all)
+  allowed_ips: []
+  
+  # MFA (optional)
+  mfa_enabled: false
+  
+  # Session recording
+  record_sessions: true
+  
+  # MOTD
+  motd_enabled: true
+
+# Bastion connection settings for private instances
+bastion_proxy:
+  enabled: true
+  default_user: "ec2-user"
+  default_key: "~/.ssh/id_rsa"
+
+# CloudWatch Logs for bastion
+bastion_logging:
+  cloudwatch:
+    enabled: true
+    log_group: "/spring-petclinic/{{ environment }}/bastion"
+    log_streams:
+      - secure
+      - commands
+      - sessions

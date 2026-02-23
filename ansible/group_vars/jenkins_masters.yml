@@ -1,0 +1,46 @@
+---
+# =============================================================================
+# Group Variables for Jenkins Masters
+# =============================================================================
+
+# Jenkins-specific configuration
+jenkins_master:
+  name: "jenkins-master"
+  http_port: 8080
+  agent_port: 50000
+  memory_limit: "2g"
+  cpu_limit: "2.0"
+
+# Docker volumes for Jenkins
+jenkins_volumes:
+  - "jenkins_home:/var/jenkins_home"
+  - "/var/run/docker.sock:/var/run/docker.sock"
+  - "jenkins_tools:/var/jenkins_tools"
+
+# Maven configuration
+maven:
+  version: "3.9.6"
+  home: "/opt/maven"
+
+# Gradle configuration
+gradle:
+  version: "8.5"
+  home: "/opt/gradle"
+
+# Jenkins pipeline libraries
+jenkins_pipeline_libraries:
+  - name: "spring-petclinic-pipeline-lib"
+    repo: "https://github.com/spring-petclinic-microservices/jenkins-pipeline-lib.git"
+    branch: "main"
+
+# Security settings
+jenkins_security:
+  csrf_enabled: true
+  cli_enabled: false
+  script_security_enabled: true
+
+# Backup configuration
+jenkins_backup:
+  enabled: true
+  schedule: "0 3 * * *"  # Daily at 3 AM
+  destination: "/backup/jenkins"
