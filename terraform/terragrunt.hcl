@@ -116,7 +116,7 @@ locals {
     Environment = local.env
     ManageBy    = "Gsmash-DevTeam"
     Owner       = "gsmash"
-    Repository  = "https://github.com/spring-petclinic-microservices"
+    Repository  = "https://github.com/Ganil151/spring-petclinic-microservices.git"
   }
 }
 
