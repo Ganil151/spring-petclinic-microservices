@@ -217,6 +217,10 @@ resource "aws_instance" "sonarqube" {
 
   monitoring = var.enable_monitoring
 
+  lifecycle {
+    create_before_destroy = true
+  }
+
   user_data = <<-EOF
               #!/bin/bash
               set -e
