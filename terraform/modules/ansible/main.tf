@@ -105,8 +105,10 @@ locals {
     # EKS Cluster Configuration
     # ─────────────────────────────────────────────────────────────────────────────
 
+    %{~ if var.eks_cluster_name != "" ~}
     [eks_clusters]
     ${var.eks_cluster_name}-${var.cluster_suffix} region=${var.aws_region} vpc=${var.vpc_id}
+    %{~ endif ~}
 
     # ─────────────────────────────────────────────────────────────────────────────
     # Spring Petclinic Microservices
