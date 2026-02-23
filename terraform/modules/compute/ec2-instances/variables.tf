@@ -53,22 +53,91 @@ variable "bastion_instance_type" {
   default     = "t3.micro"
 }
 
+variable "bastion_instance_name" {
+  description = "Bastion host instance name"
+  type        = string
+  default     = "bastion-host"
+}
+
+# =============================================================================
+# Jenkins Master Configuration
+# =============================================================================
+variable "jenkins_instance_name" {
+  description = "Jenkins master instance name"
+  type        = string
+  default     = "jenkins-master"
+}
+
 variable "jenkins_instance_type" {
   description = "Jenkins master instance type"
   type        = string
-  default     = "t3.medium"
+  default     = "t3.large"
+}
+
+variable "jenkins_root_volume_size" {
+  description = "Jenkins root EBS volume size in GB"
+  type        = number
+  default     = 20
+}
+
+variable "jenkins_extra_volume_size" {
+  description = "Jenkins extra EBS volume size for builds/workspace in GB"
+  type        = number
+  default     = 10
+}
+
+# =============================================================================
+# SonarQube Server Configuration
+# =============================================================================
+variable "sonarqube_instance_name" {
+  description = "SonarQube instance name"
+  type        = string
+  default     = "sonarqube-server"
 }
 
 variable "sonarqube_instance_type" {
   description = "SonarQube instance type"
   type        = string
-  default     = "t3.medium"
+  default     = "t2.medium"
+}
+
+variable "sonarqube_root_volume_size" {
+  description = "SonarQube root EBS volume size in GB"
+  type        = number
+  default     = 20
+}
+
+variable "sonarqube_extra_volume_size" {
+  description = "SonarQube extra EBS volume size for data in GB"
+  type        = number
+  default     = 0
+}
+
+# =============================================================================
+# Worker Node Configuration
+# =============================================================================
+variable "worker_instance_name" {
+  description = "Worker node instance name prefix"
+  type        = string
+  default     = "worker-node"
 }
 
 variable "worker_node_type" {
   description = "Worker node instance type"
   type        = string
-  default     = "t3.large"
+  default     = "t3.medium"
+}
+
+variable "worker_root_volume_size" {
+  description = "Worker node root EBS volume size in GB"
+  type        = number
+  default     = 50
+}
+
+variable "worker_extra_volume_size" {
+  description = "Worker node extra EBS volume size for Docker/images in GB"
+  type        = number
+  default     = 50
 }
 
 variable "worker_node_count" {
