@@ -11,11 +11,19 @@ terraform {
 # Pull data from the VPC module
 dependency "vpc" {
   config_path = "../vpc"
+  mock_outputs = {
+    vpc_id         = "vpc-00000000"
+    vpc_cidr       = "10.0.0.0/16"
+    public_subnets = ["subnet-10000001", "subnet-10000002"]
+  }
 }
 
 # Pull data from the security module (for existing security groups)
 dependency "security" {
   config_path = "../bastion"
+  mock_outputs = {
+    web_sg_id = "sg-10000004"
+  }
 }
 
 # Pass inputs to the Terraform module
@@ -32,7 +40,7 @@ inputs = {
 
   # Use existing security group from security module
   enable_security_group = false
-  security_group_id     = dependency.security.outputs.alb_security_group_id
+  security_group_id     = dependency.security.outputs.web_sg_id
 
   # Public access for ALB ports
   allowed_cidr_blocks = ["0.0.0.0/0"]

@@ -11,11 +11,19 @@ terraform {
 # Pull data from the VPC module
 dependency "vpc" {
   config_path = "../vpc"
+  mock_outputs = {
+    vpc_id          = "vpc-00000000"
+    vpc_cidr        = "10.0.0.0/16"
+    private_subnets = ["subnet-00000001", "subnet-00000002"]
+  }
 }
 
 # Pull data from the security module
 dependency "security" {
   config_path = "../bastion"
+  mock_outputs = {
+    data_sg_id = "sg-10000003"
+  }
 }
 
 # Pass inputs to the Terraform module
