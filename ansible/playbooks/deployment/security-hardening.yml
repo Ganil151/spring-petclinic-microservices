@@ -68,7 +68,7 @@
           ╔══════════════════════════════════════════════════════════════╗
           ║     Spring Petclinic - Security Hardening                    ║
           ║     Host: {{ inventory_hostname }}                            ║
-          ║     Environment: {{ environment | default('dev') }}          ║
+          ║     Environment: {{ app_env | default('dev') }}          ║
           ╚══════════════════════════════════════════════════════════════╝
       tags: always
 

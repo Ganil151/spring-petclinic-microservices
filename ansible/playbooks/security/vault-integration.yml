@@ -1,0 +1,11 @@
+---
+# =============================================================================
+# Vault Integration Playbook
+# Sets up HashiCorp Vault access
+# =============================================================================
+
+- name: Setup Vault Integration
+  hosts: all
+  become: true
+  roles:
+    - vault_integration

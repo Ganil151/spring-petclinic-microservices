@@ -1,0 +1,11 @@
+---
+# =============================================================================
+# Trivy Scan Playbook
+# Installs and runs vulnerability scans
+# =============================================================================
+
+- name: Setup Trivy Scanning
+  hosts: all
+  become: true
+  roles:
+    - trivy_scan

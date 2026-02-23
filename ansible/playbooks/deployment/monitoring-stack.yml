@@ -1,0 +1,36 @@
+---
+# =============================================================================
+# Monitoring Stack Playbook
+# Deploys Prometheus and Grafana using Helm
+# =============================================================================
+
+- name: Deploy Monitoring Stack
+  hosts: jenkins_masters
+  become: true
+  tasks:
+    - name: Add Prometheus community repo
+      kubernetes.core.k8s_info:
+        kind: Namespace
+        name: monitoring
+      register: ns_check
+
+    - name: Create monitoring namespace
+      kubernetes.core.k8s:
+        name: monitoring
+        kind: Namespace
+        state: present
+      when: ns_check.resources | length == 0
+
+    - name: Add Helm repos
+      ansible.builtin.command:
+        cmd: "{{ item }}"
+      loop:
+        - "helm repo add prometheus-community https://prometheus-community.github.io/helm-charts"
+        - "helm repo add grafana https://grafana.github.io/helm-charts"
+        - "helm repo update"
+      changed_when: false
+
+    - name: Install Prometheus
+      ansible.builtin.command:
+        cmd: "helm upgrade --install prometheus prometheus-community/kube-prometheus-stack --namespace monitoring"
+      changed_when: true

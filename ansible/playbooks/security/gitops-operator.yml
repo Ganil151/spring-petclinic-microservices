@@ -1,0 +1,11 @@
+---
+# =============================================================================
+# GitOps Operator Playbook
+# Installs and configures GitOps tools (ArgoCD)
+# =============================================================================
+
+- name: Deploy GitOps Operator
+  hosts: jenkins_masters
+  become: true
+  roles:
+    - gitops_operator

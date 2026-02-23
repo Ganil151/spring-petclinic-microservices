@@ -1,0 +1,22 @@
+---
+# =============================================================================
+# Git Role - tasks/main.yml
+# Installs Git on Amazon Linux 2
+# =============================================================================
+
+- name: Install Git
+  ansible.builtin.yum:
+    name: git
+    state: present
+  tags: git
+
+- name: Verify Git installation
+  ansible.builtin.command: git --version
+  register: git_version
+  changed_when: false
+  tags: git
+
+- name: Display Git version
+  ansible.builtin.debug:
+    var: git_version.stdout
+  tags: git

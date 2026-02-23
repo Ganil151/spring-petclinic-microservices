@@ -1,0 +1,20 @@
+---
+# =============================================================================
+# Kubernetes Cluster Playbook
+# Sets up EKS access and worker node configuration
+# =============================================================================
+
+- name: Configure Kubernetes Control Plane Access
+  hosts: bastion_hosts, jenkins_masters
+  become: true
+  roles:
+    - kubectl
+    - helm
+    - kubernetes_setup
+
+- name: Configure Worker Nodes
+  hosts: k8s_workers
+  become: true
+  roles:
+    - kubectl
+    - helm

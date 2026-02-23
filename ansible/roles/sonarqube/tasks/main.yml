@@ -1,0 +1,48 @@
+---
+# =============================================================================
+# SonarQube Role - tasks/main.yml
+# Deploys SonarQube as a Docker container
+# =============================================================================
+
+- name: Create SonarQube directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: 999
+    group: 999
+    mode: '0755'
+  loop:
+    - /opt/sonarqube/data
+    - /opt/sonarqube/extensions
+    - /opt/sonarqube/logs
+  tags: sonarqube
+
+- name: Set system limits for SonarQube (Elasticsearch)
+  ansible.posix.sysctl:
+    name: vm.max_map_count
+    value: '262144'
+    state: present
+    reload: true
+  tags: sonarqube
+
+- name: Pull SonarQube image
+  community.docker.docker_image:
+    name: "{{ sonarqube_server.docker_image | default('sonarqube:10.4-community') }}"
+    source: pull
+  tags: sonarqube
+
+- name: Deploy SonarQube container
+  community.docker.docker_container:
+    name: sonarqube
+    image: "{{ sonarqube_server.docker_image | default('sonarqube:10.4-community') }}"
+    state: started
+    restart_policy: always
+    ports:
+      - "{{ sonarqube_server.http_port | default(9000) }}:9000"
+    volumes:
+      - "/opt/sonarqube/data:/opt/sonarqube/data"
+      - "/opt/sonarqube/extensions:/opt/sonarqube/extensions"
+      - "/opt/sonarqube/logs:/opt/sonarqube/logs"
+    env:
+      SONAR_JDBC_URL: "jdbc:h2:tcp://localhost:9092/sonar" # Using internal H2 for simplicity in this dev env
+  tags: sonarqube
