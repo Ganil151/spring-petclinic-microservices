@@ -158,7 +158,7 @@ resource "aws_instance" "jenkins" {
 
   monitoring = var.enable_monitoring
 
-  user_data = "../"
+  user_data = ""
 
   tags = merge({
     Name        = "${var.project_name}-${var.environment}-${var.jenkins_instance_name}"
