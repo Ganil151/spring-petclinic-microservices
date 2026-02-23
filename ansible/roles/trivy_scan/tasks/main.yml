@@ -1,0 +1,34 @@
+---
+# =============================================================================
+# Trivy Scan Role - tasks/main.yml
+# Installs Trivy for vulnerability scanning
+# =============================================================================
+
+- name: Add Trivy repository
+  ansible.builtin.copy:
+    dest: /etc/yum.repos.d/trivy.repo
+    content: |
+      [trivy]
+      name=Trivy repository
+      baseurl=https://aquasecurity.github.io/trivy-repo/rpm/releases/$basearch/
+      gpgcheck=0
+      enabled=1
+    mode: '0644'
+  tags: trivy
+
+- name: Install Trivy
+  ansible.builtin.yum:
+    name: trivy
+    state: present
+  tags: trivy
+
+- name: Verify Trivy installation
+  ansible.builtin.command: trivy --version
+  register: trivy_version
+  changed_when: false
+  tags: trivy
+
+- name: Display Trivy version
+  ansible.builtin.debug:
+    var: trivy_version.stdout
+  tags: trivy

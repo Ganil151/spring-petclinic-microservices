@@ -1,0 +1,45 @@
+---
+# =============================================================================
+# GitOps Operator Role - tasks/main.yml
+# Installs ArgoCD on the Kubernetes cluster
+# =============================================================================
+
+- name: Create argocd namespace
+  kubernetes.core.k8s:
+    name: argocd
+    api_version: v1
+    kind: Namespace
+    state: present
+  tags: gitops
+
+- name: Apply ArgoCD manifests
+  kubernetes.core.k8s:
+    src: https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+    namespace: argocd
+    state: present
+  tags: gitops
+
+- name: Wait for ArgoCD server to be ready
+  kubernetes.core.k8s_info:
+    kind: Deployment
+    name: argocd-server
+    namespace: argocd
+  register: argocd_status
+  until: argocd_status.resources[0].status.readyReplicas | default(0) > 0
+  retries: 20
+  delay: 15
+  tags: gitops
+
+- name: Get ArgoCD initial admin password
+  kubernetes.core.k8s_info:
+    kind: Secret
+    name: argocd-initial-admin-secret
+    namespace: argocd
+  register: argocd_secret
+  tags: gitops
+
+- name: Display ArgoCD admin password
+  ansible.builtin.debug:
+    msg: "ArgoCD password: {{ argocd_secret.resources[0].data.password | b64decode }}"
+  when: argocd_secret.resources | length > 0
+  tags: gitops

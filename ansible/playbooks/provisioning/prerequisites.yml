@@ -1,0 +1,15 @@
+---
+# =============================================================================
+# Prerequisites Playbook
+# Sets up base tools on all hosts
+# =============================================================================
+
+- name: Install Base Prerequisites
+  hosts: all
+  become: true
+  gather_facts: true
+  roles:
+    - java
+    - docker
+    - awscli
+    - security_tools

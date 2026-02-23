@@ -1,0 +1,34 @@
+---
+# =============================================================================
+# Vault Integration Role - tasks/main.yml
+# Installs and configures HashiCorp Vault CLI
+# =============================================================================
+
+- name: Install yum-utils
+  ansible.builtin.yum:
+    name: yum-utils
+    state: present
+  tags: vault
+
+- name: Add HashiCorp repository
+  ansible.builtin.command:
+    cmd: yum-config-manager --add-repo https://rpm.releases.hashicorp.com/AmazonLinux/hashicorp.repo
+    creates: /etc/yum.repos.d/hashicorp.repo
+  tags: vault
+
+- name: Install Vault
+  ansible.builtin.yum:
+    name: vault
+    state: present
+  tags: vault
+
+- name: Verify Vault installation
+  ansible.builtin.command: vault --version
+  register: vault_version
+  changed_when: false
+  tags: vault
+
+- name: Display Vault version
+  ansible.builtin.debug:
+    var: vault_version.stdout
+  tags: vault

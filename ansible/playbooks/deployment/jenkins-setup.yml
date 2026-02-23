@@ -1,0 +1,11 @@
+---
+# =============================================================================
+# Jenkins Setup Playbook
+# Deploys Jenkins Master
+# =============================================================================
+
+- name: Deploy Jenkins Master
+  hosts: jenkins_masters
+  become: true
+  roles:
+    - jenkins

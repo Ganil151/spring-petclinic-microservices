@@ -1,0 +1,51 @@
+---
+# =============================================================================
+# Jenkins Role - tasks/main.yml
+# Deploys Jenkins as a Docker container with persistent storage
+# =============================================================================
+
+- name: Create Jenkins directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: 1000
+    group: 1000
+    mode: '0755'
+  loop:
+    - /var/jenkins_home
+    - /var/jenkins_tools
+  tags: jenkins
+
+- name: Pull Jenkins Docker image
+  community.docker.docker_image:
+    name: "{{ jenkins_master.docker_image | default('jenkins/jenkins:lts-jdk21') }}"
+    source: pull
+  tags: jenkins
+
+- name: Deploy Jenkins container
+  community.docker.docker_container:
+    name: jenkins
+    image: "{{ jenkins_master.docker_image | default('jenkins/jenkins:lts-jdk21') }}"
+    state: started
+    restart_policy: always
+    ports:
+      - "{{ jenkins_master.http_port | default(8080) }}:8080"
+      - "{{ jenkins_master.agent_port | default(50000) }}:50000"
+    volumes:
+      - "/var/jenkins_home:/var/jenkins_home"
+      - "/var/jenkins_tools:/var/jenkins_tools"
+      - "/var/run/docker.sock:/var/run/docker.sock"
+    env:
+      JAVA_OPTS: "-Djenkins.install.runSetupWizard=false"
+    user: "root" # To allow docker socket access easily in this demo context
+  tags: jenkins
+
+- name: Wait for Jenkins to start
+  ansible.builtin.uri:
+    url: "http://localhost:{{ jenkins_master.http_port | default(8080) }}/login"
+    status_code: 200
+  register: result
+  until: result.status == 200
+  retries: 30
+  delay: 10
+  tags: jenkins

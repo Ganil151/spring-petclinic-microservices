@@ -1,0 +1,25 @@
+---
+# =============================================================================
+# Kubernetes Setup Role - tasks/main.yml
+# Configures kubectl access for the EKS cluster
+# =============================================================================
+
+- name: Update kubeconfig for EKS
+  ansible.builtin.command:
+    cmd: "aws eks update-kubeconfig --region {{ aws_region | default('us-east-1') }} --name {{ project_name }}-{{ app_env }}-eks"
+  register: kubeconfig_update
+  changed_when: "'Updated context' in kubeconfig_update.stdout"
+  failed_when: false
+  tags: k8s_setup
+
+- name: Verify cluster connectivity
+  ansible.builtin.command:
+    cmd: kubectl get nodes
+  register: nodes_check
+  changed_when: false
+  tags: k8s_setup
+
+- name: Display cluster nodes
+  ansible.builtin.debug:
+    var: nodes_check.stdout_lines
+  tags: k8s_setup
