@@ -1,0 +1,434 @@
+---
+# =============================================================================
+# Security Hardening Playbook for Spring Petclinic Microservices
+# =============================================================================
+# This playbook applies security hardening to all EC2 instances in the
+# Spring Petclinic infrastructure.
+#
+# Target Hosts: All instances (bastion, jenkins, sonarqube, workers)
+# Ansible Roles: security_tools
+#
+# Usage:
+#   ansible-playbook -i inventory/hosts playbooks/deployment/security-hardening.yml
+#
+# Tags:
+#   - security      : All security tasks
+#   - ssh           : SSH hardening only
+#   - firewall      : Firewall configuration only
+#   - audit         : Audit logging only
+#   - fail2ban      : Fail2ban configuration only
+#   - users         : User management only
+# =============================================================================
+
+- name: Security Hardening for Spring Petclinic Infrastructure
+  hosts: all
+  become: true
+  gather_facts: true
+  
+  vars:
+    # Security Configuration
+    security_ssh_port: 22
+    security_ssh_permit_root_login: "no"
+    security_ssh_password_authentication: "no"
+    security_ssh_pubkey_authentication: "yes"
+    security_ssh_max_auth_tries: 3
+    security_ssh_client_alive_interval: 300
+    security_ssh_client_alive_count_max: 2
+    security_ssh_login_grace_time: 60
+    security_ssh_x11_forwarding: "no"
+    security_ssh_allow_tcp_forwarding: "no"
+    security_ssh_permit_empty_passwords: "no"
+    
+    # Fail2ban Configuration
+    security_fail2ban_enabled: true
+    security_fail2ban_bantime: 3600
+    security_fail2ban_findtime: 600
+    security_fail2ban_maxretry: 3
+    
+    # Firewall Configuration
+    security_firewall_enabled: true
+    security_firewall_allowed_tcp_ports:
+      - 22    # SSH
+      - 80    # HTTP
+      - 443   # HTTPS
+    
+    # Audit Configuration
+    security_audit_enabled: true
+    security_audit_log_retention_days: 90
+    
+    # User Configuration
+    security_sudo_wheel_group: true
+    security_password_minlen: 12
+    security_password_retry: 3
+    
+  pre_tasks:
+    - name: Display security hardening start
+      ansible.builtin.debug:
+        msg: |
+          ╔══════════════════════════════════════════════════════════════╗
+          ║     Spring Petclinic - Security Hardening                    ║
+          ║     Host: {{ inventory_hostname }}                            ║
+          ║     Environment: {{ environment | default('dev') }}          ║
+          ╚══════════════════════════════════════════════════════════════╝
+      tags: always
+
+    - name: Gather package facts
+      ansible.builtin.package_facts:
+        manager: auto
+      tags: always
+
+  roles:
+    - role: security_tools
+      tags:
+        - security
+        - security_tools
+
+  tasks:
+    # =============================================================================
+    # SSH Hardening
+    # =============================================================================
+    - name: SSH Hardening Configuration
+      ansible.builtin.lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: "^#?{{ item.key }} "
+        line: "{{ item.key }} {{ item.value }}"
+        state: present
+        validate: 'sshd -t -f %s'
+      loop:
+        - { key: 'PermitRootLogin', value: '{{ security_ssh_permit_root_login }}' }
+        - { key: 'PasswordAuthentication', value: '{{ security_ssh_password_authentication }}' }
+        - { key: 'PubkeyAuthentication', value: '{{ security_ssh_pubkey_authentication }}' }
+        - { key: 'MaxAuthTries', value: '{{ security_ssh_max_auth_tries }}' }
+        - { key: 'ClientAliveInterval', value: '{{ security_ssh_client_alive_interval }}' }
+        - { key: 'ClientAliveCountMax', value: '{{ security_ssh_client_alive_count_max }}' }
+        - { key: 'LoginGraceTime', value: '{{ security_ssh_login_grace_time }}' }
+        - { key: 'X11Forwarding', value: '{{ security_ssh_x11_forwarding }}' }
+        - { key: 'AllowTcpForwarding', value: '{{ security_ssh_allow_tcp_forwarding }}' }
+        - { key: 'PermitEmptyPasswords', value: '{{ security_ssh_permit_empty_passwords }}' }
+        - { key: 'Protocol', value: '2' }
+        - { key: 'HostbasedAuthentication', value: 'no' }
+        - { key: 'PermitUserEnvironment', value: 'no' }
+        - { key: 'UsePAM', value: 'yes' }
+        - { key: 'PrintMotd', value: 'no' }
+        - { key: 'PrintLastLog', value: 'yes' }
+        - { key: 'TCPKeepAlive', value: 'yes' }
+        - { key: 'Compression', value: 'delayed' }
+        - { key: 'StrictModes', value: 'yes' }
+        - { key: 'IgnoreRhosts', value: 'yes' }
+      notify: Restart SSH
+      tags:
+        - security
+        - ssh
+
+    - name: Create SSH banner
+      ansible.builtin.copy:
+        dest: /etc/ssh/banner
+        content: |
+          ╔══════════════════════════════════════════════════════════════╗
+          ║                    AUTHORIZED ACCESS ONLY                    ║
+          ╠══════════════════════════════════════════════════════════════╣
+          ║  This system is for authorized users only. All activity      ║
+          ║  may be monitored and recorded. Unauthorized access is       ║
+          ║  prohibited and may result in disciplinary action or         ║
+          ║  legal proceedings.                                          ║
+          ║                                                              ║
+          ║  Project: Spring Petclinic Microservices                     ║
+          ║  Environment: {{ environment | default('dev') }}            ║
+          ╚══════════════════════════════════════════════════════════════╝
+        owner: root
+        group: root
+        mode: '0644'
+      tags:
+        - security
+        - ssh
+
+    - name: Configure SSH banner
+      ansible.builtin.lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: "^#?Banner "
+        line: "Banner /etc/ssh/banner"
+        state: present
+        validate: 'sshd -t -f %s'
+      notify: Restart SSH
+      tags:
+        - security
+        - ssh
+
+    # =============================================================================
+    # Firewall Configuration (firewalld for Amazon Linux 2)
+    # =============================================================================
+    - name: Install firewalld
+      ansible.builtin.yum:
+        name: firewalld
+        state: present
+      when: security_firewall_enabled | bool
+      tags:
+        - security
+        - firewall
+
+    - name: Enable and start firewalld
+      ansible.builtin.systemd:
+        name: firewalld
+        state: started
+        enabled: true
+      when: security_firewall_enabled | bool
+      tags:
+        - security
+        - firewall
+
+    - name: Configure firewall - Allow SSH
+      ansible.posix.firewalld:
+        service: ssh
+        permanent: true
+        state: enabled
+        immediate: true
+      when: security_firewall_enabled | bool
+      tags:
+        - security
+        - firewall
+
+    - name: Configure firewall - Allow HTTP
+      ansible.posix.firewalld:
+        service: http
+        permanent: true
+        state: enabled
+        immediate: true
+      when: security_firewall_enabled | bool
+      tags:
+        - security
+        - firewall
+
+    - name: Configure firewall - Allow HTTPS
+      ansible.posix.firewalld:
+        service: https
+        permanent: true
+        state: enabled
+        immediate: true
+      when: security_firewall_enabled | bool
+      tags:
+        - security
+        - firewall
+
+    - name: Configure firewall - Allow Jenkins port
+      ansible.posix.firewalld:
+        port: 8080/tcp
+        permanent: true
+        state: enabled
+        immediate: true
+      when: 
+        - security_firewall_enabled | bool
+        - "'jenkins_masters' in group_names"
+      tags:
+        - security
+        - firewall
+
+    - name: Configure firewall - Allow SonarQube port
+      ansible.posix.firewalld:
+        port: 9000/tcp
+        permanent: true
+        state: enabled
+        immediate: true
+      when: 
+        - security_firewall_enabled | bool
+        - "'sonarqube_servers' in group_names"
+      tags:
+        - security
+        - firewall
+
+    # =============================================================================
+    # Fail2ban Configuration
+    # =============================================================================
+    - name: Install fail2ban
+      ansible.builtin.yum:
+        name: 
+          - fail2ban
+          - fail2ban-systemd
+        state: present
+      when: security_fail2ban_enabled | bool
+      tags:
+        - security
+        - fail2ban
+
+    - name: Create fail2ban jail.local configuration
+      ansible.builtin.template:
+        src: templates/fail2ban_jail_local.j2
+        dest: /etc/fail2ban/jail.local
+        owner: root
+        group: root
+        mode: '0644'
+      notify: Restart fail2ban
+      when: security_fail2ban_enabled | bool
+      tags:
+        - security
+        - fail2ban
+
+    - name: Enable and start fail2ban
+      ansible.builtin.systemd:
+        name: fail2ban
+        state: started
+        enabled: true
+      when: security_fail2ban_enabled | bool
+      tags:
+        - security
+        - fail2ban
+
+    # =============================================================================
+    # Audit Configuration
+    # =============================================================================
+    - name: Install auditd
+      ansible.builtin.yum:
+        name: audit
+        state: present
+      when: security_audit_enabled | bool
+      tags:
+        - security
+        - audit
+
+    - name: Enable and start auditd
+      ansible.builtin.systemd:
+        name: auditd
+        state: started
+        enabled: true
+      when: security_audit_enabled | bool
+      tags:
+        - security
+        - audit
+
+    - name: Configure audit rules for SSH
+      ansible.builtin.lineinfile:
+        path: /etc/audit/rules.d/audit.rules
+        line: "{{ item }}"
+        create: true
+        mode: '0600'
+      loop:
+        - "-w /etc/ssh/sshd_config -p wa -k sshd_config"
+        - "-w /var/log/secure -p wa -k secure_log"
+        - "-w /var/log/auth.log -p wa -k auth_log"
+      when: security_audit_enabled | bool
+      tags:
+        - security
+        - audit
+
+    # =============================================================================
+    # User Security
+    # =============================================================================
+    - name: Ensure sudo group has wheel privileges
+      ansible.builtin.lineinfile:
+        path: /etc/sudoers
+        regexp: '^%wheel'
+        line: '%wheel ALL=(ALL) ALL'
+        validate: 'visudo -cf %s'
+      when: security_sudo_wheel_group | bool
+      tags:
+        - security
+        - users
+
+    - name: Set password quality requirements
+      ansible.builtin.lineinfile:
+        path: /etc/security/pwquality.conf
+        regexp: "^#?{{ item.key }} ="
+        line: "{{ item.key }} = {{ item.value }}"
+      loop:
+        - { key: 'minlen', value: '{{ security_password_minlen }}' }
+        - { key: 'dcredit', value: '-1' }
+        - { key: 'ucredit', value: '-1' }
+        - { key: 'ocredit', value: '-1' }
+        - { key: 'lcredit', value: '-1' }
+      tags:
+        - security
+        - users
+
+    # =============================================================================
+    # System Hardening
+    # =============================================================================
+    - name: Disable unused filesystems
+      ansible.builtin.lineinfile:
+        path: /etc/modprobe.d/{{ item }}.conf
+        line: "install {{ item }} /bin/true"
+        create: true
+        mode: '0644'
+      loop:
+        - cramfs
+        - freevxfs
+        - jffs2
+        - hfs
+        - hfsplus
+        - squashfs
+        - udf
+        - vfat
+      tags:
+        - security
+        - hardening
+
+    - name: Set kernel parameters for security
+      ansible.posix.sysctl:
+        name: "{{ item.name }}"
+        value: "{{ item.value }}"
+        sysctl_set: true
+        state: present
+        reload: true
+      loop:
+        - { name: 'net.ipv4.tcp_syncookies', value: '1' }
+        - { name: 'net.ipv4.conf.all.accept_redirects', value: '0' }
+        - { name: 'net.ipv4.conf.default.accept_redirects', value: '0' }
+        - { name: 'net.ipv4.conf.all.send_redirects', value: '0' }
+        - { name: 'net.ipv4.conf.default.send_redirects', value: '0' }
+        - { name: 'net.ipv4.conf.all.accept_source_route', value: '0' }
+        - { name: 'net.ipv4.conf.default.accept_source_route', value: '0' }
+        - { name: 'net.ipv4.icmp_echo_ignore_broadcasts', value: '1' }
+        - { name: 'net.ipv4.conf.all.log_martians', value: '1' }
+        - { name: 'net.ipv4.conf.default.log_martians', value: '1' }
+        - { name: 'kernel.randomize_va_space', value: '2' }
+        - { name: 'kernel.exec-shield', value: '1' }
+      tags:
+        - security
+        - hardening
+
+    # =============================================================================
+    # Security Summary
+    # =============================================================================
+    - name: Display security hardening summary
+      ansible.builtin.debug:
+        msg: |
+          ╔══════════════════════════════════════════════════════════════╗
+          ║          Security Hardening Complete                         ║
+          ╠══════════════════════════════════════════════════════════════╣
+          ║  Host: {{ inventory_hostname }}                               ║
+          ║                                                              ║
+          ║  Applied Configurations:                                     ║
+          ║    ✓ SSH Hardening                                           ║
+          ║    ✓ Firewall (firewalld)                                    ║
+          ║    ✓ Fail2ban                                                ║
+          ║    ✓ Audit Logging                                           ║
+          ║    ✓ User Security                                           ║
+          ║    ✓ Kernel Hardening                                        ║
+          ║                                                              ║
+          ║  Next Steps:                                                 ║
+          ║    1. Verify SSH access before closing current session       ║
+          ║    2. Test firewall rules                                    ║
+          ║    3. Check fail2ban status: sudo fail2ban-client status     ║
+          ║    4. Review audit logs: sudo ausearch -m all -ts recent     ║
+          ╚══════════════════════════════════════════════════════════════╝
+      tags: always
+
+  handlers:
+    - name: Restart SSH
+      ansible.builtin.systemd:
+        name: sshd
+        state: restarted
+      tags:
+        - ssh
+
+    - name: Restart fail2ban
+      ansible.builtin.systemd:
+        name: fail2ban
+        state: restarted
+      tags:
+        - fail2ban
+
+    - name: Restart auditd
+      ansible.builtin.systemd:
+        name: auditd
+        state: restarted
+      tags:
+        - audit
