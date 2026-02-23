@@ -205,6 +205,9 @@
   },
   "active": "e8a8bfd7c13c69fd",
   "lastOpenFiles": [
+    "docs/INFRA_AUDIT.md",
+    "terraform/live/dev/k8s-cluster/README_DISABLED.md",
+    "terraform/live/dev/k8s-cluster/terragrunt.hcl.disabled",
     "terraform/live/dev/security-groups/terragrunt.hcl",
     "terraform/live/dev/security-groups",
     "ansible/300/worker-node-1",
@@ -215,8 +218,6 @@
     "ansible/roles/infracost/tasks/main.yml",
     "ansible/roles/infracost/templates",
     "ansible/roles/infracost/tasks",
-    "ansible/roles/infracost",
-    "ansible/300/bastion-host",
     "spring-petclinic-api-gateway/target/classes/static/images/spring-pivotal-logo.png",
     "spring-petclinic-api-gateway/target/classes/static/images/spring-logo-dataflow.png",
     "spring-petclinic-api-gateway/target/classes/static/images/spring-logo-dataflow-mobile.png",
@@ -248,7 +249,6 @@
     "docs/RUNBOOK_AWS_DEPLOY.md",
     "docs/README.md",
     "docs/DEPLOYMENT_CHECKLIST.md",
-    "README.md",
     "docs/microservices-architecture-diagram.jpg",
     "docs/grafana-custom-metrics-dashboard.png"
   ]

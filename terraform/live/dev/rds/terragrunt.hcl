@@ -20,7 +20,7 @@ dependency "vpc" {
 
 # Pull data from the security module
 dependency "security" {
-  config_path = "../bastion"
+  config_path = "../security-groups"
   mock_outputs = {
     data_sg_id = "sg-10000003"
   }
