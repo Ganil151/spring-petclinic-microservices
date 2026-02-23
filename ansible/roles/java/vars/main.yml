@@ -2,6 +2,6 @@
 # Java Role Variables
 # =============================================================================
 
-java_version: "17"
+java_version: "21"
 java_distribution: "amazon"
-java_home: "/usr/lib/jvm/java-17-amazon-corretto"
+java_home: "/usr/lib/jvm/java-21-amazon-corretto"

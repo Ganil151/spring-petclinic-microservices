@@ -10,6 +10,9 @@ sonarqube_server:
   memory_limit: "2g"
   cpu_limit: "2.0"
   
+  # Docker Image - Latest LTS (Long Term Support)
+  docker_image: "sonarqube:10.4-community"  # Latest LTS version (April 2024)
+  
   # Database configuration (embedded H2 for dev, PostgreSQL for prod)
   database:
     type: "h2"  # Change to 'postgresql' for production

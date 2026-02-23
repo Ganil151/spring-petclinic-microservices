@@ -2,18 +2,18 @@
 # =============================================================================
 # Java Role for Spring Petclinic Microservices
 # =============================================================================
-# Installs Amazon Corretto 17 (Java 17)
+# Installs Amazon Corretto 21 (Java 21)
 # =============================================================================
 
-- name: Install Java (Amazon Corretto 17)
+- name: Install Java (Amazon Corretto 21)
   hosts: "{{ target_hosts | default('all') }}"
   become: true
   gather_facts: true
   
   vars:
-    java_version: "17"
+    java_version: "21"
     java_distribution: "amazon"
-    java_home: "/usr/lib/jvm/java-17-amazon-corretto"
+    java_home: "/usr/lib/jvm/java-21-amazon-corretto"
   
   tasks:
     - name: Display Java installation start
@@ -26,12 +26,13 @@
         name:
           - java-1.8.0-openjdk
           - java-11-openjdk
+          - java-17-amazon-corretto
         state: absent
       tags: java
 
-    - name: Install Amazon Corretto 17
+    - name: Install Amazon Corretto 21
       ansible.builtin.yum:
-        name: java-17-amazon-corretto
+        name: java-21-amazon-corretto
         state: present
       tags: java
 

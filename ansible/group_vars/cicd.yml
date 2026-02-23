@@ -38,7 +38,7 @@ cicd_docker:
   base_image: "amazonlinux:2023"
   build_args:
     MAVEN_VERSION: "3.9.6"
-    JAVA_VERSION: "17"
+    JAVA_VERSION: "21"
 
 # Testing Configuration
 cicd_testing:

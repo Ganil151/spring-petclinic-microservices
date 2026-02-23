@@ -88,9 +88,9 @@ docker:
 # Java Configuration
 # =============================================================================
 java:
-  version: "17"
+  version: "21"
   distribution: "amazon"
-  home: "/usr/lib/jvm/java-17-amazon-corretto"
+  home: "/usr/lib/jvm/java-21-amazon-corretto"
 
 # =============================================================================
 # Jenkins Configuration
@@ -99,7 +99,7 @@ jenkins:
   http_port: 8080
   agent_port: 50000
   home: "/var/jenkins_home"
-  docker_image: "jenkins/jenkins:lts-jdk17"
+  docker_image: "jenkins/jenkins:lts-jdk21"  # JDK 21 for Java 21 support
   plugins:
     - aws-java-sdk
     - docker
@@ -125,16 +125,16 @@ jenkins:
 # =============================================================================
 sonarqube:
   http_port: 9000
-  docker_image: "sonarqube:lts-community"
+  docker_image: "sonarqube:10.4-community"  # Latest LTS version (April 2024)
   home: "/opt/sonarqube"
   data_dir: "/opt/sonarqube/data"
   extensions_dir: "/opt/sonarqube/extensions"
   logs_dir: "/opt/sonarqube/logs"
-  
+
   # Default credentials (CHANGE IN PRODUCTION!)
   admin_user: admin
   admin_password: admin
-  
+
   # Plugins
   plugins:
     - sonar-java-plugin
