@@ -12,9 +12,11 @@
 | Document | Description |
 |----------|-------------|
 | [DEPLOYMENT_CHECKLIST.md](DEPLOYMENT_CHECKLIST.md) | This file - Overall deployment checklist |
-| [TERRAFORM_DEPLOYMENT.md](TERRAFORM_DEPLOYMENT.md) | **NEW** - Complete Terraform/Terragrunt guide |
+| [TERRAFORM_DEPLOYMENT.md](TERRAFORM_DEPLOYMENT.md) | Complete Terraform/Terragrunt guide |
+| [DESTRUCTION_GUIDE.md](DESTRUCTION_GUIDE.md) | **NEW** - How to destroy and start over |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | System architecture diagrams |
 | [SECURITY_COMPLIANCE.md](SECURITY_COMPLIANCE.md) | Security controls and compliance |
+| [JAVA21_MIGRATION.md](JAVA21_MIGRATION.md) | Java 21 migration guide |
 
 ### Security Posture Assessment
 
