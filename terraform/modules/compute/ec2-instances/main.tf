@@ -38,7 +38,7 @@ resource "aws_instance" "bastion" {
   }
 
   monitoring = var.enable_monitoring
-  user_data_base64 = var.bastion_user_data
+  user_data = var.bastion_user_data
   user_data_replace_on_change = true
 
   tags = merge({
@@ -93,7 +93,7 @@ resource "aws_instance" "jenkins" {
   }
 
   monitoring = var.enable_monitoring
-  user_data_base64 = var.jenkins_user_data
+  user_data = var.jenkins_user_data
   user_data_replace_on_change = true
 
   tags = merge({
@@ -136,7 +136,7 @@ resource "aws_instance" "sonarqube" {
   }
 
   monitoring = var.enable_monitoring
-  user_data_base64 = var.sonarqube_user_data
+  user_data = var.sonarqube_user_data
   user_data_replace_on_change = true
 
   lifecycle {
@@ -184,7 +184,7 @@ resource "aws_instance" "worker_nodes" {
   }
 
   monitoring = var.enable_monitoring
-  user_data_base64 = var.worker_user_data
+  user_data = var.worker_user_data
   user_data_replace_on_change = true
 
   tags = merge({
