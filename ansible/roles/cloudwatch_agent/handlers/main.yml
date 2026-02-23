@@ -1,0 +1,7 @@
+---
+# CloudWatch Agent Handlers
+
+- name: Restart CloudWatch Agent
+  ansible.builtin.systemd:
+    name: amazon-cloudwatch-agent
+    state: restarted

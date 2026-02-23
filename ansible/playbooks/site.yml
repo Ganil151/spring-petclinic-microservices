@@ -2,266 +2,62 @@
 # =============================================================================
 # Spring Petclinic Microservices - Main Site Playbook
 # =============================================================================
-# This is the main entry point for all Ansible deployments.
-# It orchestrates the deployment of the entire Spring Petclinic infrastructure.
-#
-# Usage:
-#   # Deploy everything
-#   ansible-playbook -i inventory/hosts playbooks/site.yml
-#
-#   # Deploy to specific environment
-#   ansible-playbook -i inventory/hosts playbooks/site.yml -e environment=prod
-#
-#   # Deploy specific component
-#   ansible-playbook -i inventory/hosts playbooks/site.yml --limit jenkins_masters
-#
-#   # Dry run
-#   ansible-playbook -i inventory/hosts playbooks/site.yml --check
-#
-#   # With verbose output
-#   ansible-playbook -i inventory/hosts playbooks/site.yml -vvv
+# Orchestrates the entire infrastructure configuration.
 # =============================================================================
 
-- name: Welcome and Pre-flight Checks
+- name: 01. Pre-flight Checks
   hosts: all
-  gather_facts: false
-  tags:
-    - always
-    - preflight
-
-  pre_tasks:
-    - name: Display deployment banner
-      ansible.builtin.debug:
-        msg: |
-          ╔══════════════════════════════════════════════════════════════════════╗
-          ║                                                                      ║
-          ║          Spring Petclinic Microservices - Ansible Deployment         ║
-          ║                                                                      ║
-          ║          Environment: {{ app_env | default('dev') }}                                   ║
-          ║          Target: {{ inventory_hostname }}                                   ║
-          ║          Ansible Version: {{ ansible_version.full }}                          ║
-          ║                                                                      ║
-          ╚══════════════════════════════════════════════════════════════════════╝
-      tags: always
-
-    - name: Validate Python version
+  gather_facts: true
+  tags: [always, preflight]
+  tasks:
+    - name: Validate OS Family
       ansible.builtin.assert:
-        that:
-          - ansible_python_version is version('3.6', '>=')
-        fail_msg: "Python 3.6 or higher is required. Found: {{ ansible_python_version }}"
-        success_msg: "Python version check passed: {{ ansible_python_version }}"
-      tags: always
+        that: ansible_os_family == "RedHat"
+        fail_msg: "Only RedHat family (Amazon Linux 2) is supported."
 
-# =============================================================================
-# Security Hardening (All Hosts)
-# =============================================================================
-- name: Apply Security Hardening
-  import_playbook: deployment/security-hardening.yml
-  tags:
-    - security
-    - hardening
+- name: 02. Base Infrastructure (Common & Security)
+  import_playbook: provisioning/prerequisites.yml
+  tags: [common, security, infra]
 
-# =============================================================================
-# Infrastructure Provisioning
-# =============================================================================
-- name: Provision Infrastructure
-  hosts: all
-  become: true
-  gather_facts: true
-  tags:
-    - provision
-    - infrastructure
+- name: 03. Bastion Host Configuration
+  import_playbook: deployment/bastion-setup.yml
+  tags: [bastion, tools]
 
-  pre_tasks:
-    - name: Update system packages
-      ansible.builtin.yum:
-        name: '*'
-        state: latest
-        update_only: true
-      when: ansible_os_family == "RedHat"
-      tags:
-        - packages
+- name: 04. Jenkins Master Deployment
+  import_playbook: deployment/jenkins-setup.yml
+  tags: [jenkins, cicd]
 
-  roles:
-    - role: git
-      tags:
-        - git
-    - role: docker
-      tags:
-        - docker
-    - role: awscli
-      tags:
-        - awscli
-    - role: java
-      tags:
-        - java
-
-# =============================================================================
-# Jenkins Master Deployment
-# =============================================================================
-- name: Deploy Jenkins Master
-  hosts: jenkins_masters
-  become: true
-  gather_facts: true
-  tags:
-    - jenkins
-    - cicd
-
-  roles:
-    - role: jenkins
-      tags:
-        - jenkins
-
-  post_tasks:
-    - name: Verify Jenkins is running
-      ansible.builtin.uri:
-        url: "http://localhost:{{ jenkins.http_port | default(8080) }}/login"
-        status_code: 200
-        timeout: 30
-      register: jenkins_health
-      until: jenkins_health.status == 200
-      retries: 5
-      delay: 10
-      tags:
-        - jenkins
-        - verify
-
-# =============================================================================
-# SonarQube Server Deployment
-# =============================================================================
-- name: Deploy SonarQube Server
+- name: 05. SonarQube Server Deployment
   hosts: sonarqube_servers
   become: true
-  gather_facts: true
-  tags:
+  roles:
     - sonarqube
-    - quality
+  tags: [sonarqube, quality]
 
-  roles:
-    - role: sonarqube
-      tags:
-        - sonarqube
+- name: 06. Kubernetes Cluster Configuration
+  import_playbook: provisioning/k8s-cluster.yml
+  tags: [k8s, kubernetes]
 
-  post_tasks:
-    - name: Verify SonarQube is running
-      ansible.builtin.uri:
-        url: "http://localhost:{{ sonarqube_server.http_port | default(9000) }}/api/system/status"
-        status_code: 200
-        timeout: 60
-      register: sonarqube_health
-      until: sonarqube_health.json.status == "UP"
-      retries: 10
-      delay: 15
-      tags:
-        - sonarqube
-        - verify
-
-# =============================================================================
-# Kubernetes Worker Nodes Setup
-# =============================================================================
-- name: Configure Kubernetes Worker Nodes
-  hosts: k8s_workers
-  become: true
-  gather_facts: true
-  tags:
-    - kubernetes
-    - k8s
-    - workers
-
-  roles:
-    - role: kubectl
-      tags:
-        - kubectl
-        - kubernetes
-    - role: helm
-      tags:
-        - helm
-        - kubernetes
-    - role: kubernetes_setup
-      tags:
-        - kubernetes
-        - k8s
-
-  post_tasks:
-    - name: Verify kubelet is running
-      ansible.builtin.systemd:
-        name: kubelet
-      register: kubelet_status
-      tags:
-        - kubernetes
-        - verify
-
-# =============================================================================
-# GitOps Operator Setup
-# =============================================================================
-- name: Configure GitOps Operators
-  hosts: k8s_workers
-  become: true
-  gather_facts: false
-  tags:
-    - gitops
-    - argocd
-    - flux
-
-  roles:
-    - role: gitops_operator
-      tags:
-        - gitops
-        - argocd
-
-# =============================================================================
-# Security Tools Installation
-# =============================================================================
-- name: Install Security Tools
+- name: 07. GitOps & Security Integration
   hosts: all
   become: true
-  gather_facts: false
-  tags:
-    - security_tools
-    - trivy
+  tasks:
+    - name: Install Trivy Scan
+      ansible.builtin.include_role:
+        name: trivy_scan
+      when: "'dev_all' in group_names"
+      tags: [trivy, security]
+    
+    - name: Install Vault Integration
+      ansible.builtin.include_role:
+        name: vault_integration
+      tags: [vault, secrets]
 
-  roles:
-    - role: trivy_scan
-      tags:
-        - trivy
-        - security
-    - role: vault_integration
-      tags:
-        - vault
-        - secrets
-
-# =============================================================================
-# Deployment Summary
-# =============================================================================
-- name: Deployment Summary
+- name: 08. Deployment Summary
   hosts: localhost
   gather_facts: false
-  tags:
-    - always
-    - summary
-
+  tags: [always, summary]
   tasks:
-    - name: Display deployment summary
+    - name: Display deployment message
       ansible.builtin.debug:
-        msg: |
-          ╔══════════════════════════════════════════════════════════════════════╗
-          ║                      Deployment Complete!                            ║
-          ╠══════════════════════════════════════════════════════════════════════╣
-          ║                                                                      ║
-          ║  Environment: {{ app_env | default('dev') }}                                            ║
-          ║  Timestamp: {{ ansible_date_time.iso8601 | default('N/A') }}                      ║
-          ║                                                                      ║
-          ║  Deployed Components:                                                ║
-          ║    {% if 'jenkins_masters' in hostvars %}✓ Jenkins Master{% endif %}
-          ║    {% if 'sonarqube_servers' in hostvars %}✓ SonarQube Server{% endif %}
-          ║    {% if 'k8s_workers' in hostvars %}✓ Kubernetes Workers{% endif %}
-          ║    {% if 'bastion_hosts' in hostvars %}✓ Bastion Host{% endif %}
-          ║                                                                      ║
-          ║  Next Steps:                                                         ║
-          ║    1. Access Jenkins: http://<jenkins-ip>:8080                       ║
-          ║    2. Access SonarQube: http://<sonarqube-ip>:9000                   ║
-          ║    3. Configure kubectl: kubectl config use-context <cluster>        ║
-          ║    4. Deploy application: kubectl apply -f k8s/manifests/            ║
-          ║                                                                      ║
-          ╚══════════════════════════════════════════════════════════════════════╝
-      tags: always
+        msg: "Full infrastructure configuration for {{ app_env | upper }} complete!"

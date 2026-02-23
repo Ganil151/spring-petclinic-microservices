@@ -1,0 +1,14 @@
+---
+# =============================================================================
+# Bastion Host Setup Playbook
+# Sets up Terraform, Terragrunt and administrative tools
+# =============================================================================
+
+- name: Configure Bastion Host
+  hosts: bastion_hosts
+  become: true
+  roles:
+    - terraform
+    - terragrunt
+    - kubectl
+    - helm

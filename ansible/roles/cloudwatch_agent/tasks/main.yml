@@ -1,0 +1,27 @@
+---
+# =============================================================================
+# CloudWatch Agent Role - tasks/main.yml
+# =============================================================================
+
+- name: Install CloudWatch Agent
+  ansible.builtin.yum:
+    name: amazon-cloudwatch-agent
+    state: present
+  tags: cloudwatch
+
+- name: Configure CloudWatch Agent
+  ansible.builtin.template:
+    src: amazon-cloudwatch-agent.json.j2
+    dest: /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json
+    owner: root
+    group: root
+    mode: '0644'
+  notify: Restart CloudWatch Agent
+  tags: cloudwatch
+
+- name: Start and enable CloudWatch Agent
+  ansible.builtin.systemd:
+    name: amazon-cloudwatch-agent
+    state: started
+    enabled: true
+  tags: cloudwatch

@@ -1,15 +1,27 @@
 ---
 # =============================================================================
 # Prerequisites Playbook
-# Sets up base tools on all hosts
+# Sets up base tools and common settings on all hosts
 # =============================================================================
 
-- name: Install Base Prerequisites
+- name: Apply Common Settings and Base Tools
   hosts: all
   become: true
   gather_facts: true
   roles:
-    - java
-    - docker
-    - awscli
+    - common
     - security_tools
+    - cloudwatch_agent
+
+- name: Install Development Tools (Where Applicable)
+  hosts: all
+  become: true
+  roles:
+    - role: java
+      when: "'k8s_workers' in group_names or 'jenkins_masters' in group_names or 'sonarqube_servers' in group_names"
+    - role: docker
+      when: "'bastion_hosts' in group_names or 'k8s_workers' in group_names or 'jenkins_masters' in group_names or 'sonarqube_servers' in group_names"
+    - role: awscli
+      when: "'bastion_hosts' in group_names or 'k8s_workers' in group_names or 'jenkins_masters' in group_names"
+    - role: git
+      when: "'bastion_hosts' in group_names or 'jenkins_masters' in group_names"

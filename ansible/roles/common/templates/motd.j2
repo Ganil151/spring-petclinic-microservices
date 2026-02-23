@@ -1,0 +1,19 @@
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                    Spring Petclinic Microservices                            ║
+║                           {{ inventory_hostname }} - {{ app_env | upper }}                              ║
+╠══════════════════════════════════════════════════════════════════════════════╣
+║  Project: {{ project_name }}
+║  Environment: {{ app_env }}
+║  Hostname: {{ ansible_hostname }}
+║  Private IP: {{ ansible_default_ipv4.address | default('N/A') }}
+╠══════════════════════════════════════════════════════════════════════════════╣
+║  Quick Start:                                                                ║
+║    • Terraform: cd /opt/spring-petclinic/terraform/live/dev                 ║
+║    • Ansible:   cd /opt/spring-petclinic/ansible                            ║
+║    • Logs:      journalctl -u docker -f                                     ║
+║                                                                              ║
+║  Useful Commands:                                                            ║
+║    • tf plan / tf apply                                                      ║
+║    • kubectl get pods -n petclinic                                           ║
+║    • docker ps                                                               ║
+╚══════════════════════════════════════════════════════════════════════════════╝
