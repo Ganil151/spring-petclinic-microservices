@@ -9,7 +9,9 @@
 set -e
 
 # ─── 1. Set Hostname ─────────────────────────────────────────────
-sudo hostnamectl set-hostname jenkins-master
+SERVERNAME="jenkins-master"
+
+sudo hostnamectl set-hostname ${SERVERNAME}
 
 # ─── 2. Wait for Cloud-Init to Finish ────────────────────────────
 echo "Waiting for instance stabilization..."

@@ -21,11 +21,18 @@ locals {
     ansible_user=${var.ssh_user}
     ansible_ssh_private_key_file=${var.ssh_key_file}
     ansible_python_interpreter=/usr/bin/python3
+    
+    # 🧪 Industrial Rigor: SSH Proxy Tunneling through Bastion
+    # This enables connectivity to private subnets without exposing them to the internet.
+    %{~ if var.bastion_ip != "" ~}
+    ansible_ssh_common_args='-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ProxyCommand="ssh -W %h:%p -q ${var.ssh_user}@${var.bastion_ip} -i ${var.ssh_key_file} -o StrictHostKeyChecking=no"'
+    %{~ else ~}
     ansible_ssh_common_args='-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
+    %{~ endif ~}
 
     # AWS Configuration
     aws_region=${var.aws_region}
-    aws_account_id=${var.aws_account_id}
+    aws_account_id=${var.account_id}
     vpc_id=${var.vpc_id}
 
     # ─────────────────────────────────────────────────────────────────────────────
@@ -33,7 +40,7 @@ locals {
     # ─────────────────────────────────────────────────────────────────────────────
 
     [jenkins_masters]
-    jenkins-master ansible_host=${var.jenkins_master_ip} private_ip=${var.jenkins_master_priv}
+    jenkins-master ansible_host=${var.jenkins_master_priv} private_ip=${var.jenkins_master_priv}
 
     [jenkins_masters:vars]
     ansible_roles=java,docker,awscli,jenkins,security_tools
@@ -45,7 +52,7 @@ locals {
     # ─────────────────────────────────────────────────────────────────────────────
 
     [sonarqube_servers]
-    sonarqube-server ansible_host=${var.sonarqube_ip} private_ip=${var.sonarqube_priv}
+    sonarqube-server ansible_host=${var.sonarqube_priv} private_ip=${var.sonarqube_priv}
 
     [sonarqube_servers:vars]
     ansible_roles=java,docker,awscli,sonarqube,security_tools
@@ -56,8 +63,8 @@ locals {
     # ─────────────────────────────────────────────────────────────────────────────
 
     [k8s_workers]
-    %{~ for idx, ip in var.worker_node_ips ~}
-    worker-node-${idx + 1} ansible_host=${ip} private_ip=${var.worker_node_priv_ips[idx]}
+    %{~ for idx, ip in var.worker_node_priv_ips ~}
+    worker-node-${idx + 1} ansible_host=${ip} private_ip=${ip}
     %{~ endfor ~}
 
     [k8s_workers:vars]
@@ -70,7 +77,7 @@ locals {
 
     [bastion_hosts]
     %{~ if var.bastion_ip != "" ~}
-    bastion-host ansible_host=${var.bastion_ip} private_ip=${var.bastion_priv_ip}
+    bastion-host ansible_host=${var.bastion_ip} private_ip=${var.bastion_priv_ip} ansible_ssh_common_args='-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
     %{~ endif ~}
 
     [bastion_hosts:vars]

@@ -9,14 +9,26 @@ variable "vpc_cidr" {
   default     = "10.0.0.0/16"
 }
 
-variable "subnet_ids" {
-  description = "List of subnet IDs for instances"
+variable "public_subnet_ids" {
+  description = "List of public subnet IDs (for Bastion/ALB)"
   type        = list(string)
 }
 
-variable "security_group_ids" {
-  description = "List of security group IDs"
+variable "private_subnet_ids" {
+  description = "List of private subnet IDs (for Jenkins/SonarQube/Workers)"
   type        = list(string)
+}
+
+variable "mgmt_security_group_id" {
+  description = "Security group ID for Management Tier (Bastion)"
+  type        = string
+  default     = null
+}
+
+variable "app_security_group_id" {
+  description = "Security group ID for Application Tier (Microservices)"
+  type        = string
+  default     = null
 }
 
 variable "environment" {
@@ -28,6 +40,12 @@ variable "project_name" {
   description = "Project name for tagging"
   type        = string
   default     = "spring-petclinic"
+}
+
+variable "manage_by" {
+  description = "Management Team"
+  type        = string
+  default     = "Gsmash DevOps Team"
 }
 
 variable "key_pair_name" {
@@ -59,6 +77,12 @@ variable "bastion_instance_name" {
   default     = "bastion-host"
 }
 
+variable "bastion_user_data" {
+  description = "Bastion host user data"
+  type        = string
+  default     = ""
+}
+
 # =============================================================================
 # Jenkins Master Configuration
 # =============================================================================
@@ -86,6 +110,12 @@ variable "jenkins_extra_volume_size" {
   default     = 10
 }
 
+variable "jenkins_user_data" {
+  description = "Jenkins master user data"
+  type        = string
+  default     = ""
+}
+
 # =============================================================================
 # SonarQube Server Configuration
 # =============================================================================
@@ -111,6 +141,12 @@ variable "sonarqube_extra_volume_size" {
   description = "SonarQube extra EBS volume size for data in GB"
   type        = number
   default     = 0
+}
+
+variable "sonarqube_user_data" {
+  description = "SonarQube server user data"
+  type        = string
+  default     = ""
 }
 
 # =============================================================================
@@ -168,4 +204,10 @@ variable "allowed_cidr_blocks" {
   description = "CIDR blocks allowed to access EC2 instances"
   type        = list(string)
   default     = ["0.0.0.0/0"]
+}
+
+variable "worker_user_data" {
+  description = "Worker node user data"
+  type        = string
+  default     = ""
 }

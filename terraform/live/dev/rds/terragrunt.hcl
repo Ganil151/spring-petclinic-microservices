@@ -40,7 +40,7 @@ inputs = {
 
   # Security
   publicly_accessible = false
-  security_group_ids  = [dependency.security.outputs.database_security_group_id]
+  security_group_ids  = [dependency.security.outputs.data_sg_id]
 
   # Backup
   backup_retention_period = 7
