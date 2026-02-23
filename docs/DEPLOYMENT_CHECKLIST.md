@@ -193,10 +193,10 @@ done
 │   │           └── terragrunt.hcl
 │   ├── modules/
 │   │   ├── compute/
-│   │   │   ├── bastion/
+│   │   │   ├── ec2-instances/      # EC2 instances module
 │   │   │   │   ├── main.tf
-│   │   │   │   ├── outputs.tf
-│   │   │   │   └── variables.tf
+│   │   │   │   ├── variables.tf
+│   │   │   │   └── outputs.tf
 │   │   │   └── k8s-node/
 │   │   │       ├── data.tf
 │   │   │       ├── main.tf
@@ -217,16 +217,20 @@ done
 │   │   │       ├── main.tf          # VPC + Subnets + Routes
 │   │   │       ├── outputs.tf
 │   │   │       └── variables.tf
-│   │   └── security/
-│   │       ├── iam/
-│   │       │   ├── main.tf          # Security Groups (all services)
-│   │       │   ├── outputs.tf
-│   │       │   ├── policies.tf
-│   │       │   └── variables.tf
-│   │       └── key-pair/
-│   │           ├── main.tf          # SSH Key Pair (RSA/ED25519)
-│   │           ├── outputs.tf
-│   │           └── variables.tf
+│   │   ├── security/
+│   │   │   ├── iam/                 # Security Groups (all services)
+│   │   │   │   ├── main.tf
+│   │   │   │   ├── outputs.tf
+│   │   │   │   ├── policies.tf
+│   │   │   │   └── variables.tf
+│   │   │   └── key-pair/            # SSH Key Pair (RSA/ED25519)
+│   │   │       ├── main.tf
+│   │   │       ├── outputs.tf
+│   │   │       └── variables.tf
+│   │   └── ansible/                 # Ansible Inventory Generator
+│   │       ├── main.tf
+│   │       ├── variables.tf
+│   │       └── outputs.tf
 │   ├── backend.tf
 │   ├── providers.tf
 │   ├── terragrunt.hcl
@@ -799,16 +803,20 @@ terragrunt init && terragrunt apply -auto-approve
 cd ../bastion  # Security groups configured here
 terragrunt init && terragrunt apply -auto-approve
 
-# 4. ALB (depends on VPC + Security Groups)
-cd ../alb
+# 4. EC2 Instances (depends on VPC + Security Groups + Key Pair)
+cd ../ec2-instances
 terragrunt init && terragrunt apply -auto-approve
 
 # 5. RDS Database (depends on VPC + Security Groups)
 cd ../rds
 terragrunt init && terragrunt apply -auto-approve
 
-# 6. Kubernetes Cluster (depends on VPC + Security Groups)
-cd ../k8s-cluster
+# 6. ALB (depends on VPC + Security Groups)
+cd ../alb
+terragrunt init && terragrunt apply -auto-approve
+
+# 7. Ansible Inventory (depends on ALL above)
+cd ../ansible
 terragrunt init && terragrunt apply -auto-approve
 ```
 
@@ -835,19 +843,22 @@ terragrunt --version
 │      └─ Creates: VPC, Subnets, IGW, NAT, Route Tables      │
 │                                                             │
 │  2️⃣  Key Pair (key-pair/) - Can run parallel with VPC      │
-│      └─ Creates: SSH Key (spms-dev)                        │
+│      └─ Creates: SSH Key (spms-dev, RSA 4096)              │
 │                                                             │
 │  3️⃣  Security Groups (bastion/) - After VPC                │
-│      └─ Creates: SGs for all services                      │
+│      └─ Creates: SGs for all services (12 security groups) │
 │                                                             │
-│  4️⃣  ALB (alb/) - After VPC + Security Groups              │
-│      └─ Creates: Load Balancer + Target Group              │
+│  4️⃣  EC2 Instances (ec2-instances/)                        │
+│      └─ Creates: Bastion, Jenkins, SonarQube, Workers      │
 │                                                             │
 │  5️⃣  RDS (rds/) - After VPC + Security Groups              │
 │      └─ Creates: Aurora MySQL/PostgreSQL                   │
 │                                                             │
-│  6️⃣  K8s Cluster (k8s-cluster/) - After VPC + Security     │
-│      └─ Creates: EKS Cluster + Node Groups                 │
+│  6️⃣  ALB (alb/) - After VPC + Security Groups              │
+│      └─ Creates: Load Balancer + Target Group              │
+│                                                             │
+│  7️⃣  Ansible Inventory (ansible/) - After ALL above        │
+│      └─ Creates: Ansible inventory file from outputs       │
 │                                                             │
 └─────────────────────────────────────────────────────────────┘
 ```
