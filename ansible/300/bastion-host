@@ -1,0 +1,1 @@
+{"changed": false, "elapsed": 605, "msg": "timed out waiting for ping module test: Data could not be sent to remote host \"52.207.160.154\". Make sure this host can be reached over ssh: Warning: Permanently added '52.207.160.154' (ED25519) to the list of known hosts.\r\nec2-user@52.207.160.154: Permission denied (publickey,gssapi-keyex,gssapi-with-mic)."}
