@@ -1,0 +1,92 @@
+---
+# =============================================================================
+# Kubernetes Cluster Variables
+# =============================================================================
+# These variables apply to all Kubernetes cluster nodes
+# =============================================================================
+
+# Cluster Configuration
+k8s_cluster:
+  name: "spring-petclinic-eks"
+  version: "1.28"
+  provider: "eks"
+  region: "{{ aws_region }}"
+
+# Network Configuration
+k8s_network:
+  pod_cidr: "10.244.0.0/16"
+  service_cidr: "10.96.0.0/12"
+  cni_plugin: "calico"
+  network_policy: true
+
+# Control Plane Configuration
+k8s_control_plane:
+  endpoint_private: true
+  endpoint_public: true
+  audit_logging: true
+  api_server_logging: true
+  controller_manager_logging: true
+  scheduler_logging: true
+
+# Node Configuration
+k8s_nodes:
+  container_runtime: "containerd"
+  kubelet_max_pods: 110
+  kube_reserved:
+    cpu: "100m"
+    memory: "256Mi"
+  system_reserved:
+    cpu: "100m"
+    memory: "256Mi"
+
+# Addons
+k8s_addons:
+  metrics_server:
+    enabled: true
+  coredns:
+    enabled: true
+    replicas: 2
+  kube_proxy:
+    enabled: true
+  aws_node:
+    enabled: true
+  cluster_autoscaler:
+    enabled: true
+
+# Ingress Configuration
+k8s_ingress:
+  controller: "nginx"
+  replicas: 2
+  external_traffic_policy: "Local"
+  ssl_redirect: true
+
+# Storage Configuration
+k8s_storage:
+  default_storage_class: "gp3"
+  reclaim_policy: "Delete"
+  allow_volume_expansion: true
+
+# RBAC Configuration
+k8s_rbac:
+  enabled: true
+  default_namespace: "petclinic"
+  service_accounts:
+    - name: jenkins
+      namespace: cicd
+    - name: argocd
+      namespace: argocd
+
+# Resource Quotas
+k8s_quotas:
+  default_namespace:
+    requests_cpu: "2"
+    requests_memory: "4Gi"
+    limits_cpu: "4"
+    limits_memory: "8Gi"
+    pods: "20"
+
+# Pod Security Standards
+k8s_pod_security:
+  enforce: "baseline"
+  audit: "restricted"
+  warn: "restricted"

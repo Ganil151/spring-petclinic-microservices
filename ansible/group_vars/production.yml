@@ -1,0 +1,87 @@
+---
+# =============================================================================
+# Production Environment Variables
+# =============================================================================
+# These variables apply to the production environment
+# =============================================================================
+
+# Environment
+environment: "prod"
+environment_name: "Production"
+
+# Instance Configuration
+prod_instance_types:
+  bastion: "t3.small"
+  jenkins: "t3.xlarge"
+  sonarqube: "t3.large"
+  worker: "t3.large"
+
+# Scaling
+prod_scaling:
+  min_workers: 3
+  max_workers: 10
+  desired_workers: 5
+
+# Resource Limits (Production - High)
+prod_resources:
+  jenkins_memory: "4g"
+  jenkins_cpu: "4.0"
+  sonarqube_memory: "4g"
+  sonarqube_cpu: "4.0"
+  worker_max_pods: 110
+
+# Production Features
+prod_features:
+  debug_enabled: false
+  verbose_logging: false
+  hot_reload: false
+  metrics_enabled: true
+  tracing_enabled: true
+
+# High Availability
+prod_ha:
+  multi_az: true
+  multi_region: false
+  auto_scaling: true
+  load_balancing: true
+
+# Security (Production - Strict)
+prod_security:
+  mfa_required: true
+  ip_whitelist_enabled: true
+  encryption_at_rest: true
+  encryption_in_transit: true
+  audit_logging: true
+  intrusion_detection: true
+
+# Database (Production - Multi-AZ with Read Replica)
+prod_database:
+  multi_az: true
+  instance_class: "db.r5.large"
+  allocated_storage: 100
+  backup_retention: 30
+  read_replicas: 1
+  deletion_protection: true
+
+# Monitoring (Production - Full)
+prod_monitoring:
+  detailed_monitoring: true
+  log_retention_days: 90
+  alarm_enabled: true
+  sns_notifications: true
+  pagerduty_integration: true
+
+# Backup (Production - Comprehensive)
+prod_backup:
+  enabled: true
+  frequency: "hourly"
+  retention_days: 90
+  cross_region: true
+  disaster_recovery: true
+
+# Compliance
+prod_compliance:
+  soc2: true
+  pci_dss: true
+  gdpr: true
+  hipaa: false

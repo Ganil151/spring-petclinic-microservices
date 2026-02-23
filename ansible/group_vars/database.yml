@@ -1,0 +1,79 @@
+---
+# =============================================================================
+# Database Variables
+# =============================================================================
+# These variables apply to database servers
+# =============================================================================
+
+# Database Configuration
+database:
+  engine: "mysql"
+  version: "8.0"
+  port: 3306
+
+# Instance Configuration
+db_instance:
+  class: "db.t3.micro"
+  multi_az: false
+  publicly_accessible: false
+
+# Storage Configuration
+db_storage:
+  type: "gp3"
+  allocated: 20
+  max_allocated: 100
+  iops: 3000
+  throughput: 125
+  encrypted: true
+
+# Backup Configuration
+db_backup:
+  enabled: true
+  window: "03:00-04:00"
+  retention_period: 7
+  copy_tags: true
+
+# Maintenance Configuration
+db_maintenance:
+  window: "Mon:04:00-Mon:05:00"
+  auto_minor_version_upgrade: true
+
+# Performance Configuration
+db_performance:
+  insights_enabled: false
+  insights_retention: 7
+
+# Parameter Group
+db_parameters:
+  character_set_server: "utf8mb4"
+  collation_server: "utf8mb4_unicode_ci"
+  max_connections: "1000"
+  innodb_buffer_pool_size: "128M"
+
+# Security Group
+db_security:
+  allowed_cidr_blocks:
+    - "10.0.0.0/8"
+  allowed_security_groups: []
+
+# Monitoring
+db_monitoring:
+  enhanced_monitoring: false
+  monitoring_interval: 0
+  cloudwatch_logs:
+    - "error"
+    - "general"
+    - "slowquery"
+    - "audit"
+
+# Spring Petclinic Databases
+db_schemas:
+  - name: "customers"
+    charset: "utf8mb4"
+    collation: "utf8mb4_unicode_ci"
+  - name: "vets"
+    charset: "utf8mb4"
+    collation: "utf8mb4_unicode_ci"
+  - name: "visits"
+    charset: "utf8mb4"
+    collation: "utf8mb4_unicode_ci"

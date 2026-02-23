@@ -1,0 +1,59 @@
+---
+# =============================================================================
+# Development Environment Variables
+# =============================================================================
+# These variables apply to the dev environment
+# =============================================================================
+
+# Environment
+environment: "dev"
+environment_name: "Development"
+
+# Instance Configuration
+dev_instance_types:
+  bastion: "t3.micro"
+  jenkins: "t3.large"
+  sonarqube: "t3.medium"
+  worker: "t3.medium"
+
+# Scaling
+dev_scaling:
+  min_workers: 2
+  max_workers: 4
+  desired_workers: 2
+
+# Resource Limits (Development - Lower)
+dev_resources:
+  jenkins_memory: "1g"
+  jenkins_cpu: "1.0"
+  sonarqube_memory: "1g"
+  sonarqube_cpu: "1.0"
+  worker_max_pods: 50
+
+# Development Features
+dev_features:
+  debug_enabled: true
+  verbose_logging: true
+  hot_reload: true
+  metrics_enabled: true
+  tracing_enabled: true
+
+# Cost Optimization
+dev_cost_optimization:
+  use_spot_instances: false
+  auto_shutdown: false
+  shutdown_hour: 20  # 8 PM
+  startup_hour: 8    # 8 AM
+
+# Database (Dev - Single AZ)
+dev_database:
+  multi_az: false
+  instance_class: "db.t3.micro"
+  allocated_storage: 20
+  backup_retention: 1
+
+# Monitoring (Dev - Basic)
+dev_monitoring:
+  detailed_monitoring: false
+  log_retention_days: 7
+  alarm_enabled: false

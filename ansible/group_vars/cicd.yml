@@ -1,0 +1,85 @@
+---
+# =============================================================================
+# CI/CD Pipeline Variables
+# =============================================================================
+# These variables apply to CI/CD infrastructure
+# =============================================================================
+
+# Pipeline Configuration
+cicd:
+  provider: "jenkins"
+  strategy: "blue-green"
+  rollback_enabled: true
+
+# Jenkins Configuration
+cicd_jenkins:
+  url: "http://jenkins-master:8080"
+  admin_user: "admin"
+  # admin_password: Set via Ansible Vault
+  agent_port: 50000
+  csrf_enabled: true
+
+# Pipeline Libraries
+cicd_libraries:
+  - name: "spring-petclinic-pipeline-lib"
+    repo: "https://github.com/spring-petclinic-microservices/jenkins-pipeline-lib.git"
+    branch: "main"
+
+# Build Configuration
+cicd_build:
+  parallel_builds: 5
+  build_timeout: 3600  # 1 hour
+  artifact_retention: 30
+  workspace_cleanup: true
+
+# Docker Build
+cicd_docker:
+  registry: "ecr"
+  base_image: "amazonlinux:2023"
+  build_args:
+    MAVEN_VERSION: "3.9.6"
+    JAVA_VERSION: "17"
+
+# Testing Configuration
+cicd_testing:
+  unit_tests: true
+  integration_tests: true
+  e2e_tests: false  # Run manually
+  code_coverage: true
+  coverage_threshold: 80
+
+# Code Quality
+cicd_quality:
+  sonarqube_enabled: true
+  sonarqube_url: "http://sonarqube-server:9000"
+  quality_gate_wait: true
+  quality_gate_timeout: 300
+
+# Security Scanning
+cicd_security:
+  sca_enabled: true
+  sast_enabled: true
+  container_scanning: true
+  dependency_check: true
+  trivy_enabled: true
+
+# Deployment Configuration
+cicd_deployment:
+  strategy: "rolling"
+  max_surge: 1
+  max_unavailable: 0
+  health_check_timeout: 300
+
+# Notifications
+cicd_notifications:
+  slack_enabled: false
+  slack_channel: "#deployments"
+  email_enabled: true
+  email_recipients:
+    - "dev-team@spring-petclinic.local"
+
+# Artifact Management
+cicd_artifacts:
+  repository: "maven"
+  snapshot_retention: 7
+  release_retention: 365

@@ -1,0 +1,103 @@
+---
+# =============================================================================
+# Monitoring Stack Variables
+# =============================================================================
+# These variables apply to monitoring infrastructure
+# =============================================================================
+
+# Prometheus Configuration
+prometheus:
+  enabled: true
+  port: 9090
+  retention: "15d"
+  scrape_interval: "15s"
+  evaluation_interval: "15s"
+
+  # Alertmanager
+  alertmanager:
+    enabled: true
+    port: 9093
+    slack_webhook: ""
+    pagerduty_key: ""
+
+  # Node Exporter
+  node_exporter:
+    enabled: true
+    port: 9100
+
+  # Spring Boot Actuator
+  spring_actuator:
+    enabled: true
+    metrics_path: "/actuator/prometheus"
+
+# Grafana Configuration
+grafana:
+  enabled: true
+  port: 3000
+  admin_user: "admin"
+  # admin_password: Set via Ansible Vault
+
+  # Datasources
+  datasources:
+    - name: Prometheus
+      type: prometheus
+      url: "http://localhost:9090"
+      default: true
+
+  # Dashboards
+  dashboards:
+    - name: "Spring Petclinic Overview"
+      uid: "petclinic-overview"
+    - name: "JVM Metrics"
+      uid: "jvm-metrics"
+    - name: "Kubernetes Cluster"
+      uid: "k8s-cluster"
+    - name: "Node Exporter"
+      uid: "node-exporter"
+
+# Logging Stack
+logging:
+  # Loki
+  loki:
+    enabled: true
+    port: 3100
+    retention: "7d"
+
+  # Promtail
+  promtail:
+    enabled: true
+    scrape_interval: "10s"
+
+  # Fluentd
+  fluentd:
+    enabled: false
+    port: 24224
+
+# Alerting Rules
+alerting:
+  rules:
+    - name: "HighCPU"
+      condition: "avg(cpu_usage) > 80"
+      duration: "5m"
+      severity: "warning"
+    - name: "HighMemory"
+      condition: "avg(memory_usage) > 85"
+      duration: "5m"
+      severity: "warning"
+    - name: "ServiceDown"
+      condition: "up == 0"
+      duration: "1m"
+      severity: "critical"
+    - name: "HighErrorRate"
+      condition: "rate(http_errors_total[5m]) > 0.1"
+      duration: "5m"
+      severity: "critical"
+
+# Spring Petclinic Metrics
+spring_metrics:
+  - "jvm_memory_used_bytes"
+  - "jvm_threads_live_threads"
+  - "http_server_requests_seconds"
+  - "tomcat_sessions_active_current"
+  - "hikaricp_connections_active"
+  - "hikaricp_connections_pending"

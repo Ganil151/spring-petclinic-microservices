@@ -1,0 +1,63 @@
+---
+# =============================================================================
+# Staging Environment Variables
+# =============================================================================
+# These variables apply to the staging environment
+# =============================================================================
+
+# Environment
+environment: "staging"
+environment_name: "Staging"
+
+# Instance Configuration
+staging_instance_types:
+  bastion: "t3.micro"
+  jenkins: "t3.large"
+  sonarqube: "t3.medium"
+  worker: "t3.large"
+
+# Scaling
+staging_scaling:
+  min_workers: 2
+  max_workers: 6
+  desired_workers: 3
+
+# Resource Limits (Staging - Medium)
+staging_resources:
+  jenkins_memory: "2g"
+  jenkins_cpu: "2.0"
+  sonarqube_memory: "2g"
+  sonarqube_cpu: "2.0"
+  worker_max_pods: 75
+
+# Staging Features
+staging_features:
+  debug_enabled: false
+  verbose_logging: false
+  hot_reload: false
+  metrics_enabled: true
+  tracing_enabled: true
+
+# Cost Optimization
+staging_cost_optimization:
+  use_spot_instances: true
+  auto_shutdown: false
+
+# Database (Staging - Multi-AZ)
+staging_database:
+  multi_az: true
+  instance_class: "db.t3.small"
+  allocated_storage: 50
+  backup_retention: 7
+
+# Monitoring (Staging - Enhanced)
+staging_monitoring:
+  detailed_monitoring: true
+  log_retention_days: 14
+  alarm_enabled: true
+
+# Pre-Production Testing
+staging_testing:
+  load_testing: true
+  performance_testing: true
+  security_scanning: true
