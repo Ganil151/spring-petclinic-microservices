@@ -1,0 +1,73 @@
+---
+# =============================================================================
+# Ansible Collections Requirements for Spring Petclinic Microservices
+# =============================================================================
+# Install with: ansible-galaxy install -r requirements.yml
+# =============================================================================
+
+collections:
+  # AWS Collection - for AWS-specific modules
+  - name: amazon.aws
+    version: ">=7.0.0"
+  
+  # Community General Collection - misc modules
+  - name: community.general
+    version: ">=8.0.0"
+  
+  # Community Docker Collection - Docker modules
+  - name: community.docker
+    version: ">=3.4.0"
+  
+  # Community Kubernetes Collection - K8s modules
+  - name: community.kubernetes
+    version: ">=2.4.0"
+  
+  # Ansible POSIX Collection - POSIX modules (firewalld, sysctl, etc.)
+  - name: ansible.posix
+    version: ">=1.5.0"
+  
+  # Community Crypto Collection - crypto modules
+  - name: community.crypto
+    version: ">=2.0.0"
+
+# Galaxy role requirements
+roles:
+  # Geerlingguy Roles - Well-maintained community roles
+  - name: geerlingguy.docker
+    version: "6.1.0"
+  
+  - name: geerlingguy.java
+    version: "5.0.0"
+  
+  - name: geerlingguy.jenkins
+    version: "5.1.0"
+  
+  - name: geerlingguy.maven
+    version: "3.1.0"
+  
+  - name: geerlingguy.pip
+    version: "2.2.0"
+  
+  - name: geerlingguy.git
+    version: "3.1.0"
+  
+  - name: geerlingguy.aws-cli
+    version: "1.0.0"
+  
+  - name: geerlingguy.kubernetes
+    version: "5.1.0"
+  
+  - name: geerlingguy.helm
+    version: "2.0.0"
+  
+  - name: geerlingguy.firewall
+    version: "2.5.0"
+  
+  - name: geerlingguy.ntp
+    version: "2.3.0"
+  
+  - name: geerlingguy.packer
+    version: "1.1.0"
+  
+  - name: geerlingguy.ansible
+    version: "2.1.0"

@@ -1,0 +1,186 @@
+---
+# =============================================================================
+# Ansible Lint Configuration for Spring Petclinic Microservices
+# =============================================================================
+# https://ansible-lint.readthedocs.io/configuring/
+# =============================================================================
+
+# Default rules
+profile: production
+
+# Parseability
+parseable: false
+quiet: false
+verbosity: 0
+
+# Formatters
+format: rich
+
+# Rules
+enable_list:
+  - args
+  - avoid-implicit
+  - command-instead-of-module
+  - command-instead-of-shell
+  - deprecated-bare-vars
+  - deprecated-local-action
+  - deprecated-module
+  - inline-env-var
+  - key-order
+  - literal-compare
+  - jinja
+  - no-free-form
+  - no-handler
+  - no-changed-when
+  - no-jinja-when
+  - no-relative-paths
+  - no-tabs
+  - package-latest
+  - partial-become
+  - playbook-extension
+  - risky-file-permissions
+  - risky-octal
+  - risky-shell-pipe
+  - role-name
+  - schema
+  - name
+  - syntax
+  - var-naming
+  - yaml
+
+# Skip rules
+skip_list:
+  - yaml[line-length]  # Lines can be long in templates
+  - name[missing]      # Some tasks don't need names
+  - ignore-errors      # We use ignore_errors intentionally sometimes
+
+# Mock modules (for custom modules)
+mock_modules:
+  - community.general.onepassword
+  - community.general.pass
+
+# Mock roles (for custom roles)
+mock_roles:
+  - geerlingguy.docker
+  - geerlingguy.java
+  - geerlingguy.jenkins
+
+# Loop var prefix
+loop_var_prefix: "{item}"
+
+# Rules specific configuration
+rules:
+  args:
+    action: error
+  avoid-implicit:
+    action: warning
+  command-instead-of-module:
+    action: error
+  command-instead-of-shell:
+    action: warning
+  deprecated-bare-vars:
+    action: error
+  deprecated-local-action:
+    action: error
+  deprecated-module:
+    action: error
+  inline-env-var:
+    action: warning
+  key-order:
+    action: warning
+  literal-compare:
+    action: warning
+  jinja:
+    action: error
+  no-free-form:
+    action: error
+  no-handler:
+    action: error
+  no-changed-when:
+    action: warning
+  no-jinja-when:
+    action: error
+  no-relative-paths:
+    action: error
+  no-tabs:
+    action: error
+  package-latest:
+    action: warning  # We want specific versions
+  partial-become:
+    action: error
+  playbook-extension:
+    action: warning
+  risky-file-permissions:
+    action: error
+  risky-octal:
+    action: error
+  risky-shell-pipe:
+    action: warning
+  role-name:
+    action: error
+  schema:
+    action: error
+  name:
+    action: warning
+  syntax:
+    action: error
+  var-naming:
+    action: warning
+  yaml:
+    action: error
+    line-length: 160  # Allow longer lines
+
+# Tags
+tags:
+  - formatting
+  - idiom
+  - syntax
+  - warning
+
+# Exclude paths
+exclude_paths:
+  - .git/
+  - .github/
+  - .vscode/
+  - .idea/
+  - __pycache__/
+  - *.pyc
+  - *.pyo
+  - *.swp
+  - *.swo
+  - *~
+  - vault/
+  - tests/
+
+# Include paths
+include_paths:
+  - playbooks/
+  - roles/
+
+# Offline mode
+offline: false
+
+# Project directory
+project_dir: .
+
+# Use default rules
+use_default_rules: true
+
+# Version
+version: true
+
+# Write list
+write_list:
+  - .ansible-lint-cache
+
+# Progressive mode
+progressive: false
+
+# Force color
+force_color: false
+
+# No color
+nocolor: false
+
+# Sarif output
+sarif_file: null
