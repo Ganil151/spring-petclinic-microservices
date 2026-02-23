@@ -133,7 +133,7 @@
           ║  legal proceedings.                                          ║
           ║                                                              ║
           ║  Project: Spring Petclinic Microservices                     ║
-          ║  Environment: {{ environment | default('dev') }}            ║
+          ║  Environment: {{ app_env | default('dev') }}            ║
           ╚══════════════════════════════════════════════════════════════╝
         owner: root
         group: root

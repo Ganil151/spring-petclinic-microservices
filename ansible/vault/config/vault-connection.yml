@@ -1,0 +1,9 @@
+---
+# =============================================================================
+# Vault Connection Configuration
+# =============================================================================
+
+vault_addr: "https://vault.example.com"
+vault_skip_verify: false
+vault_mount_path: "secrets/spring-petclinic"
+vault_auth_method: "aws"
