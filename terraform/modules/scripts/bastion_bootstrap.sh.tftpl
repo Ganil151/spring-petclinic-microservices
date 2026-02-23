@@ -10,7 +10,8 @@ set -e
 
 # Configuration
 PROJECT_NAME="spring-petclinic"
-ENVIRONMENT="dev"
+ENVIRONMENT="${env}"
+HOSTNAME="${hostname}"
 LOG_FILE="/var/log/bastion_bootstrap.log"
 
 # Colors for output
@@ -42,6 +43,10 @@ log "Environment: $${ENVIRONMENT}"
 
 log "Updating system packages..."
 sudo yum update -y || error "Failed to update system packages"
+
+log "Enabling EPEL and extras..."
+sudo amazon-linux-extras install epel -y || warn "Failed to install EPEL"
+sudo yum install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm || warn "Failed to install EPEL rpm"
 
 log "Installing essential security tools..."
 sudo yum install -y \
