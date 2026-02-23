@@ -153,25 +153,4 @@ resource "null_resource" "run_ansible" {
   depends_on = [local_file.ansible_inventory]
 }
 
-# Output the inventory content for reference
-output "inventory_content" {
-  description = "Generated Ansible inventory content"
-  value       = local.inventory_content
-  sensitive   = false
-}
-
-output "inventory_file_path" {
-  description = "Path to generated inventory file"
-  value       = var.inventory_file_path
-}
-
-output "ansible_targets" {
-  description = "Summary of Ansible targets"
-  value = {
-    jenkins_master    = var.jenkins_master_ip
-    sonarqube_server  = var.sonarqube_ip
-    worker_nodes      = var.worker_node_ips
-    bastion_host      = var.bastion_ip
-    total_instances   = length(var.worker_node_ips) + 2 + (var.bastion_ip != "" ? 1 : 0)
-  }
-}
+# Outputs are defined in outputs.tf
