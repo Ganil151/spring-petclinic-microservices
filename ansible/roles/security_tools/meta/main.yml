@@ -25,5 +25,4 @@ galaxy_info:
     - audit
     - system
 
-dependencies:
-  - role: ansible.posix
+dependencies: []
