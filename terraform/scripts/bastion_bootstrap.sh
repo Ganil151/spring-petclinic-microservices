@@ -1,5 +1,10 @@
  #!/bin/bash
-
+# Bastion Bootstrap — User Data (Bare Minimum)
+# ───────────────────────────────────────────────────────────────────
+# PURPOSE: OS-level prep that MUST happen at first boot before
+#          Ansible can connect via SSH.
+# ALL tool installations & Bastion config are handled by Ansible.
+# ───────────────────────────────────────────────────────────────────
               
 
 set -e
