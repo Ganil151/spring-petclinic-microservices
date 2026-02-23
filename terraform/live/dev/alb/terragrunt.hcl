@@ -20,14 +20,14 @@ dependency "security" {
 
 # Pass inputs to the Terraform module
 inputs = {
-  vpc_id     = dependency.vpc.outputs.vpc_id
-  vpc_cidr   = dependency.vpc.outputs.vpc_cidr
-  subnet_ids = dependency.vpc.outputs.public_subnets
-  environment = "dev"
-  project_name = "spring-petclinic"
-  alb_name   = "petclinic-dev-alb"
-  internal   = false
-  target_port = 8080
+  vpc_id            = dependency.vpc.outputs.vpc_id
+  vpc_cidr          = dependency.vpc.outputs.vpc_cidr
+  subnet_ids        = dependency.vpc.outputs.public_subnets
+  environment       = "dev"
+  project_name      = "spring-petclinic"
+  alb_name          = "petclinic-dev-alb"
+  internal          = false
+  target_port       = 8080
   health_check_path = "/actuator/health"
 
   # Use existing security group from security module

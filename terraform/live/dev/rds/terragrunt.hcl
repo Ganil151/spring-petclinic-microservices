@@ -29,14 +29,14 @@ inputs = {
   # Database Configuration
   db_name              = "petclinic"
   db_username          = "petclinic_admin"
-  db_password          = ""  # Auto-generate secure password
+  db_password          = "" # Auto-generate secure password
   db_instance_class    = "db.t3.micro"
   db_allocated_storage = 20
   db_engine            = "mysql"
-  db_engine_version    = "8.0"  # MySQL 8.0
+  db_engine_version    = "8.0" # MySQL 8.0
 
   # High Availability
-  multi_az = false  # Set to true for production
+  multi_az = false # Set to true for production
 
   # Security
   publicly_accessible = false

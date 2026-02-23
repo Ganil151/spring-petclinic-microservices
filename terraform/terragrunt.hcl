@@ -81,21 +81,21 @@ remote_state {
   config = {
     # Dev/Staging: Random suffix for privacy
     # Production: Account ID for audit trail and compliance
-    bucket         = local.env == "prod" ? "petclinic-state-${get_aws_account_id()}" : "petclinic-state-${local.env}-${local.random_suffix}"
-    key            = "${path_relative_to_include()}/terraform.tfstate"
-    region         = "us-east-1"
-    encrypt        = true
-    use_lockfile   = true
-    
+    bucket       = local.env == "prod" ? "petclinic-state-${get_aws_account_id()}" : "petclinic-state-${local.env}-${local.random_suffix}"
+    key          = "${path_relative_to_include()}/terraform.tfstate"
+    region       = "us-east-1"
+    encrypt      = true
+    use_lockfile = true
+
     # Optional: Enable S3 bucket SSE-KMS for enhanced security
     # kms_key_id = "alias/petclinic-terraform-state"
-    
+
     # Optional: Enable DynamoDB for state locking (already created)
     # dynamodb_table = "terraform-lock-table"
   }
-  
+
   # Configure retry settings for S3 operations
-  retry_max_attempts  = 3
+  retry_max_attempts   = 3
   retry_sleep_interval = 10
 }
 
@@ -105,11 +105,11 @@ remote_state {
 locals {
   # Extract environment from path (e.g., "live/dev/vpc" -> "dev")
   env = element(split("/", path_relative_to_include()), 1)
-  
+
   # Fixed random suffix for dev/staging (set once, never change)
   # Use different suffix for each environment to avoid state collisions
   random_suffix = local.env == "dev" ? "a7f3c2" : local.env == "staging" ? "b9d4e1" : "default"
-  
+
   # Common tags to apply to all resources
   common_tags = {
     Project     = "spring-petclinic"
@@ -130,7 +130,7 @@ download_dir = ".terragrunt-cache"
 # Retry Settings
 # =============================================================================
 # Configure retry behavior for failed API calls
-retry_max_attempts  = 3
+retry_max_attempts   = 3
 retry_sleep_interval = 10
 
 # =============================================================================
