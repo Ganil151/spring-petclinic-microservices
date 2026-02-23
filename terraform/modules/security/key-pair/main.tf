@@ -43,6 +43,7 @@ resource "aws_ssm_parameter" "private_key" {
   name  = coalesce(var.ssm_parameter_name, "/${var.project_name}/${var.environment}/key-pair/${var.key_pair_name}")
   type  = "SecureString"
   value = tls_private_key.main[0].private_key_pem
+  overwrite = true
 
   tags = merge({
     Name        = var.key_pair_name
