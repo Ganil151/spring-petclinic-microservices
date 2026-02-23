@@ -31,10 +31,10 @@ dependency "security" {
 }
 
 # Pull data from the key-pair module
-dependency "keypair" {
+dependency "key_pair" {
   config_path = "../key-pair"
   mock_outputs = {
-    key_name = "spms-mock-key"
+    key_pair_name = "spms-mock-key"
   }
 }
 
@@ -47,13 +47,13 @@ locals {
 inputs = {
   vpc_id     = dependency.vpc.outputs.vpc_id
   vpc_cidr   = dependency.vpc.outputs.vpc_cidr
-  public_subnet_ids  = dependency.vpc.outputs.public_subnets
-  private_subnet_ids = dependency.vpc.outputs.private_subnets
+  public_subnet_ids      = dependency.vpc.outputs.public_subnets
+  private_subnet_ids     = dependency.vpc.outputs.private_subnets
   mgmt_security_group_id = dependency.security.outputs.mgmt_sg_id
   app_security_group_id  = dependency.security.outputs.app_sg_id
-  environment   = "dev"
-  project_name  = "spring-petclinic"
-  key_pair_name = "spms-dev"
+  environment            = "dev"
+  project_name           = "spring-petclinic"
+  key_pair_name          = dependency.key_pair.outputs.key_pair_name
 
   # Instance Names (Standardized)
   bastion_instance_name   = "bastion-host"
