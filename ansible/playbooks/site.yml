@@ -7,9 +7,16 @@
 
 - name: 01. Pre-flight Checks
   hosts: all
-  gather_facts: true
+  gather_facts: false
   tags: [always, preflight]
   tasks:
+    - name: Wait for system readiness (SSH)
+      ansible.builtin.wait_for_connection:
+        timeout: 300
+    
+    - name: Gather facts after connection
+      ansible.builtin.setup:
+
     - name: Validate OS Family
       ansible.builtin.assert:
         that: ansible_os_family == "RedHat"

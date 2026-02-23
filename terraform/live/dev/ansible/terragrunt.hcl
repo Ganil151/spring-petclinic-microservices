@@ -136,33 +136,16 @@ inputs = {
   }
 
   # Ansible Configuration
-  ansible_config = {
-    # Enable inventory generation
-    enable_inventory = true
+  run_ansible              = true
+  enable_ansible_inventory = true
+  ssh_user                 = "ec2-user"
 
-    # Run Ansible playbooks after inventory generation (optional)
-    run_playbooks = false
-
-    # Playbook to run (if run_playbooks is true)
-    playbook = "playbooks/site.yml"
-
-    # Extra variables for Ansible
-    extra_vars = {
-      java_version       = "21"
-      sonarqube_version  = "10.4-community"
-      jenkins_image      = "jenkins/jenkins:lts-jdk21"
-      kubernetes_version = "1.28"
-      helm_version       = "3.13.0"
-    }
-
-    # SSH Configuration
-    ssh = {
-      user              = "ec2-user"
-      timeout           = 30
-      retries           = 3
-      strict_host_check = false
-    }
-  }
+  # Extra variables for Ansible (Optional - if the module were to support them)
+  # java_version       = "21"
+  # sonarqube_version  = "10.4-community"
+  # jenkins_image      = "jenkins/jenkins:lts-jdk21"
+  # kubernetes_version = "1.28"
+  # helm_version       = "3.13.0"
 
   # Inventory Groups Configuration
   inventory_groups = {
