@@ -1,0 +1,41 @@
+jenkins:
+  systemMessage: "Spring Petclinic Microservices - Managed by Jenkins Configuration as Code"
+  numExecutors: 2
+  mode: NORMAL
+  scmCheckoutRetryCount: 3
+  labelString: "master"
+
+  # 🧪 Industrial Rigor: Automating EKS Agent Configuration
+  clouds:
+    - kubernetes:
+        name: "kubernetes"
+        serverUrl: "https://kubernetes.default"
+        namespace: "spring-petclinic"
+        jenkinsUrl: "http://jenkins-master:8080"
+        templates:
+          - name: "jenkins-agent"
+            label: "jenkins-agent"
+            containers:
+              - name: "maven"
+                image: "maven:3-eclipse-temurin-17"
+                command: "cat"
+                ttyEnabled: true
+              - name: "docker"
+                image: "docker:latest"
+                command: "cat"
+                ttyEnabled: true
+              - name: "kubectl"
+                image: "bitnami/kubectl:latest"
+                command: "cat"
+                ttyEnabled: true
+
+unclassified:
+  location:
+    url: "http://jenkins-master:8080/"
+    adminAddress: "admin@petclinic.com"
+
+security:
+  apiToken:
+    creationAllowed: true
+  roleBasedCanary:
+    enabled: true
