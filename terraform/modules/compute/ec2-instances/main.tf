@@ -145,13 +145,15 @@ resource "aws_instance" "jenkins" {
   }
 
   # Extra volume for Jenkins builds/workspace
-  ebs_block_device {
-    count                 = var.jenkins_extra_volume_size > 0 ? 1 : 0
-    device_name           = "/dev/sdh"
-    volume_size           = var.jenkins_extra_volume_size
-    volume_type           = "gp3"
-    encrypted             = true
-    delete_on_termination = true
+  dynamic "ebs_block_device" {
+    for_each = var.jenkins_extra_volume_size > 0 ? [1] : []
+    content {
+      device_name           = "/dev/sdh"
+      volume_size           = var.jenkins_extra_volume_size
+      volume_type           = "gp3"
+      encrypted             = true
+      delete_on_termination = true
+    }
   }
 
   monitoring = var.enable_monitoring
@@ -261,13 +263,15 @@ resource "aws_instance" "worker_nodes" {
   }
 
   # Extra volume for Docker images and containers
-  ebs_block_device {
-    count                 = var.worker_extra_volume_size > 0 ? 1 : 0
-    device_name           = "/dev/sdh"
-    volume_size           = var.worker_extra_volume_size
-    volume_type           = "gp3"
-    encrypted             = true
-    delete_on_termination = true
+  dynamic "ebs_block_device" {
+    for_each = var.worker_extra_volume_size > 0 ? [1] : []
+    content {
+      device_name           = "/dev/sdh"
+      volume_size           = var.worker_extra_volume_size
+      volume_type           = "gp3"
+      encrypted             = true
+      delete_on_termination = true
+    }
   }
 
   monitoring = var.enable_monitoring
