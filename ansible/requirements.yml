@@ -1,0 +1,30 @@
+---
+# =============================================================================
+# Ansible Collections & Galaxy Requirements
+# Spring Petclinic Microservices
+# =============================================================================
+# Install with:
+#   ansible-galaxy collection install -r requirements.yml
+#   ansible-galaxy role install -r requirements.yml
+# =============================================================================
+
+collections:
+  # AWS EC2 dynamic inventory + modules
+  - name: amazon.aws
+    version: ">=7.0.0"
+
+  # community.general — firewalld, yaml callback, etc.
+  - name: community.general
+    version: ">=8.0.0"
+
+  # ansible.posix — sysctl, firewalld, synchronize
+  - name: ansible.posix
+    version: ">=1.5.0"
+
+  # community.docker — docker_container, docker_network
+  - name: community.docker
+    version: ">=3.0.0"
+
+  # kubernetes.core — k8s module
+  - name: kubernetes.core
+    version: ">=3.0.0"
