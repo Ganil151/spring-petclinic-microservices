@@ -45,8 +45,8 @@ dependency "ec2_instances" {
   }
 }
 
-dependency "bastion" {
-  config_path = "../bastion"
+dependency "security" {
+  config_path = "../security-groups"
 
   mock_outputs = {
     mgmt_sg_id = "sg-mock123"
@@ -114,8 +114,8 @@ inputs = {
 
   # Security Groups
   security_groups = {
-    bastion       = try(dependency.bastion.outputs.mgmt_sg_id, null)
-    k8s_nodes     = try(dependency.bastion.outputs.app_sg_id, null)
+    bastion       = try(dependency.security.outputs.mgmt_sg_id, null)
+    k8s_nodes     = try(dependency.security.outputs.app_sg_id, null)
     ec2_instances = null
   }
 
