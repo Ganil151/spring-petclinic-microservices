@@ -123,13 +123,6 @@ locals {
 download_dir = ".terragrunt-cache"
 
 # =============================================================================
-# Retry Settings
-# =============================================================================
-# Configure retry behavior for failed API calls
-retry_max_attempts   = 3
-retry_sleep_interval = 10
-
-# =============================================================================
 # Dependency Optimization
 # =============================================================================
 # Skip downloading inputs from dependencies during certain operations
