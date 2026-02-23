@@ -7,14 +7,14 @@
 
 # Project Configuration
 project_name: "spring-petclinic"
-environment: "{{ lookup('env', 'ENVIRONMENT') | default('dev', true) }}"
+app_env: "{{ lookup('env', 'ENVIRONMENT') | default('dev', true) }}"
 aws_region: "{{ lookup('env', 'AWS_REGION') | default('us-east-1', true) }}"
 
 # =============================================================================
 # SSH Configuration
 # =============================================================================
-ansible_user: ec2-user
-ansible_ssh_private_key_file: "{{ lookup('env', 'HOME') }}/spring-petclinic-microservices/terraform/live/dev/key-pair/spms-dev.pem"
+# ansible_user: ec2-user
+# ansible_ssh_private_key_file: "{{ lookup('env', 'HOME') }}/spring-petclinic-microservices/terraform/live/dev/key-pair/spms-dev.pem"
 ansible_python_interpreter: /usr/bin/python3
 ansible_ssh_common_args: '-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
 
@@ -189,8 +189,8 @@ aws:
   
   # S3
   s3:
-    backup_bucket: "spring-petclinic-backups-{{ environment }}"
-    state_bucket: "petclinic-state-{{ environment }}"
+    backup_bucket: "spring-petclinic-backups-{{ app_env }}"
+    state_bucket: "petclinic-state-{{ app_env }}"
 
 # =============================================================================
 # Monitoring Configuration
@@ -218,7 +218,7 @@ logging:
   centralized: true
   driver: "awslogs"
   region: "{{ aws_region }}"
-  group: "/spring-petclinic/{{ environment }}"
+  group: "/spring-petclinic/{{ app_env }}"
 
 # =============================================================================
 # Backup Configuration
@@ -227,4 +227,4 @@ backup:
   enabled: true
   schedule: "0 2 * * *"  # Daily at 2 AM
   retention_days: 30
-  destination: "s3://{{ aws.s3.backup_bucket }}/{{ environment }}"
+  destination: "s3://{{ aws.s3.backup_bucket }}/{{ app_env }}"
