@@ -7,27 +7,27 @@
 module "ansible_inventory" {
   source = "../../../ansible"
 
-  project_name           = var.project_name
-  environment            = var.environment
-  inventory_file_path    = var.ansible_inventory_path
-  ansible_working_dir    = "${path.module}/../../../../ansible"
-  jenkins_master_ip      = aws_instance.jenkins.public_ip
-  jenkins_master_priv    = aws_instance.jenkins.private_ip
-  worker_node_ips        = aws_instance.worker_nodes[*].public_ip
-  worker_node_priv_ips   = aws_instance.worker_nodes[*].private_ip
-  sonarqube_ip           = aws_instance.sonarqube.public_ip
-  sonarqube_priv         = aws_instance.sonarqube.private_ip
-  bastion_ip             = aws_instance.bastion.public_ip
-  bastion_priv_ip        = aws_instance.bastion.private_ip
-  ssh_user               = "ec2-user"
-  ssh_key_file           = var.ssh_private_key_path
-  eks_cluster_name       = var.eks_cluster_name
-  cluster_suffix         = "primary"
-  aws_region             = var.aws_region
-  aws_account_id         = var.aws_account_id
-  vpc_id                 = var.vpc_id
+  project_name             = var.project_name
+  environment              = var.environment
+  inventory_file_path      = var.ansible_inventory_path
+  ansible_working_dir      = "${path.module}/../../../../ansible"
+  jenkins_master_ip        = aws_instance.jenkins.public_ip
+  jenkins_master_priv      = aws_instance.jenkins.private_ip
+  worker_node_ips          = aws_instance.worker_nodes[*].public_ip
+  worker_node_priv_ips     = aws_instance.worker_nodes[*].private_ip
+  sonarqube_ip             = aws_instance.sonarqube.public_ip
+  sonarqube_priv           = aws_instance.sonarqube.private_ip
+  bastion_ip               = aws_instance.bastion.public_ip
+  bastion_priv_ip          = aws_instance.bastion.private_ip
+  ssh_user                 = "ec2-user"
+  ssh_key_file             = var.ssh_private_key_path
+  eks_cluster_name         = var.eks_cluster_name
+  cluster_suffix           = "primary"
+  aws_region               = var.aws_region
+  aws_account_id           = var.aws_account_id
+  vpc_id                   = var.vpc_id
   enable_ansible_inventory = var.enable_ansible_inventory
-  run_ansible            = var.run_ansible
+  run_ansible              = var.run_ansible
 
   depends_on = [
     aws_instance.bastion,
@@ -239,22 +239,7 @@ resource "aws_instance" "sonarqube" {
     create_before_destroy = true
   }
 
-  user_data = <<-EOF
-              #!/bin/bash
-              set -e
-              yum update -y
-              # Install Docker
-              yum install -y docker
-              systemctl start docker
-              systemctl enable docker
-              # Install SonarQube (via Docker)
-              docker run -d -p 9000:9000 --name sonarqube \
-                -v sonarqube_data:/opt/sonarqube/data \
-                -v sonarqube_extensions:/opt/sonarqube/extensions \
-                -v sonarqube_logs:/opt/sonarqube/logs \
-                -e SONAR_ES_BOOTSTRAP_CHECKS_DISABLE=true \
-                sonarqube:lts-community
-              EOF
+  user_data = "terraform/scripts/sonarqube_bootstrap.sh"
 
   tags = merge({
     Name        = "${var.project_name}-${var.environment}-${var.sonarqube_instance_name}"
