@@ -147,6 +147,9 @@ resource "null_resource" "run_ansible" {
   provisioner "local-exec" {
     working_dir = var.ansible_working_dir
     command     = <<-EOT
+      echo "Waiting for connectivity to all hosts..."
+      ansible all -m wait_for_connection -i ${var.inventory_file_path} --extra-vars "ansible_connection=ssh" -t 300
+      
       echo "Running Ansible playbooks..."
       ansible-playbook -i ${var.inventory_file_path} playbooks/site.yml --limit ${var.environment}_all
     EOT
