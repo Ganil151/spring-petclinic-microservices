@@ -37,7 +37,7 @@
 
 # ── Handle fail2ban installation failure ──────────────────────────────────────
 - name: Install fail2ban from amazon-linux-extras (fallback for Amazon Linux 2)
-  ansible.builtin.shell: yum install -y fail2ban fail2ban-systemd
+  ansible.builtin.shell: amazon-linux-extras install epel -y && yum install -y fail2ban fail2ban-systemd
   args:
     warn: no
   when:
