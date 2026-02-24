@@ -13,8 +13,7 @@
 
     - name: Clean all yum metadata
       ansible.builtin.command: yum clean all
-      args:
-        warn: false
+      
 
     - name: Remove yum cache directory
       ansible.builtin.file:
