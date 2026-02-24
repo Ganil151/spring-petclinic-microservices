@@ -115,3 +115,35 @@ max_surge: "25%"
 max_unavailable: "25%"
 readiness_probe_initial_delay: 30
 liveness_probe_initial_delay: 60
+
+
+
+# ┌─────────────────────────────────────────────────────────┐
+# │ Terragrunt (terraform/live/dev/k8s-cluster/)           │
+# │ outputs:                                                │
+# │   - eks_cluster_name = "petclinic-eks-dev"             │
+# │   - eks_cluster_endpoint = "https://..."               │
+# │   - oidc_provider_arn = "arn:aws:iam::..."             │
+# └─────────────────────────────────────────────────────────┘
+#                           │
+#                           ▼
+# ┌─────────────────────────────────────────────────────────┐
+# │ Ansible Invocation (via Terragrunt post-apply-hook)    │
+# │ ansible-playbook site.yml                               │
+# │   -e eks_cluster_name={{ outputs.eks_cluster_name }}   │
+# │   -e eks_cluster_endpoint={{ outputs... }}             │
+# │   -e oidc_provider_arn={{ outputs... }}                │
+# └─────────────────────────────────────────────────────────┘
+#                           │
+#                           ▼
+# ┌─────────────────────────────────────────────────────────┐
+# │ defaults/main.yml (this file)                          │
+# │ Provides fallbacks if extra_vars not passed            │
+# │ Environment-specific overrides in group_vars/*.yml     │
+# └─────────────────────────────────────────────────────────┘
+#                           │
+#                           ▼
+# ┌─────────────────────────────────────────────────────────┐
+# │ tasks/main.yml + templates/*.j2                        │
+# │ Renders final K8s manifests with resolved variables    │
+# └─────────────────────────────────────────────────────────┘
