@@ -20,3 +20,6 @@
   tags: kubernetes, never
 
 - name: Reload systemd Daemon
+  ansible.builtin.systemd:
+   daemon_reload: true
+  tags: kubernetes, never
