@@ -60,3 +60,8 @@
   register: docker_version_output
   changed_when: false
   tags: docker
+
+- name: Clean up broken Docker repo
+  ansible.builtin.file:
+    path: /etc/yum.repos.d/docker-ce.repo
+    state: absent
