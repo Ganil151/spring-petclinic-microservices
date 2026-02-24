@@ -1,25 +1,91 @@
 ---
 # =============================================================================
 # Kubernetes Setup Role - tasks/main.yml
-# Configures kubectl access for the EKS cluster
+# Purpose: Configure kubectl access and prepare EKS cluster for Spring Petclinic
+# Alignment: Must match Terragrunt EKS outputs (cluster name, region, OIDC)
 # =============================================================================
+
+- name: Verify kubectl is installed
+  ansible.builtin.command:
+    cmd: kubectl version --client --output=yaml
+  register: kubectl_check
+  changed_when: false
+  failed_when: kubectl_check.rc != 0
+  tags: kubernetes, prereq
+
+- name: Verify AWS CLI is installed
+  ansible.builtin.command:
+    cmd: aws --version
+  register: aws_check
+  changed_when: false
+  failed_when: aws_check.rc != 0
+  tags: kubernetes, prereq
 
 - name: Update kubeconfig for EKS
   ansible.builtin.command:
-    cmd: "aws eks update-kubeconfig --region {{ aws_region | default('us-east-1') }} --name {{ project_name }}-{{ app_env }}-eks"
+    cmd: >
+      aws eks update-kubeconfig
+      --region {{ aws_region | default('us-east-1') }}
+      --name {{ eks_cluster_name }}
+      --alias {{ eks_cluster_name }}
   register: kubeconfig_update
   changed_when: "'Updated context' in kubeconfig_update.stdout"
-  failed_when: false
-  tags: k8s_setup
+  failed_when: kubeconfig_update.rc != 0
+  tags: kubernetes, kubeconfig
 
 - name: Verify cluster connectivity
   ansible.builtin.command:
-    cmd: kubectl get nodes
+    cmd: kubectl cluster-info
+  register: cluster_info
+  changed_when: false
+  failed_when: cluster_info.rc != 0
+  retries: 3
+  delay: 5
+  until: cluster_info.rc == 0
+  tags: kubernetes, verify
+
+- name: Get cluster nodes
+  ansible.builtin.command:
+    cmd: kubectl get nodes --output=wide
   register: nodes_check
   changed_when: false
-  tags: k8s_setup
+  tags: kubernetes, verify
 
-- name: Display cluster nodes
+- name: Display cluster information
   ansible.builtin.debug:
-    var: nodes_check.stdout_lines
-  tags: k8s_setup
+    msg:
+      - "Cluster: {{ eks_cluster_name }}"
+      - "Region: {{ aws_region | default('us-east-1') }}"
+      - "Nodes: {{ nodes_check.stdout_lines | length }}"
+  tags: kubernetes, verify
+
+- name: Create Spring Petclinic namespace
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: "{{ default_namespace | default('petclinic') }}"
+        labels:
+          app: spring-petclinic
+          environment: "{{ app_env | default('dev') }}"
+  tags: kubernetes, namespace
+
+- name: Configure default service account for namespace
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: ServiceAccount
+      metadata:
+        name: petclinic-sa
+        namespace: "{{ default_namespace | default('petclinic') }}"
+        annotations:
+          eks.amazonaws.com/role-arn: "{{ oidc_provider_arn | default('') }}"
+  tags: kubernetes, rbac, irsa
+
+- name: Display kubeconfig location
+  ansible.builtin.debug:
+    msg: "Kubeconfig: {{ lookup('env', 'KUBECONFIG') | default('~/.kube/config', true) }}"
+  tags: kubernetes, debug
