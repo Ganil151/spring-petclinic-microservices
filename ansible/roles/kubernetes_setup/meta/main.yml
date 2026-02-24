@@ -13,8 +13,8 @@ galaxy_info:
   min_ansible_version: "2.14"
   
   # Repository tracking
-  issue_tracker: https://github.com/your-org/spring-petclinic-microservices/issues
-  repository: https://github.com/your-org/spring-petclinic-microservices
+  issue_tracker: https://github.com/Ganil151/spring-petclinic-microservices.git/issues
+  repository: https://github.com/Ganil151/spring-petclinic-microservices.git
   
   # Platform support (MUST match actual infrastructure)
   platforms:
