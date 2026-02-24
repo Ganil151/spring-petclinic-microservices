@@ -4,25 +4,6 @@
 # Installs fail2ban, audit, and hardens sysctl on Amazon Linux 2
 # =============================================================================
 
-# ── EPEL Repository Setup ────────────────────────────────────────────────────
-- name: Install EPEL repository (required for fail2ban on Amazon Linux 2)
-  ansible.builtin.yum:
-    name: epel-release
-    state: present
-  when:
-    - ansible_os_family == "RedHat"
-    - ansible_distribution != "Amazon"
-  tags: security
-
-- name: Enable EPEL repository using amazon-linux-extras (for Amazon Linux 2)
-  ansible.builtin.shell: amazon-linux-extras install epel -y
-  args:
-    creates: /etc/yum.repos.d/epel.repo
-  when:
-    - ansible_os_family == "RedHat"
-    - ansible_distribution == "Amazon"
-  tags: security
-
 # ── Package Installation ──────────────────────────────────────────────────────
 - name: Install security packages
   ansible.builtin.yum:
@@ -31,29 +12,6 @@
       - fail2ban-systemd
       - audit
     state: present
-  register: package_install_result
-  ignore_errors: true
-  tags: security
-
-# ── Handle fail2ban installation failure ──────────────────────────────────────
-- name: Install fail2ban from amazon-linux-extras (fallback for Amazon Linux 2)
-  ansible.builtin.shell: amazon-linux-extras install epel -y && yum install -y fail2ban fail2ban-systemd
-  args:
-    warn: no
-  when:
-    - ansible_distribution == "Amazon"
-    - package_install_result.failed is defined
-    - package_install_result.failed
-  tags: security
-
-# ── Final security packages installation (for cases where first attempt failed) ──
-- name: Retry installing audit if not installed
-  ansible.builtin.yum:
-    name: audit
-    state: present
-  when:
-    - package_install_result.failed is defined
-    - package_install_result.failed
   tags: security
 
 # ── Fail2ban ──────────────────────────────────────────────────────────────────
@@ -75,9 +33,6 @@
     owner: root
     group: root
   notify: Restart fail2ban
-  when:
-    - package_install_result is defined
-    - not (package_install_result.failed | default(false))
   tags:
     - security
     - fail2ban
@@ -87,9 +42,6 @@
     name: fail2ban
     state: started
     enabled: true
-  when:
-    - package_install_result is defined
-    - not (package_install_result.failed | default(false))
   tags:
     - security
     - fail2ban
@@ -100,9 +52,6 @@
     name: auditd
     state: started
     enabled: true
-  when:
-    - package_install_result is defined
-    - not (package_install_result.failed | default(false))
   tags:
     - security
     - audit
@@ -121,9 +70,6 @@
     - "-w /etc/shadow -p wa -k shadow_changes"
     - "-w /etc/sudoers -p wa -k sudoers_changes"
   notify: Reload auditd rules
-  when:
-    - package_install_result is defined
-    - not (package_install_result.failed | default(false))
   tags:
     - security
     - audit
