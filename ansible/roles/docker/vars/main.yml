@@ -2,9 +2,24 @@
 # Docker Role Variables
 # =============================================================================
 
-Unexpected scalar token in YAML stream: "enabled"YAML
-Unexpected map-value-ind token in YAML stream: ":"YAML
-Unexpected scalar token in YAML stream: "true" at line 51, column 18:
+# Docker configuration defaults for Amazon Linux
+docker_daemon_config:
+  log-driver: json-file
+  log-opts:
+    max-size: "10m"
+    max-file: "3"
+  storage-driver: overlay2
+  features:
+    buildkit: true
+
+# Docker repo mapping for RHEL-compatible systems
+docker_ce_repo_map:
+  amazon-2: "rhel/7"
+  amazon-2023: "rhel/8"
+  default: "rhel/9"
+
+# Computed at runtime via set_fact in tasks/main.yml
+# docker_repo_os: "{{ docker_ce_repo_map[ansible_distribution + '-' + ansible_distribution_major_version] | default(docker_ce_repo_map['default']) }}"
 
 # Docker registries to configure
 docker_registries: []
