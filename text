@@ -1,0 +1,3040 @@
+.
+├── .amazonq
+│   └── rules
+│       └── memory-bank
+│           ├── guidelines.md
+│           ├── product.md
+│           ├── structure.md
+│           └── tech.md
+├── ansible
+│   ├── 300
+│   │   ├── bastion-host
+│   │   ├── jenkins-master
+│   │   ├── sonarqube-server
+│   │   ├── worker-node-1
+│   │   └── worker-node-2
+│   ├── ansible.cfg
+│   ├── .ansible-lint.yml
+│   ├── collections
+│   │   ├── ansible_collections
+│   │   │   ├── kubernetes
+│   │   │   │   └── core
+│   │   │   │       ├── .ansible-lint
+│   │   │   │       ├── .ansible-lint-ignore
+│   │   │   │       ├── bindep.txt
+│   │   │   │       ├── CHANGELOG.rst
+│   │   │   │       ├── changelogs
+│   │   │   │       │   ├── changelog.yaml
+│   │   │   │       │   └── config.yaml
+│   │   │   │       ├── codecov.yml
+│   │   │   │       ├── CONTRIBUTING.md
+│   │   │   │       ├── docs
+│   │   │   │       │   ├── docsite
+│   │   │   │       │   │   ├── extra-docs.yml
+│   │   │   │       │   │   └── rst
+│   │   │   │       │   │       ├── kubernetes_scenarios
+│   │   │   │       │   │       │   ├── k8s_intro.rst
+│   │   │   │       │   │       │   ├── k8s_scenarios.rst
+│   │   │   │       │   │       │   └── scenario_k8s_object.rst
+│   │   │   │       │   │       └── scenario_guide.rst
+│   │   │   │       │   ├── kubernetes.core.helm_info_module.rst
+│   │   │   │       │   ├── kubernetes.core.helm_module.rst
+│   │   │   │       │   ├── kubernetes.core.helm_plugin_info_module.rst
+│   │   │   │       │   ├── kubernetes.core.helm_plugin_module.rst
+│   │   │   │       │   ├── kubernetes.core.helm_pull_module.rst
+│   │   │   │       │   ├── kubernetes.core.helm_registry_auth_module.rst
+│   │   │   │       │   ├── kubernetes.core.helm_repository_module.rst
+│   │   │   │       │   ├── kubernetes.core.helm_template_module.rst
+│   │   │   │       │   ├── kubernetes.core.k8s_cluster_info_module.rst
+│   │   │   │       │   ├── kubernetes.core.k8s_cp_module.rst
+│   │   │   │       │   ├── kubernetes.core.k8s_drain_module.rst
+│   │   │   │       │   ├── kubernetes.core.k8s_exec_module.rst
+│   │   │   │       │   ├── kubernetes.core.k8s_info_module.rst
+│   │   │   │       │   ├── kubernetes.core.k8s_json_patch_module.rst
+│   │   │   │       │   ├── kubernetes.core.k8s_log_module.rst
+│   │   │   │       │   ├── kubernetes.core.k8s_lookup.rst
+│   │   │   │       │   ├── kubernetes.core.k8s_module.rst
+│   │   │   │       │   ├── kubernetes.core.k8s_rollback_module.rst
+│   │   │   │       │   ├── kubernetes.core.k8s_scale_module.rst
+│   │   │   │       │   ├── kubernetes.core.k8s_service_module.rst
+│   │   │   │       │   ├── kubernetes.core.k8s_taint_module.rst
+│   │   │   │       │   ├── kubernetes.core.kubectl_connection.rst
+│   │   │   │       │   └── kubernetes.core.kustomize_lookup.rst
+│   │   │   │       ├── FILES.json
+│   │   │   │       ├── .github
+│   │   │   │       │   ├── patchback.yml
+│   │   │   │       │   └── workflows
+│   │   │   │       │       ├── changelog.yaml
+│   │   │   │       │       ├── galaxy-import.yaml
+│   │   │   │       │       ├── integration-tests.yaml
+│   │   │   │       │       ├── label-new-prs.yaml
+│   │   │   │       │       ├── linters.yaml
+│   │   │   │       │       ├── sanity-tests.yaml
+│   │   │   │       │       └── unit-tests.yaml
+│   │   │   │       ├── .gitignore
+│   │   │   │       ├── LICENSE
+│   │   │   │       ├── Makefile
+│   │   │   │       ├── MANIFEST.json
+│   │   │   │       ├── meta
+│   │   │   │       │   └── runtime.yml
+│   │   │   │       ├── plugins
+│   │   │   │       │   ├── action
+│   │   │   │       │   │   ├── helm_info.py -> k8s_info.py
+│   │   │   │       │   │   ├── helm_plugin_info.py -> k8s_info.py
+│   │   │   │       │   │   ├── helm_plugin.py -> k8s_info.py
+│   │   │   │       │   │   ├── helm.py -> k8s_info.py
+│   │   │   │       │   │   ├── helm_repository.py -> k8s_info.py
+│   │   │   │       │   │   ├── k8s_cluster_info.py -> k8s_info.py
+│   │   │   │       │   │   ├── k8s_cp.py -> k8s_info.py
+│   │   │   │       │   │   ├── k8s_drain.py -> k8s_info.py
+│   │   │   │       │   │   ├── k8s_exec.py -> k8s_info.py
+│   │   │   │       │   │   ├── k8s_info.py
+│   │   │   │       │   │   ├── k8s_json_patch.py -> k8s_info.py
+│   │   │   │       │   │   ├── k8s_log.py -> k8s_info.py
+│   │   │   │       │   │   ├── k8s.py -> k8s_info.py
+│   │   │   │       │   │   ├── k8s_rollback.py -> k8s_info.py
+│   │   │   │       │   │   ├── k8s_scale.py -> k8s_info.py
+│   │   │   │       │   │   └── k8s_service.py -> k8s_info.py
+│   │   │   │       │   ├── connection
+│   │   │   │       │   │   └── kubectl.py
+│   │   │   │       │   ├── doc_fragments
+│   │   │   │       │   │   ├── helm_common_options.py
+│   │   │   │       │   │   ├── __init__.py
+│   │   │   │       │   │   ├── k8s_auth_options.py
+│   │   │   │       │   │   ├── k8s_delete_options.py
+│   │   │   │       │   │   ├── k8s_name_options.py
+│   │   │   │       │   │   ├── k8s_resource_options.py
+│   │   │   │       │   │   ├── k8s_scale_options.py
+│   │   │   │       │   │   ├── k8s_state_options.py
+│   │   │   │       │   │   ├── k8s_wait_options.py
+│   │   │   │       │   │   └── __pycache__
+│   │   │   │       │   │       ├── k8s_auth_options.cpython-314.pyc
+│   │   │   │       │   │       ├── k8s_delete_options.cpython-314.pyc
+│   │   │   │       │   │       ├── k8s_name_options.cpython-314.pyc
+│   │   │   │       │   │       ├── k8s_resource_options.cpython-314.pyc
+│   │   │   │       │   │       └── k8s_wait_options.cpython-314.pyc
+│   │   │   │       │   ├── filter
+│   │   │   │       │   │   ├── k8s_config_resource_name.yml
+│   │   │   │       │   │   └── k8s.py
+│   │   │   │       │   ├── lookup
+│   │   │   │       │   │   ├── k8s.py
+│   │   │   │       │   │   └── kustomize.py
+│   │   │   │       │   ├── modules
+│   │   │   │       │   │   ├── helm_info.py
+│   │   │   │       │   │   ├── helm_plugin_info.py
+│   │   │   │       │   │   ├── helm_plugin.py
+│   │   │   │       │   │   ├── helm_pull.py
+│   │   │   │       │   │   ├── helm.py
+│   │   │   │       │   │   ├── helm_registry_auth.py
+│   │   │   │       │   │   ├── helm_repository.py
+│   │   │   │       │   │   ├── helm_template.py
+│   │   │   │       │   │   ├── __init__.py
+│   │   │   │       │   │   ├── k8s_cluster_info.py
+│   │   │   │       │   │   ├── k8s_cp.py
+│   │   │   │       │   │   ├── k8s_drain.py
+│   │   │   │       │   │   ├── k8s_exec.py
+│   │   │   │       │   │   ├── k8s_info.py
+│   │   │   │       │   │   ├── k8s_json_patch.py
+│   │   │   │       │   │   ├── k8s_log.py
+│   │   │   │       │   │   ├── k8s.py
+│   │   │   │       │   │   ├── k8s_rollback.py
+│   │   │   │       │   │   ├── k8s_scale.py
+│   │   │   │       │   │   ├── k8s_service.py
+│   │   │   │       │   │   └── k8s_taint.py
+│   │   │   │       │   └── module_utils
+│   │   │   │       │       ├── ansiblemodule.py
+│   │   │   │       │       ├── apply.py
+│   │   │   │       │       ├── args_common.py
+│   │   │   │       │       ├── client
+│   │   │   │       │       │   ├── discovery.py
+│   │   │   │       │       │   └── resource.py
+│   │   │   │       │       ├── common.py
+│   │   │   │       │       ├── copy.py
+│   │   │   │       │       ├── exceptions.py
+│   │   │   │       │       ├── hashes.py
+│   │   │   │       │       ├── helm_args_common.py
+│   │   │   │       │       ├── helm.py
+│   │   │   │       │       ├── __init__.py
+│   │   │   │       │       ├── k8s
+│   │   │   │       │       │   ├── client.py
+│   │   │   │       │       │   ├── core.py
+│   │   │   │       │       │   ├── exceptions.py
+│   │   │   │       │       │   ├── resource.py
+│   │   │   │       │       │   ├── runner.py
+│   │   │   │       │       │   ├── service.py
+│   │   │   │       │       │   └── waiter.py
+│   │   │   │       │       ├── k8sdynamicclient.py
+│   │   │   │       │       ├── selector.py
+│   │   │   │       │       ├── _version.py
+│   │   │   │       │       └── version.py
+│   │   │   │       ├── PSF-license.txt
+│   │   │   │       ├── README.md
+│   │   │   │       ├── requirements.txt
+│   │   │   │       ├── setup.cfg
+│   │   │   │       ├── test-requirements.txt
+│   │   │   │       ├── tests
+│   │   │   │       │   ├── config.yml
+│   │   │   │       │   ├── integration
+│   │   │   │       │   │   └── targets
+│   │   │   │       │   │       ├── helm
+│   │   │   │       │   │       │   ├── aliases
+│   │   │   │       │   │       │   ├── defaults
+│   │   │   │       │   │       │   │   └── main.yml
+│   │   │   │       │   │       │   ├── files
+│   │   │   │       │   │       │   │   ├── appversionless-chart
+│   │   │   │       │   │       │   │   │   ├── Chart.yaml
+│   │   │   │       │   │       │   │   │   └── templates
+│   │   │   │       │   │       │   │   │       └── configmap.yaml
+│   │   │   │       │   │       │   │   ├── appversionless-chart-v2
+│   │   │   │       │   │       │   │   │   ├── Chart.yaml
+│   │   │   │       │   │       │   │   │   └── templates
+│   │   │   │       │   │       │   │   │       └── configmap.yaml
+│   │   │   │       │   │       │   │   ├── dep-up
+│   │   │   │       │   │       │   │   │   ├── Chart.yaml
+│   │   │   │       │   │       │   │   │   └── values.yaml
+│   │   │   │       │   │       │   │   ├── test-chart
+│   │   │   │       │   │       │   │   │   ├── Chart.yaml
+│   │   │   │       │   │       │   │   │   └── templates
+│   │   │   │       │   │       │   │   │       └── configmap.yaml
+│   │   │   │       │   │       │   │   ├── test-chart-v2
+│   │   │   │       │   │       │   │   │   ├── Chart.yaml
+│   │   │   │       │   │       │   │   │   └── templates
+│   │   │   │       │   │       │   │   │       └── configmap.yaml
+│   │   │   │       │   │       │   │   ├── test-crds
+│   │   │   │       │   │       │   │   │   ├── Chart.yaml
+│   │   │   │       │   │       │   │   │   └── crds
+│   │   │   │       │   │       │   │   │       └── crd.yaml
+│   │   │   │       │   │       │   │   └── values.yaml
+│   │   │   │       │   │       │   ├── library
+│   │   │   │       │   │       │   │   ├── helm_test_pending.py
+│   │   │   │       │   │       │   │   └── helm_test_version.py
+│   │   │   │       │   │       │   ├── meta
+│   │   │   │       │   │       │   │   └── main.yml
+│   │   │   │       │   │       │   ├── playbook.yaml
+│   │   │   │       │   │       │   ├── runme.sh
+│   │   │   │       │   │       │   └── tasks
+│   │   │   │       │   │       │       ├── install.yml
+│   │   │   │       │   │       │       ├── main.yml
+│   │   │   │       │   │       │       ├── run_test.yml
+│   │   │   │       │   │       │       ├── test_crds.yml
+│   │   │   │       │   │       │       ├── test_helm_insecure.yml
+│   │   │   │       │   │       │       ├── test_helm_not_installed.yml
+│   │   │   │       │   │       │       ├── test_helm_reset_then_reuse_values.yml
+│   │   │   │       │   │       │       ├── test_helm_reuse_values.yml
+│   │   │   │       │   │       │       ├── test_helm_take_ownership.yml
+│   │   │   │       │   │       │       ├── test_helm_uninstall.yml
+│   │   │   │       │   │       │       ├── test_helm_version.yml
+│   │   │   │       │   │       │       ├── test_helm_with_space_into_chart_name.yml
+│   │   │   │       │   │       │       ├── test_read_envvars.yml
+│   │   │   │       │   │       │       ├── tests_chart
+│   │   │   │       │   │       │       │   ├── from_local_path.yml
+│   │   │   │       │   │       │       │   ├── from_repository.yml
+│   │   │   │       │   │       │       │   └── from_url.yml
+│   │   │   │       │   │       │       ├── tests_chart.yml
+│   │   │   │       │   │       │       ├── test_skip_schema_validation.yml
+│   │   │   │       │   │       │       └── test_up_dep.yml
+│   │   │   │       │   │       ├── helm_diff
+│   │   │   │       │   │       │   ├── aliases
+│   │   │   │       │   │       │   ├── defaults
+│   │   │   │       │   │       │   │   └── main.yml
+│   │   │   │       │   │       │   ├── files
+│   │   │   │       │   │       │   │   ├── test-chart
+│   │   │   │       │   │       │   │   │   ├── Chart.yaml
+│   │   │   │       │   │       │   │   │   └── templates
+│   │   │   │       │   │       │   │   │       └── configmap.yaml
+│   │   │   │       │   │       │   │   ├── test-chart-deployment-time
+│   │   │   │       │   │       │   │   │   ├── Chart.yaml
+│   │   │   │       │   │       │   │   │   └── templates
+│   │   │   │       │   │       │   │   │       └── configmap.yaml
+│   │   │   │       │   │       │   │   └── test-chart-reuse-values
+│   │   │   │       │   │       │   │       ├── Chart.yaml
+│   │   │   │       │   │       │   │       ├── templates
+│   │   │   │       │   │       │   │       │   └── configmap.yaml
+│   │   │   │       │   │       │   │       └── values.yaml
+│   │   │   │       │   │       │   ├── meta
+│   │   │   │       │   │       │   │   └── main.yml
+│   │   │   │       │   │       │   ├── playbook.yaml
+│   │   │   │       │   │       │   ├── runme.sh
+│   │   │   │       │   │       │   └── tasks
+│   │   │   │       │   │       │       ├── main.yml
+│   │   │   │       │   │       │       ├── reset_then_reuse_values.yml
+│   │   │   │       │   │       │       └── reuse_values.yml
+│   │   │   │       │   │       ├── helm_kubeconfig
+│   │   │   │       │   │       │   ├── aliases
+│   │   │   │       │   │       │   ├── defaults
+│   │   │   │       │   │       │   │   └── main.yml
+│   │   │   │       │   │       │   ├── meta
+│   │   │   │       │   │       │   │   └── main.yml
+│   │   │   │       │   │       │   ├── playbook.yaml
+│   │   │   │       │   │       │   ├── runme.sh
+│   │   │   │       │   │       │   └── tasks
+│   │   │   │       │   │       │       ├── from_in_memory_kubeconfig.yml
+│   │   │   │       │   │       │       ├── from_kubeconfig_with_cacert.yml
+│   │   │   │       │   │       │       ├── from_kubeconfig_with_validate_certs.yml
+│   │   │   │       │   │       │       ├── main.yml
+│   │   │   │       │   │       │       └── tests_helm_auth.yml
+│   │   │   │       │   │       ├── helm_plain_http
+│   │   │   │       │   │       │   ├── aliases
+│   │   │   │       │   │       │   ├── inventory.ini
+│   │   │   │       │   │       │   ├── playbooks
+│   │   │   │       │   │       │   │   ├── play.yaml
+│   │   │   │       │   │       │   │   └── tasks
+│   │   │   │       │   │       │   │       └── test.yaml
+│   │   │   │       │   │       │   └── runme.sh
+│   │   │   │       │   │       ├── helm_plugin
+│   │   │   │       │   │       │   ├── aliases
+│   │   │   │       │   │       │   ├── defaults
+│   │   │   │       │   │       │   │   └── main.yml
+│   │   │   │       │   │       │   ├── files
+│   │   │   │       │   │       │   │   └── sample_plugin
+│   │   │   │       │   │       │   │       └── plugin.yaml
+│   │   │   │       │   │       │   ├── meta
+│   │   │   │       │   │       │   │   └── main.yml
+│   │   │   │       │   │       │   ├── playbook.yaml
+│   │   │   │       │   │       │   ├── runme.sh
+│   │   │   │       │   │       │   └── tasks
+│   │   │   │       │   │       │       └── main.yml
+│   │   │   │       │   │       ├── helm_pull
+│   │   │   │       │   │       │   ├── aliases
+│   │   │   │       │   │       │   ├── playbook.yaml
+│   │   │   │       │   │       │   ├── runme.sh
+│   │   │   │       │   │       │   └── tasks
+│   │   │   │       │   │       │       └── main.yml
+│   │   │   │       │   │       ├── helm_registry_auth
+│   │   │   │       │   │       │   ├── aliases
+│   │   │   │       │   │       │   ├── defaults
+│   │   │   │       │   │       │   │   └── main.yaml
+│   │   │   │       │   │       │   ├── files
+│   │   │   │       │   │       │   │   └── registry.password
+│   │   │   │       │   │       │   ├── meta
+│   │   │   │       │   │       │   │   └── main.yml
+│   │   │   │       │   │       │   ├── playbook.yaml
+│   │   │   │       │   │       │   ├── runme.sh
+│   │   │   │       │   │       │   └── tasks
+│   │   │   │       │   │       │       └── main.yaml
+│   │   │   │       │   │       ├── helm_repository
+│   │   │   │       │   │       │   ├── aliases
+│   │   │   │       │   │       │   ├── defaults
+│   │   │   │       │   │       │   │   └── main.yml
+│   │   │   │       │   │       │   ├── meta
+│   │   │   │       │   │       │   │   └── main.yml
+│   │   │   │       │   │       │   ├── playbook.yaml
+│   │   │   │       │   │       │   ├── runme.sh
+│   │   │   │       │   │       │   └── tasks
+│   │   │   │       │   │       │       └── main.yml
+│   │   │   │       │   │       ├── helm_set_values
+│   │   │   │       │   │       │   ├── aliases
+│   │   │   │       │   │       │   ├── defaults
+│   │   │   │       │   │       │   │   └── main.yml
+│   │   │   │       │   │       │   ├── meta
+│   │   │   │       │   │       │   │   └── main.yml
+│   │   │   │       │   │       │   ├── playbook.yaml
+│   │   │   │       │   │       │   ├── runme.sh
+│   │   │   │       │   │       │   └── tasks
+│   │   │   │       │   │       │       └── main.yml
+│   │   │   │       │   │       ├── install_helm
+│   │   │   │       │   │       │   ├── aliases
+│   │   │   │       │   │       │   ├── defaults
+│   │   │   │       │   │       │   │   └── main.yml
+│   │   │   │       │   │       │   └── tasks
+│   │   │   │       │   │       │       └── main.yml
+│   │   │   │       │   │       ├── k8s_access_review
+│   │   │   │       │   │       │   ├── aliases
+│   │   │   │       │   │       │   ├── playbook.yaml
+│   │   │   │       │   │       │   ├── runme.sh
+│   │   │   │       │   │       │   └── tasks
+│   │   │   │       │   │       │       └── main.yml
+│   │   │   │       │   │       ├── k8s_append_hash
+│   │   │   │       │   │       │   ├── aliases
+│   │   │   │       │   │       │   ├── defaults
+│   │   │   │       │   │       │   │   └── main.yml
+│   │   │   │       │   │       │   ├── meta
+│   │   │   │       │   │       │   │   └── main.yml
+│   │   │   │       │   │       │   ├── playbook.yaml
+│   │   │   │       │   │       │   ├── runme.sh
+│   │   │   │       │   │       │   └── tasks
+│   │   │   │       │   │       │       └── main.yml
+│   │   │   │       │   │       ├── k8s_apply
+│   │   │   │       │   │       │   ├── aliases
+│   │   │   │       │   │       │   ├── defaults
+│   │   │   │       │   │       │   │   └── main.yml
+│   │   │   │       │   │       │   ├── meta
+│   │   │   │       │   │       │   │   └── main.yml
+│   │   │   │       │   │       │   ├── playbook.yaml
+│   │   │   │       │   │       │   ├── runme.sh
+│   │   │   │       │   │       │   └── tasks
+│   │   │   │       │   │       │       ├── main.yml
+│   │   │   │       │   │       │       └── server_side_apply.yml
+│   │   │   │       │   │       ├── k8s_check_mode
+│   │   │   │       │   │       │   ├── aliases
+│   │   │   │       │   │       │   ├── defaults
+│   │   │   │       │   │       │   │   └── main.yml
+│   │   │   │       │   │       │   ├── meta
+│   │   │   │       │   │       │   │   └── main.yml
+│   │   │   │       │   │       │   ├── playbook.yaml
+│   │   │   │       │   │       │   ├── runme.sh
+│   │   │   │       │   │       │   └── tasks
+│   │   │   │       │   │       │       ├── check_mode.yml
+│   │   │   │       │   │       │       └── main.yml
+│   │   │   │       │   │       ├── k8s_cluster_info
+│   │   │   │       │   │       │   ├── aliases
+│   │   │   │       │   │       │   ├── playbook.yaml
+│   │   │   │       │   │       │   ├── runme.sh
+│   │   │   │       │   │       │   └── tasks
+│   │   │   │       │   │       │       └── main.yml
+│   │   │   │       │   │       ├── k8s_copy
+│   │   │   │       │   │       │   ├── aliases
+│   │   │   │       │   │       │   ├── defaults
+│   │   │   │       │   │       │   │   └── main.yml
+│   │   │   │       │   │       │   ├── files
+│   │   │   │       │   │       │   │   ├── archive.tar
+│   │   │   │       │   │       │   │   ├── data
+│   │   │   │       │   │       │   │   │   ├── ansible
+│   │   │   │       │   │       │   │   │   │   ├── collection.txt
+│   │   │   │       │   │       │   │   │   │   └── module.txt
+│   │   │   │       │   │       │   │   │   ├── file.txt
+│   │   │   │       │   │       │   │   │   └── teams
+│   │   │   │       │   │       │   │   │       └── ansible.txt
+│   │   │   │       │   │       │   │   ├── simple_file.txt
+│   │   │   │       │   │       │   │   └── simple_zip_file.txt.gz
+│   │   │   │       │   │       │   ├── library
+│   │   │   │       │   │       │   │   └── kubectl_file_compare.py
+│   │   │   │       │   │       │   ├── meta
+│   │   │   │       │   │       │   │   └── main.yml
+│   │   │   │       │   │       │   ├── playbook.yaml
+│   │   │   │       │   │       │   ├── runme.sh
+│   │   │   │       │   │       │   ├── tasks
+│   │   │   │       │   │       │   │   ├── main.yml
+│   │   │   │       │   │       │   │   ├── test_check_mode.yml
+│   │   │   │       │   │       │   │   ├── test_copy_directory.yml
+│   │   │   │       │   │       │   │   ├── test_copy_errors.yml
+│   │   │   │       │   │       │   │   ├── test_copy_file.yml
+│   │   │   │       │   │       │   │   ├── test_copy_item_with_space_in_its_name.yml
+│   │   │   │       │   │       │   │   ├── test_copy_large_file.yml
+│   │   │   │       │   │       │   │   ├── test_init_container_pod.yml
+│   │   │   │       │   │       │   │   └── test_multi_container_pod.yml
+│   │   │   │       │   │       │   └── templates
+│   │   │   │       │   │       │       ├── pods_definition_init.j2
+│   │   │   │       │   │       │       └── pods_definition.j2
+│   │   │   │       │   │       ├── k8s_crd
+│   │   │   │       │   │       │   ├── aliases
+│   │   │   │       │   │       │   ├── defaults
+│   │   │   │       │   │       │   │   └── main.yml
+│   │   │   │       │   │       │   ├── files
+│   │   │   │       │   │       │   │   ├── crd-resource.yml
+│   │   │   │       │   │       │   │   └── setup-crd.yml
+│   │   │   │       │   │       │   ├── meta
+│   │   │   │       │   │       │   │   └── main.yml
+│   │   │   │       │   │       │   ├── playbook.yaml
+│   │   │   │       │   │       │   ├── runme.sh
+│   │   │   │       │   │       │   └── tasks
+│   │   │   │       │   │       │       └── main.yml
+│   │   │   │       │   │       ├── k8s_delete
+│   │   │   │       │   │       │   ├── aliases
+│   │   │   │       │   │       │   ├── defaults
+│   │   │   │       │   │       │   │   └── main.yml
+│   │   │   │       │   │       │   ├── files
+│   │   │   │       │   │       │   │   └── deployments.yaml
+│   │   │   │       │   │       │   ├── meta
+│   │   │   │       │   │       │   │   └── main.yml
+│   │   │   │       │   │       │   ├── playbook.yaml
+│   │   │   │       │   │       │   ├── runme.sh
+│   │   │   │       │   │       │   └── tasks
+│   │   │   │       │   │       │       └── main.yml
+│   │   │   │       │   │       ├── k8s_diff
+│   │   │   │       │   │       │   ├── aliases
+│   │   │   │       │   │       │   ├── defaults
+│   │   │   │       │   │       │   │   └── main.yml
+│   │   │   │       │   │       │   ├── meta
+│   │   │   │       │   │       │   │   └── main.yml
+│   │   │   │       │   │       │   ├── playbook.yaml
+│   │   │   │       │   │       │   ├── runme.sh
+│   │   │   │       │   │       │   ├── tasks
+│   │   │   │       │   │       │   │   └── main.yml
+│   │   │   │       │   │       │   └── templates
+│   │   │   │       │   │       │       └── pod.j2
+│   │   │   │       │   │       ├── k8s_drain
+│   │   │   │       │   │       │   ├── aliases
+│   │   │   │       │   │       │   ├── defaults
+│   │   │   │       │   │       │   │   └── main.yml
+│   │   │   │       │   │       │   ├── meta
+│   │   │   │       │   │       │   │   └── main.yml
+│   │   │   │       │   │       │   ├── playbook.yaml
+│   │   │   │       │   │       │   ├── runme.sh
+│   │   │   │       │   │       │   └── tasks
+│   │   │   │       │   │       │       └── main.yml
+│   │   │   │       │   │       ├── k8s_exec
+│   │   │   │       │   │       │   ├── aliases
+│   │   │   │       │   │       │   ├── defaults
+│   │   │   │       │   │       │   │   └── main.yml
+│   │   │   │       │   │       │   ├── meta
+│   │   │   │       │   │       │   │   └── main.yml
+│   │   │   │       │   │       │   ├── playbook.yaml
+│   │   │   │       │   │       │   ├── runme.sh
+│   │   │   │       │   │       │   └── tasks
+│   │   │   │       │   │       │       └── main.yml
+│   │   │   │       │   │       ├── k8s_full
+│   │   │   │       │   │       │   ├── aliases
+│   │   │   │       │   │       │   ├── defaults
+│   │   │   │       │   │       │   │   └── main.yml
+│   │   │   │       │   │       │   ├── meta
+│   │   │   │       │   │       │   │   └── main.yml
+│   │   │   │       │   │       │   ├── playbook.yaml
+│   │   │   │       │   │       │   ├── runme.sh
+│   │   │   │       │   │       │   └── tasks
+│   │   │   │       │   │       │       └── main.yml
+│   │   │   │       │   │       ├── k8s_gc
+│   │   │   │       │   │       │   ├── aliases
+│   │   │   │       │   │       │   ├── defaults
+│   │   │   │       │   │       │   │   └── main.yml
+│   │   │   │       │   │       │   ├── meta
+│   │   │   │       │   │       │   │   └── main.yml
+│   │   │   │       │   │       │   ├── playbook.yaml
+│   │   │   │       │   │       │   ├── runme.sh
+│   │   │   │       │   │       │   └── tasks
+│   │   │   │       │   │       │       └── main.yml
+│   │   │   │       │   │       ├── k8s_generate_name
+│   │   │   │       │   │       │   ├── aliases
+│   │   │   │       │   │       │   ├── playbook.yaml
+│   │   │   │       │   │       │   ├── runme.sh
+│   │   │   │       │   │       │   └── tasks
+│   │   │   │       │   │       │       └── main.yml
+│   │   │   │       │   │       ├── k8s_hide_fields
+│   │   │   │       │   │       │   ├── aliases
+│   │   │   │       │   │       │   ├── defaults
+│   │   │   │       │   │       │   │   └── main.yml
+│   │   │   │       │   │       │   ├── meta
+│   │   │   │       │   │       │   │   └── main.yml
+│   │   │   │       │   │       │   ├── playbook.yaml
+│   │   │   │       │   │       │   ├── runme.sh
+│   │   │   │       │   │       │   └── tasks
+│   │   │   │       │   │       │       └── main.yml
+│   │   │   │       │   │       ├── k8s_info
+│   │   │   │       │   │       │   ├── aliases
+│   │   │   │       │   │       │   ├── defaults
+│   │   │   │       │   │       │   │   └── main.yml
+│   │   │   │       │   │       │   ├── meta
+│   │   │   │       │   │       │   │   └── main.yml
+│   │   │   │       │   │       │   ├── playbook.yaml
+│   │   │   │       │   │       │   ├── runme.sh
+│   │   │   │       │   │       │   └── tasks
+│   │   │   │       │   │       │       ├── api-server-caching.yml
+│   │   │   │       │   │       │       ├── discovery.yml
+│   │   │   │       │   │       │       ├── main.yml
+│   │   │   │       │   │       │       └── wait.yml
+│   │   │   │       │   │       ├── k8s_json_patch
+│   │   │   │       │   │       │   ├── aliases
+│   │   │   │       │   │       │   ├── defaults
+│   │   │   │       │   │       │   │   └── main.yml
+│   │   │   │       │   │       │   ├── meta
+│   │   │   │       │   │       │   │   └── main.yml
+│   │   │   │       │   │       │   ├── playbook.yaml
+│   │   │   │       │   │       │   ├── runme.sh
+│   │   │   │       │   │       │   └── tasks
+│   │   │   │       │   │       │       └── main.yml
+│   │   │   │       │   │       ├── k8s_json_patch_hide_fields
+│   │   │   │       │   │       │   ├── aliases
+│   │   │   │       │   │       │   ├── defaults
+│   │   │   │       │   │       │   │   └── main.yml
+│   │   │   │       │   │       │   ├── meta
+│   │   │   │       │   │       │   │   └── main.yml
+│   │   │   │       │   │       │   ├── playbook.yaml
+│   │   │   │       │   │       │   ├── runme.sh
+│   │   │   │       │   │       │   └── tasks
+│   │   │   │       │   │       │       └── main.yml
+│   │   │   │       │   │       ├── k8s_label_selectors
+│   │   │   │       │   │       │   ├── aliases
+│   │   │   │       │   │       │   ├── defaults
+│   │   │   │       │   │       │   │   └── main.yml
+│   │   │   │       │   │       │   ├── meta
+│   │   │   │       │   │       │   │   └── main.yml
+│   │   │   │       │   │       │   ├── playbook.yaml
+│   │   │   │       │   │       │   ├── runme.sh
+│   │   │   │       │   │       │   └── tasks
+│   │   │   │       │   │       │       └── main.yml
+│   │   │   │       │   │       ├── k8s_lists
+│   │   │   │       │   │       │   ├── aliases
+│   │   │   │       │   │       │   ├── defaults
+│   │   │   │       │   │       │   │   └── main.yml
+│   │   │   │       │   │       │   ├── meta
+│   │   │   │       │   │       │   │   └── main.yml
+│   │   │   │       │   │       │   ├── playbook.yaml
+│   │   │   │       │   │       │   ├── runme.sh
+│   │   │   │       │   │       │   └── tasks
+│   │   │   │       │   │       │       └── main.yml
+│   │   │   │       │   │       ├── k8s_log
+│   │   │   │       │   │       │   ├── aliases
+│   │   │   │       │   │       │   ├── defaults
+│   │   │   │       │   │       │   │   └── main.yml
+│   │   │   │       │   │       │   ├── meta
+│   │   │   │       │   │       │   │   └── main.yml
+│   │   │   │       │   │       │   ├── playbook.yaml
+│   │   │   │       │   │       │   ├── runme.sh
+│   │   │   │       │   │       │   └── tasks
+│   │   │   │       │   │       │       └── main.yml
+│   │   │   │       │   │       ├── k8s_manifest_url
+│   │   │   │       │   │       │   ├── aliases
+│   │   │   │       │   │       │   ├── defaults
+│   │   │   │       │   │       │   │   └── main.yml
+│   │   │   │       │   │       │   ├── meta
+│   │   │   │       │   │       │   │   └── main.yml
+│   │   │   │       │   │       │   ├── playbook.yaml
+│   │   │   │       │   │       │   ├── runme.sh
+│   │   │   │       │   │       │   └── tasks
+│   │   │   │       │   │       │       └── main.yml
+│   │   │   │       │   │       ├── k8s_merge_type
+│   │   │   │       │   │       │   ├── aliases
+│   │   │   │       │   │       │   ├── defaults
+│   │   │   │       │   │       │   │   └── main.yml
+│   │   │   │       │   │       │   ├── meta
+│   │   │   │       │   │       │   │   └── main.yml
+│   │   │   │       │   │       │   ├── playbook.yaml
+│   │   │   │       │   │       │   ├── runme.sh
+│   │   │   │       │   │       │   └── tasks
+│   │   │   │       │   │       │       └── main.yml
+│   │   │   │       │   │       ├── k8s_patched
+│   │   │   │       │   │       │   ├── aliases
+│   │   │   │       │   │       │   ├── defaults
+│   │   │   │       │   │       │   │   └── main.yml
+│   │   │   │       │   │       │   ├── meta
+│   │   │   │       │   │       │   │   └── main.yml
+│   │   │   │       │   │       │   ├── playbook.yaml
+│   │   │   │       │   │       │   ├── runme.sh
+│   │   │   │       │   │       │   └── tasks
+│   │   │   │       │   │       │       └── main.yml
+│   │   │   │       │   │       ├── k8s_rollback
+│   │   │   │       │   │       │   ├── aliases
+│   │   │   │       │   │       │   ├── defaults
+│   │   │   │       │   │       │   │   └── main.yml
+│   │   │   │       │   │       │   ├── meta
+│   │   │   │       │   │       │   │   └── main.yml
+│   │   │   │       │   │       │   ├── playbook.yaml
+│   │   │   │       │   │       │   ├── runme.sh
+│   │   │   │       │   │       │   └── tasks
+│   │   │   │       │   │       │       └── main.yml
+│   │   │   │       │   │       ├── k8s_scale
+│   │   │   │       │   │       │   ├── aliases
+│   │   │   │       │   │       │   ├── defaults
+│   │   │   │       │   │       │   │   └── main.yml
+│   │   │   │       │   │       │   ├── files
+│   │   │   │       │   │       │   │   └── deployment.yaml
+│   │   │   │       │   │       │   ├── meta
+│   │   │   │       │   │       │   │   └── main.yml
+│   │   │   │       │   │       │   ├── playbook.yaml
+│   │   │   │       │   │       │   ├── runme.sh
+│   │   │   │       │   │       │   └── tasks
+│   │   │   │       │   │       │       └── main.yml
+│   │   │   │       │   │       ├── k8s_taint
+│   │   │   │       │   │       │   ├── aliases
+│   │   │   │       │   │       │   ├── defaults
+│   │   │   │       │   │       │   │   └── main.yml
+│   │   │   │       │   │       │   ├── meta
+│   │   │   │       │   │       │   │   └── main.yml
+│   │   │   │       │   │       │   ├── playbook.yaml
+│   │   │   │       │   │       │   ├── runme.sh
+│   │   │   │       │   │       │   └── tasks
+│   │   │   │       │   │       │       └── main.yml
+│   │   │   │       │   │       ├── k8s_template
+│   │   │   │       │   │       │   ├── aliases
+│   │   │   │       │   │       │   ├── defaults
+│   │   │   │       │   │       │   │   └── main.yml
+│   │   │   │       │   │       │   ├── meta
+│   │   │   │       │   │       │   │   └── main.yml
+│   │   │   │       │   │       │   ├── playbook.yaml
+│   │   │   │       │   │       │   ├── runme.sh
+│   │   │   │       │   │       │   ├── tasks
+│   │   │   │       │   │       │   │   └── main.yml
+│   │   │   │       │   │       │   └── templates
+│   │   │   │       │   │       │       ├── pod_one.j2
+│   │   │   │       │   │       │       ├── pod_three.j2
+│   │   │   │       │   │       │       ├── pod_two.j2
+│   │   │   │       │   │       │       └── pod_with_bad_namespace.j2
+│   │   │   │       │   │       ├── k8s_user_impersonation
+│   │   │   │       │   │       │   ├── aliases
+│   │   │   │       │   │       │   ├── defaults
+│   │   │   │       │   │       │   │   └── main.yml
+│   │   │   │       │   │       │   ├── meta
+│   │   │   │       │   │       │   │   └── main.yml
+│   │   │   │       │   │       │   ├── playbook.yaml
+│   │   │   │       │   │       │   ├── runme.sh
+│   │   │   │       │   │       │   └── tasks
+│   │   │   │       │   │       │       └── main.yml
+│   │   │   │       │   │       ├── k8s_validate
+│   │   │   │       │   │       │   ├── aliases
+│   │   │   │       │   │       │   ├── defaults
+│   │   │   │       │   │       │   │   └── main.yml
+│   │   │   │       │   │       │   ├── meta
+│   │   │   │       │   │       │   │   └── main.yml
+│   │   │   │       │   │       │   ├── playbook.yaml
+│   │   │   │       │   │       │   ├── runme.sh
+│   │   │   │       │   │       │   └── tasks
+│   │   │   │       │   │       │       └── main.yml
+│   │   │   │       │   │       ├── k8s_waiter
+│   │   │   │       │   │       │   ├── aliases
+│   │   │   │       │   │       │   ├── defaults
+│   │   │   │       │   │       │   │   └── main.yml
+│   │   │   │       │   │       │   ├── meta
+│   │   │   │       │   │       │   │   └── main.yml
+│   │   │   │       │   │       │   ├── playbook.yaml
+│   │   │   │       │   │       │   ├── runme.sh
+│   │   │   │       │   │       │   └── tasks
+│   │   │   │       │   │       │       └── main.yml
+│   │   │   │       │   │       ├── lookup_k8s
+│   │   │   │       │   │       │   ├── aliases
+│   │   │   │       │   │       │   ├── defaults
+│   │   │   │       │   │       │   │   └── main.yml
+│   │   │   │       │   │       │   ├── meta
+│   │   │   │       │   │       │   │   └── main.yml
+│   │   │   │       │   │       │   ├── playbook.yaml
+│   │   │   │       │   │       │   ├── runme.sh
+│   │   │   │       │   │       │   └── tasks
+│   │   │   │       │   │       │       └── main.yml
+│   │   │   │       │   │       ├── lookup_kustomize
+│   │   │   │       │   │       │   ├── aliases
+│   │   │   │       │   │       │   ├── defaults
+│   │   │   │       │   │       │   │   └── main.yml
+│   │   │   │       │   │       │   ├── meta
+│   │   │   │       │   │       │   │   └── main.yml
+│   │   │   │       │   │       │   ├── playbook.yaml
+│   │   │   │       │   │       │   ├── runme.sh
+│   │   │   │       │   │       │   └── tasks
+│   │   │   │       │   │       │       └── main.yml
+│   │   │   │       │   │       ├── push_to_helm_registry
+│   │   │   │       │   │       │   ├── aliases
+│   │   │   │       │   │       │   ├── defaults
+│   │   │   │       │   │       │   │   └── main.yml
+│   │   │   │       │   │       │   └── tasks
+│   │   │   │       │   │       │       └── main.yml
+│   │   │   │       │   │       ├── remove_namespace
+│   │   │   │       │   │       │   ├── aliases
+│   │   │   │       │   │       │   └── tasks
+│   │   │   │       │   │       │       └── main.yml
+│   │   │   │       │   │       ├── setup_helm_registry
+│   │   │   │       │   │       │   ├── aliases
+│   │   │   │       │   │       │   ├── defaults
+│   │   │   │       │   │       │   │   └── main.yml
+│   │   │   │       │   │       │   ├── handlers
+│   │   │   │       │   │       │   │   └── main.yml
+│   │   │   │       │   │       │   └── tasks
+│   │   │   │       │   │       │       ├── main.yml
+│   │   │   │       │   │       │       ├── remove_docker_container.yml
+│   │   │   │       │   │       │       └── teardown_registry.yml
+│   │   │   │       │   │       ├── setup_kubeconfig
+│   │   │   │       │   │       │   ├── aliases
+│   │   │   │       │   │       │   ├── defaults
+│   │   │   │       │   │       │   │   └── main.yml
+│   │   │   │       │   │       │   ├── library
+│   │   │   │       │   │       │   │   └── test_inventory_read_credentials.py
+│   │   │   │       │   │       │   └── tasks
+│   │   │   │       │   │       │       └── main.yml
+│   │   │   │       │   │       └── setup_namespace
+│   │   │   │       │   │           ├── aliases
+│   │   │   │       │   │           ├── defaults
+│   │   │   │       │   │           │   └── main.yml
+│   │   │   │       │   │           └── tasks
+│   │   │   │       │   │               ├── create.yml
+│   │   │   │       │   │               └── main.yml
+│   │   │   │       │   ├── sanity
+│   │   │   │       │   │   ├── ignore-2.16.txt
+│   │   │   │       │   │   ├── ignore-2.17.txt
+│   │   │   │       │   │   ├── ignore-2.18.txt
+│   │   │   │       │   │   ├── ignore-2.19.txt
+│   │   │   │       │   │   ├── ignore-2.20.txt
+│   │   │   │       │   │   └── ignore-2.21.txt
+│   │   │   │       │   └── unit
+│   │   │   │       │       ├── conftest.py
+│   │   │   │       │       ├── modules
+│   │   │   │       │       │   ├── test_helm_template_module.py
+│   │   │   │       │       │   ├── test_helm_template.py
+│   │   │   │       │       │   └── test_module_helm.py
+│   │   │   │       │       ├── module_utils
+│   │   │   │       │       │   ├── fixtures
+│   │   │   │       │       │   │   ├── clusteroperator.yml
+│   │   │   │       │       │   │   ├── definitions.yml
+│   │   │   │       │       │   │   ├── deployments.yml
+│   │   │   │       │       │   │   └── pods.yml
+│   │   │   │       │       │   ├── test_apply.py
+│   │   │   │       │       │   ├── test_client.py
+│   │   │   │       │       │   ├── test_common.py
+│   │   │   │       │       │   ├── test_core.py
+│   │   │   │       │       │   ├── test_discoverer.py
+│   │   │   │       │       │   ├── test_hashes.py
+│   │   │   │       │       │   ├── test_helm.py
+│   │   │   │       │       │   ├── test_hide_fields.py
+│   │   │   │       │       │   ├── test_kubeconfig_redaction.py
+│   │   │   │       │       │   ├── test_marshal.py
+│   │   │   │       │       │   ├── test_resource.py
+│   │   │   │       │       │   ├── test_runner.py
+│   │   │   │       │       │   ├── test_selector.py
+│   │   │   │       │       │   ├── test_service.py
+│   │   │   │       │       │   └── test_waiter.py
+│   │   │   │       │       ├── requirements.txt
+│   │   │   │       │       └── utils
+│   │   │   │       │           └── ansible_module_mock.py
+│   │   │   │       ├── tox.ini
+│   │   │   │       └── .yamllint
+│   │   │   └── kubernetes.core-6.3.0.info
+│   │   │       └── GALAXY.yml
+│   │   └── requirements.yml
+│   ├── .gitignore
+│   ├── group_vars
+│   │   ├── all.yml
+│   │   ├── bastion_hosts.yml
+│   │   ├── cicd.yml
+│   │   ├── database.yml
+│   │   ├── dev.yml
+│   │   ├── jenkins_masters.yml
+│   │   ├── k8s_cluster.yml
+│   │   ├── k8s_workers.yml
+│   │   ├── monitoring.yml
+│   │   ├── production.yml
+│   │   ├── sonarqube_servers.yml
+│   │   └── staging.yml
+│   ├── host_vars
+│   │   ├── jenkins-master.yml
+│   │   ├── k8s-control.yml
+│   │   ├── k8s-worker-01.yml
+│   │   ├── sonarqube.yml
+│   │   └── worker-node.yml
+│   ├── inventory
+│   │   ├── aws
+│   │   │   └── ec2.yml
+│   │   ├── hosts
+│   │   └── plugins
+│   │       └── aws_ec2.yml
+│   ├── meta
+│   │   └── runtime.yml
+│   ├── playbooks
+│   │   ├── deployment
+│   │   │   ├── bastion-setup.yml
+│   │   │   ├── jenkins-setup.yml
+│   │   │   ├── monitoring-stack.yml
+│   │   │   └── security-hardening.yml
+│   │   ├── provisioning
+│   │   │   ├── k8s-cluster.yml
+│   │   │   ├── prerequisites.yml
+│   │   │   ├── rds-provision.yml
+│   │   │   └── vpc-network.yml
+│   │   ├── security
+│   │   │   ├── gitops-operator.yml
+│   │   │   ├── trivy-scan.yml
+│   │   │   └── vault-integration.yml
+│   │   └── site.yml
+│   ├── plugins
+│   │   ├── filter
+│   │   └── lookup
+│   ├── README.md
+│   ├── requirements.yml
+│   ├── roles
+│   │   ├── awscli
+│   │   │   ├── defaults
+│   │   │   │   └── main.yml
+│   │   │   ├── handlers
+│   │   │   ├── meta
+│   │   │   │   └── main.yml
+│   │   │   ├── tasks
+│   │   │   │   └── main.yml
+│   │   │   ├── templates
+│   │   │   └── vars
+│   │   ├── cloudwatch_agent
+│   │   │   ├── handlers
+│   │   │   │   └── main.yml
+│   │   │   ├── tasks
+│   │   │   │   └── main.yml
+│   │   │   └── templates
+│   │   │       └── amazon-cloudwatch-agent.json.j2
+│   │   ├── common
+│   │   │   ├── files
+│   │   │   │   └── bashrc
+│   │   │   ├── tasks
+│   │   │   │   └── main.yml
+│   │   │   └── templates
+│   │   │       └── motd.j2
+│   │   ├── docker
+│   │   │   ├── defaults
+│   │   │   │   └── main.yml
+│   │   │   ├── handlers
+│   │   │   │   └── main.yml
+│   │   │   ├── meta
+│   │   │   │   └── main.yml
+│   │   │   ├── tasks
+│   │   │   │   └── main.yml
+│   │   │   ├── templates
+│   │   │   │   └── daemon.json.j2
+│   │   │   └── vars
+│   │   │       └── main.yml
+│   │   ├── git
+│   │   │   └── tasks
+│   │   │       └── main.yml
+│   │   ├── gitops_operator
+│   │   │   ├── defaults
+│   │   │   ├── handlers
+│   │   │   ├── meta
+│   │   │   ├── tasks
+│   │   │   │   └── main.yml
+│   │   │   ├── templates
+│   │   │   └── vars
+│   │   ├── helm
+│   │   │   ├── defaults
+│   │   │   │   └── main.yml
+│   │   │   ├── handlers
+│   │   │   ├── meta
+│   │   │   │   └── main.yml
+│   │   │   ├── tasks
+│   │   │   │   └── main.yml
+│   │   │   ├── templates
+│   │   │   └── vars
+│   │   ├── infracost
+│   │   │   ├── tasks
+│   │   │   │   └── main.yml
+│   │   │   └── templates
+│   │   ├── java
+│   │   │   ├── defaults
+│   │   │   │   └── main.yml
+│   │   │   ├── handlers
+│   │   │   ├── meta
+│   │   │   │   └── main.yml
+│   │   │   ├── tasks
+│   │   │   │   └── main.yml
+│   │   │   ├── templates
+│   │   │   └── vars
+│   │   │       └── main.yml
+│   │   ├── jenkins
+│   │   │   ├── defaults
+│   │   │   │   └── main.yml
+│   │   │   ├── handlers
+│   │   │   │   └── main.yml
+│   │   │   ├── meta
+│   │   │   │   └── main.yml
+│   │   │   ├── tasks
+│   │   │   │   └── main.yml
+│   │   │   ├── templates
+│   │   │   └── vars
+│   │   │       └── main.yml
+│   │   ├── kubectl
+│   │   │   ├── defaults
+│   │   │   │   └── main.yml
+│   │   │   ├── handlers
+│   │   │   ├── meta
+│   │   │   │   └── main.yml
+│   │   │   ├── tasks
+│   │   │   │   └── main.yml
+│   │   │   ├── templates
+│   │   │   └── vars
+│   │   ├── kubernetes_setup
+│   │   │   ├── defaults
+│   │   │   │   └── main.yml
+│   │   │   ├── files
+│   │   │   ├── handlers
+│   │   │   │   └── main.yml
+│   │   │   ├── meta
+│   │   │   │   └── main.yml
+│   │   │   ├── tasks
+│   │   │   │   └── main.yml
+│   │   │   ├── templates
+│   │   │   └── vars
+│   │   │       └── main.yml
+│   │   ├── maven
+│   │   │   └── tasks
+│   │   │       └── main.yml
+│   │   ├── security_tools
+│   │   │   ├── defaults
+│   │   │   │   └── main.yml
+│   │   │   ├── handlers
+│   │   │   │   └── main.yml
+│   │   │   ├── meta
+│   │   │   │   └── main.yml
+│   │   │   ├── tasks
+│   │   │   │   └── main.yml
+│   │   │   ├── templates
+│   │   │   └── vars
+│   │   ├── sonarqube
+│   │   │   └── tasks
+│   │   │       └── main.yml
+│   │   ├── terraform
+│   │   │   └── tasks
+│   │   │       └── main.yml
+│   │   ├── terragrunt
+│   │   │   └── tasks
+│   │   │       └── main.yml
+│   │   ├── trivy_scan
+│   │   │   ├── defaults
+│   │   │   ├── handlers
+│   │   │   ├── meta
+│   │   │   ├── tasks
+│   │   │   │   └── main.yml
+│   │   │   ├── templates
+│   │   │   └── vars
+│   │   └── vault_integration
+│   │       ├── defaults
+│   │       ├── handlers
+│   │       ├── meta
+│   │       ├── tasks
+│   │       │   └── main.yml
+│   │       ├── templates
+│   │       └── vars
+│   ├── scripts
+│   │   ├── bootstrap.sh
+│   │   └── vault-unseal.sh
+│   ├── templates
+│   │   └── fail2ban_jail_local.j2
+│   ├── tests
+│   │   └── integration
+│   ├── vault
+│   │   ├── config
+│   │   │   └── vault-connection.yml
+│   │   ├── policies
+│   │   └── secrets
+│   │       ├── db-creds.yml
+│   │       └── prod-vault.yml
+│   └── .vault_pass
+├── .devcontainer
+│   └── devcontainer.json
+├── docker
+│   ├── Dockerfile
+│   ├── grafana
+│   │   ├── dashboards
+│   │   │   └── grafana-petclinic-dashboard.json
+│   │   ├── Dockerfile
+│   │   ├── grafana.ini
+│   │   └── provisioning
+│   │       ├── dashboards
+│   │       │   └── all.yml
+│   │       └── datasources
+│   │           └── all.yml
+│   └── prometheus
+│       ├── Dockerfile
+│       └── prometheus.yml
+├── docker-compose.yml
+├── docs
+│   ├── ANSIBLE_DEBUG_LOG.md
+│   ├── application-screenshot.png
+│   ├── ARCHITECTURE.md
+│   ├── CI_CD_DIAGRAM.md
+│   ├── DEPLOYMENT_CHECKLIST.md
+│   ├── DESTRUCTION_GUIDE.md
+│   ├── grafana-custom-metrics-dashboard.png
+│   ├── INFRA_AUDIT.md
+│   ├── INFRASTRUCTURE_COST.md
+│   ├── JAVA21_MIGRATION.md
+│   ├── JENKINS_TROUBLESHOOTING.md
+│   ├── microservices-architecture-diagram.jpg
+│   ├── NETWORK_DIAGRAM.md
+│   ├── PORT_CONFIGURATION.md
+│   ├── PORT_SUMMARY.md
+│   ├── QUICK_REFERENCE.md
+│   ├── README.md
+│   ├── REDUNDANCY_AUDIT.md
+│   ├── REFACTORING_SUMMARY.md
+│   ├── RUNBOOK_AWS_DEPLOY.md
+│   ├── SECURITY_COMPLIANCE.md
+│   ├── spring-ai.png
+│   ├── TERRAFORM_DEPLOYMENT.md
+│   └── TERRAGRUNT_MIGRATION.md
+├── .editorconfig
+├── .git
+│   ├── COMMIT_EDITMSG
+│   ├── config
+│   ├── description
+│   ├── FETCH_HEAD
+│   ├── gk
+│   │   └── config
+│   ├── HEAD
+│   ├── hooks
+│   │   ├── applypatch-msg.sample
+│   │   ├── commit-msg.sample
+│   │   ├── fsmonitor-watchman.sample
+│   │   ├── post-update.sample
+│   │   ├── pre-applypatch.sample
+│   │   ├── pre-commit.sample
+│   │   ├── pre-merge-commit.sample
+│   │   ├── prepare-commit-msg.sample
+│   │   ├── pre-push.sample
+│   │   ├── pre-rebase.sample
+│   │   ├── pre-receive.sample
+│   │   ├── push-to-checkout.sample
+│   │   ├── sendemail-validate.sample
+│   │   └── update.sample
+│   ├── index
+│   ├── info
+│   │   ├── exclude
+│   │   └── refs
+│   ├── logs
+│   │   ├── HEAD
+│   │   └── refs
+│   │       ├── heads
+│   │       │   └── main
+│   │       └── remotes
+│   │           └── origin
+│   │               ├── HEAD
+│   │               └── main
+│   ├── objects
+│   │   ├── 00
+│   │   │   └── 7f1f7a48173c34cc3221636822141f10ed4718
+│   │   ├── 01
+│   │   │   ├── 4614379f048b450e81310bd6ffff5fb1d7911f
+│   │   │   ├── b1bcfa2d32633e05738ae173b3f1fa19af4b3a
+│   │   │   └── eb162a350fc45901fabb6ccaaf7f469f6520eb
+│   │   ├── 02
+│   │   │   ├── 44139cd4b311322fe72f54f306ebd09008ce2d
+│   │   │   └── ad7b1c0aeb64894ca3d220fd881ace1201ba0d
+│   │   ├── 03
+│   │   │   └── 94f74d0714228d22d2aa0759cd407c1e088a02
+│   │   ├── 04
+│   │   │   └── b8cf0a4690e96d1f20f612d9456bad8d120ffa
+│   │   ├── 05
+│   │   │   ├── 0b4328929f8adb6c460d6bb6ce3c4fa2290770
+│   │   │   ├── 162f23ac7dd5341b4195866b29bcd3dd06bdf3
+│   │   │   ├── a4a6a038086a438a0d54b2eac7a0b440e2d39e
+│   │   │   └── c194c349d2c64812e51278f8ed9bbee5e3a568
+│   │   ├── 06
+│   │   │   ├── 6ff5ef08a341b41566ad99abb10d2bbb71a1ff
+│   │   │   └── 954398d62446f1e3efe3d89347f44a2e299407
+│   │   ├── 08
+│   │   │   ├── 8c236a3a0ee984fb1aa1a1ba8643ffe2bb8f7f
+│   │   │   └── c2847df9c962585bbe8747b160d4b281ca1bf0
+│   │   ├── 09
+│   │   │   └── 52f6e37f13262d4f457ff97f125ff263609d4e
+│   │   ├── 0a
+│   │   │   └── 0940099abe1f33b6cc60a4c13f0028916ec0a4
+│   │   ├── 0c
+│   │   │   ├── 7ed8f01e6d583d081f0f24d4b19e105d191798
+│   │   │   ├── 997ac0ea06705000f473b703e4bbd43ebe9b14
+│   │   │   └── e8eb92cd60a2d315cc10811d541f62f2663de7
+│   │   ├── 0e
+│   │   │   └── d84f75d0e36eeed8f20740bc024bfad49e52d2
+│   │   ├── 10
+│   │   │   ├── a5389c3d2d13f83281e5c8bf8b2db3fa5cade5
+│   │   │   └── aa3808dd4a02b6177116ce679ad163290cd91e
+│   │   ├── 11
+│   │   │   └── d5d3d0c40d8f4332ed4fc1e183509d48ca33d8
+│   │   ├── 12
+│   │   │   ├── 82f4f55ded1adeca291db6107f3279acfe6938
+│   │   │   └── bb192c02f4ae196bed58fcaecc54798cb992a3
+│   │   ├── 13
+│   │   │   ├── a5373b6b61f29b0b43cee74cd8350c65dff104
+│   │   │   └── d1a000db905bd60653d65d81217f79e7898d91
+│   │   ├── 14
+│   │   │   ├── 2b24cd9337fbe3769936f9e1318b8d0908b248
+│   │   │   ├── 76d759fe33958a51875a27c7520e8c9097ecd1
+│   │   │   └── 8b964613117006f16d067ef3fbaea3938a1773
+│   │   ├── 15
+│   │   │   ├── 131d50f6c066d5299b56581b6286c574267624
+│   │   │   └── 4c8c6736f1bfd29e525dd76033a52c03773cc3
+│   │   ├── 16
+│   │   │   ├── 912e2035b0b229131052df9ea75a61daee3045
+│   │   │   └── e4af41986a28e20aeffd0b19f234a57fad620a
+│   │   ├── 17
+│   │   │   ├── 8072a237aa5c425419380236f3804684cb0b16
+│   │   │   └── ae676db25c9463272299c2656edc6b6dc85caa
+│   │   ├── 18
+│   │   │   └── 6128ec6115e159b0bf384ce312683d796444af
+│   │   ├── 19
+│   │   │   ├── 25409ce49f3fa5620440000fb41267e7e7aeb9
+│   │   │   └── dae130d7e8df73d1fb4227d38953a436b34783
+│   │   ├── 1c
+│   │   │   └── 2719e4be722ab7dd43be8d9c3a74a072299f98
+│   │   ├── 1d
+│   │   │   ├── e3cb1216e4d0196539dd4e5cdcd961c8c25a1a
+│   │   │   └── f60e3cfbe02bf740e6afc290300faa670daf70
+│   │   ├── 1f
+│   │   │   ├── c3972f74f678991ab9f726c918a58e3851075e
+│   │   │   └── e656387b9c9f9f9a5b79c2982fe13cf7e7f9b2
+│   │   ├── 20
+│   │   │   └── 73b5fde3435429bf7a9d1bb60ec9442cdbf143
+│   │   ├── 21
+│   │   │   ├── 15237a6971dd97b360e9f0161602e2bf11edb3
+│   │   │   ├── 6c142e8f3cd2c797f569a5f5dcc9204ed62dae
+│   │   │   └── f5b3188d4fdae6119e0b46046311e29784b385
+│   │   ├── 23
+│   │   │   └── 5c943fec52db5c88e7af4e101aeae41b2e4624
+│   │   ├── 24
+│   │   │   └── 946bf6d6648889eca7a95af31ef984041941e7
+│   │   ├── 25
+│   │   │   └── f45bbb46550f002aea04487747c23d64e7e8a6
+│   │   ├── 27
+│   │   │   └── 62faf3bfb422fffb99781725f6441e2251ecc0
+│   │   ├── 29
+│   │   │   └── f2eb4c319415286adbe6fd592135a961fe03d9
+│   │   ├── 2b
+│   │   │   └── bc3023c74348ddcb58e848b6c6f5fe331e40bc
+│   │   ├── 2c
+│   │   │   ├── 51cad2093534b8a8219037f075f4a3eaffd754
+│   │   │   ├── d369ffd1e4ad4db6cd7afc54555c69368141f9
+│   │   │   └── f443e9e8c35163501f534e6786a9962a4ba325
+│   │   ├── 2d
+│   │   │   ├── 01b247ceb817099860716458bdc6d28553bfac
+│   │   │   ├── 0eefcc877ee878b24edeebf704dd3cfa9ac1f4
+│   │   │   ├── 3ff35eb9e3e232585aa6fd8b01f2c9ffddcc8f
+│   │   │   └── eae93ff4f70981fd2deb4114be79979246625f
+│   │   ├── 2e
+│   │   │   ├── 48e953b943dbe9e2ee3c15ce0b15623b98bbfd
+│   │   │   ├── 9d90389b1db93bc9140c978165887782d8f1ac
+│   │   │   └── b8de2f80cefc078f1ac06daef154fdeb5ecf9e
+│   │   ├── 2f
+│   │   │   ├── afdee7158b44649121c5ef626a10a33f0f53a4
+│   │   │   └── d294295818fcf4749b8040c43e73ae4a28b6b0
+│   │   ├── 30
+│   │   │   └── 61013281014bdc3ab79ae663373564f7716987
+│   │   ├── 31
+│   │   │   └── 18c696466005da5a3dd55c14f88a66570e342f
+│   │   ├── 32
+│   │   │   ├── 32229156a9db45001bb05819cac85b220d3975
+│   │   │   ├── 7d1d214a21e2b7d73308491f9290a21faae43b
+│   │   │   └── f08209429b37ad89c53d626b0cde2fef3c46ad
+│   │   ├── 34
+│   │   │   ├── d3889d1eab9e639707ed17385ff595cb6bf333
+│   │   │   └── f00d3512bf8f18aedbd152e08e866db6a81cc7
+│   │   ├── 35
+│   │   │   └── a55895305e66757f2fd72ee68648746e5d5493
+│   │   ├── 36
+│   │   │   └── f5ae81bcaa7176be04607420c1137ff09decd1
+│   │   ├── 37
+│   │   │   ├── 1371855e45ff13f27e58a61b38bbcf532318d3
+│   │   │   ├── 72bfb4547606d5430fc54c45824d383ab3b9a7
+│   │   │   ├── d3b963b943f5ff37ec4ea154e3756fd4826694
+│   │   │   └── d7866368775193496b48c6d2f602cef55ca586
+│   │   ├── 38
+│   │   │   └── 1b9a3e2c82504d18ea81538e908d61f6cb113a
+│   │   ├── 39
+│   │   │   └── fc399ce2fa9e0a54b76ade042d873bf6545434
+│   │   ├── 3a
+│   │   │   └── 17e1f6def448ba401b5731e76ccb170e5154e6
+│   │   ├── 3c
+│   │   │   ├── 1f2a953322321fd3b829ca9591bffda8c1d05e
+│   │   │   ├── 420cd4d14b91c49b17a6853f78fc911531fdf2
+│   │   │   ├── 7d67b2195f26f5e9fdfb47de93f5a323474dfc
+│   │   │   ├── aa8e052dfee90cc92a542d0a69da8cd93f1541
+│   │   │   ├── b548948334384877e895a6c1a3f735958a8f2f
+│   │   │   ├── d41067ec7c97022c320f7b847efe2453ad32f7
+│   │   │   └── eb5ac5908eaf0ca91f0c9d81827377478c9acc
+│   │   ├── 3e
+│   │   │   ├── 427781174e4cf80dfebb4be017b540384b07a2
+│   │   │   ├── 53505b9f278d00f43ef96b5b34faf0483f7519
+│   │   │   └── 89a2fef8e65e6c34601f09a726adad8b48ff42
+│   │   ├── 40
+│   │   │   └── d37ddcab0a242806041f70d72662d71a84493b
+│   │   ├── 42
+│   │   │   ├── 07ea0b57c5f75b65662000649fa791728bb1b4
+│   │   │   ├── 6ae5e63279fdc026c99886688f18d36ef98252
+│   │   │   ├── 862865b3785b90b30521c8fe573a355c90df00
+│   │   │   └── b4f378a605141f30eb53f96ef9410211d0d800
+│   │   ├── 43
+│   │   │   └── 5880d9b8ac312e318f54707489e5f8538c0430
+│   │   ├── 44
+│   │   │   ├── 9b150ad5587c354dba78ff535786bdbe16a11a
+│   │   │   └── d7e2ac2558e70603efecce83bc8a9d7f96d037
+│   │   ├── 45
+│   │   │   ├── 3daf170612438ca195e2b7441c05cc80b6aca7
+│   │   │   ├── c6edfdc17ccf3072a40fb2ef62abd59ef0abaa
+│   │   │   └── e0f42a9aa01f3c0a9c710615655f398b156fb1
+│   │   ├── 46
+│   │   │   ├── b5d9073c4f2ff2746ad8882ed404f46b19241f
+│   │   │   └── d2bb70dbfcfd7b1cc6adb49aa721356384d14d
+│   │   ├── 47
+│   │   │   ├── e3a29c02d705284dc2062122fd4ba5567d0d50
+│   │   │   └── e5aeeecb47e4562fb1157ed419d7dbf05b0b64
+│   │   ├── 48
+│   │   │   └── 90ff5b86a710f2e3f80282ce2319e5507879e7
+│   │   ├── 49
+│   │   │   └── 6fc1430b15f100d89a949a24aa09b2299f7661
+│   │   ├── 4a
+│   │   │   └── fefb1d3c6c1a933487bed3ee8b44c43b931504
+│   │   ├── 4b
+│   │   │   ├── 2c054bd254cb3416a86492e8d26bfec2e6a598
+│   │   │   └── 98f5d2c94a7e07d85da21d22a6c6c169e3843f
+│   │   ├── 4d
+│   │   │   └── 940e8346111a9ff2d02d34bc24c4359c443539
+│   │   ├── 4e
+│   │   │   └── 919eda7071709469a2e16358f07e7a062853e3
+│   │   ├── 4f
+│   │   │   └── f922c0bf3c8c0c22e7b53ca2ed0dc9204a47d8
+│   │   ├── 50
+│   │   │   ├── a206aa8735ff3c9cfd4b6ac85c14fe28d7a82d
+│   │   │   ├── d57d6203a6ae94f724d0e8d4ab81fd982e8f49
+│   │   │   └── e98835e5470db18c19a2af7348def125a90f73
+│   │   ├── 54
+│   │   │   ├── ac3d9350f47ec9618aeab4ff3b9ae1423da089
+│   │   │   └── df282bf5785edc82f7e131655c112207aae03c
+│   │   ├── 55
+│   │   │   └── 4be10fdf3ce3bc96324ea5474e2520de88650e
+│   │   ├── 56
+│   │   │   └── 3bf16749661f47ece89c72893f48b022576433
+│   │   ├── 57
+│   │   │   └── 01e296990fb689791010884b0b6107adfaaf7a
+│   │   ├── 58
+│   │   │   └── 5e11c7575a0bc4872d914a0471211f203cc974
+│   │   ├── 59
+│   │   │   └── da90778b29056a5faf4ac4947010816e98abd7
+│   │   ├── 5a
+│   │   │   └── e6d82600b855af0b24fb3ddbb17f45e1209cf0
+│   │   ├── 5b
+│   │   │   └── ef713b07b4551fcefc1b28d346454a240bc042
+│   │   ├── 5c
+│   │   │   ├── 03099930fdad5a0f0c149611534d0e5da86e64
+│   │   │   ├── 18423d01522759929436b025fbfc3537a9fe56
+│   │   │   └── 67f34cd836c37db1ed2b36c272ee8cd8bf7d62
+│   │   ├── 5d
+│   │   │   └── 22fb6f403235c4d67466b9feba3111f64c20e3
+│   │   ├── 5e
+│   │   │   ├── 2187daed00bb888651bae9335b7ca834fe8aa3
+│   │   │   └── 4cd6207c5a95565d5e9db6acafd0da94305a4d
+│   │   ├── 60
+│   │   │   ├── 50722cb2def890b058d508f8eedbd7b22974a0
+│   │   │   └── 61f7f5dece34d15a48e45bc14d1246a4f72246
+│   │   ├── 61
+│   │   │   └── 6cf6860f26d79b65a2c67036e09474881cb9d9
+│   │   ├── 62
+│   │   │   └── 0e7b95bd8c8c6c9981044a68b3086c36a9cd8a
+│   │   ├── 63
+│   │   │   ├── 02f0af7a171f7ce4dac80bb7507c52e7863424
+│   │   │   └── e713bd6b6673b86a0851775a2a76f6d612aa24
+│   │   ├── 64
+│   │   │   ├── 0f8aa4e895eebbea2107486433ce161c280c3d
+│   │   │   └── 6464c3d69cd6c2470516f4a42ff949a5e05266
+│   │   ├── 65
+│   │   │   ├── 11557b7c4d3ca31254d7bf3a20387649448251
+│   │   │   ├── 4e566ddb112060ff9cbabbc2ced7b98a3bda6a
+│   │   │   └── b85c4b3088586abfa0a737dbf1860aa3a959da
+│   │   ├── 67
+│   │   │   ├── 05508b311bba25d2d1270762671741361ee97c
+│   │   │   └── fd7448580d1fcc9da276946aa8948af5d4c14a
+│   │   ├── 68
+│   │   │   └── 351ee8a93ebe71616a365aaf36d8a5ddc2e0ab
+│   │   ├── 6a
+│   │   │   └── 277fefe6e14103c017eee59f53530ce44564c6
+│   │   ├── 6b
+│   │   │   └── 051bd2a7620e2076b501eb7d680ad24dc0c72d
+│   │   ├── 6d
+│   │   │   ├── 8234a2b82c01acd8e09e68c7e77fbc14e561ac
+│   │   │   ├── 909e1a1171d223ce9aa9c8f65ca7a84e169898
+│   │   │   └── 99766f112cb394a03afc115ec99a3cb3de82f9
+│   │   ├── 70
+│   │   │   └── dc8b7a09459b64efada336d575eed139ef795d
+│   │   ├── 72
+│   │   │   ├── 58eba5bd54d30d724f1bbe8ab1a9d252f228f0
+│   │   │   └── f5ad2111a7f80d333d50dc9de81792bda4ae86
+│   │   ├── 73
+│   │   │   └── c70db4f20230f44b2814ae12a876d9a52a6a60
+│   │   ├── 75
+│   │   │   └── f36c8935b8c7b4130ef752938b3ebb0bed1cb5
+│   │   ├── 76
+│   │   │   └── f4dd8e9cf6c1b2018d75d554f54bb33ce3a32e
+│   │   ├── 78
+│   │   │   ├── 4107987fec1848037e6eea449835446969659b
+│   │   │   ├── d9d6f3ea4db820cf2a6354f604f246b721973a
+│   │   │   └── e9e7ff7addaf28ba2cd07047d10a10f10ffbac
+│   │   ├── 79
+│   │   │   ├── 4b2c76fdfffc88332f0d0767365efc1d801932
+│   │   │   └── aedac8a9cf903452f5c81f2325116c42cb614c
+│   │   ├── 7a
+│   │   │   └── 42e8da277d724c82a7e7db9df27545047b9e54
+│   │   ├── 7b
+│   │   │   └── 17357d632cb2556b124d136939d376b66a378a
+│   │   ├── 7c
+│   │   │   └── 17d4c245fa3d68c1858d4aa56eb99bffb3bb8f
+│   │   ├── 7e
+│   │   │   ├── 3b05ff53ebb9e3df918b8aa138b4d4559d1035
+│   │   │   ├── 5acf196eaf5ae53154cbfd113dadc917a0c25e
+│   │   │   └── c44cc631e5bf570b84db81099f8a39b7f6a923
+│   │   ├── 82
+│   │   │   └── d3ae0c401924051bc08bf5373d655f2c3afa92
+│   │   ├── 84
+│   │   │   ├── 0996524dd73c6b229a4a9809ac110c4be3eca1
+│   │   │   ├── e95b0df59a01a4cab29c1884eac9cef077b21a
+│   │   │   └── ff2e4b82b151a68879762d07dc20dd37e1b62a
+│   │   ├── 86
+│   │   │   ├── 1e5cc1d3f3eec1deee200b5129ba6b49cc04fd
+│   │   │   └── 98fd6ef604ba8de4949113ceac389d49a8aa36
+│   │   ├── 87
+│   │   │   ├── 73249e7fc908e9c5c3f53d4058e77f51602e59
+│   │   │   └── d6cc5e1b2274dde0ffa60100dd921e9e9e783f
+│   │   ├── 88
+│   │   │   ├── 2c3ebdfe4c48ceef21e6f2bbe54a4126dea289
+│   │   │   └── 948d1686d3c6a087c8ddf8f6912811a5b52596
+│   │   ├── 89
+│   │   │   └── 471498b079360b2fd739e444a2fe45486ac4d1
+│   │   ├── 8a
+│   │   │   └── 549537111fc7bab97cb5bc8d1dacfadab63fb9
+│   │   ├── 8b
+│   │   │   ├── 24dc3b729ef2619e6cc19dcd73537dfeeedf36
+│   │   │   └── fc6f9e320a4033429f107ffabf6c7ae4fd792b
+│   │   ├── 8c
+│   │   │   ├── b7401247617538a835f6d8d8d68411607333d1
+│   │   │   └── f9c0c655da7396359098bf67aa8531c7e6c986
+│   │   ├── 8d
+│   │   │   ├── 7ec23dd5512bfacad4690ca5248642a2fe5c96
+│   │   │   └── b0387ca32120242835bf1a3894d2e63fe1f93f
+│   │   ├── 8e
+│   │   │   └── 32509e9f8484d7a9ee4ce07ebed2ce898d0071
+│   │   ├── 8f
+│   │   │   └── f73134285313e07079973577d33cd2f8e41b77
+│   │   ├── 90
+│   │   │   ├── 0cbcfc574ea59af617a58dd588f89901f5c33c
+│   │   │   └── 875d38e8ab5155fa73a7d0deaf2d51d2e5d9c6
+│   │   ├── 92
+│   │   │   └── 6be115fd062efb9ed885762c2c938e5effe5fe
+│   │   ├── 93
+│   │   │   ├── 37a5d739da2142e41dedd5772aebf968391dc8
+│   │   │   └── 5800c48cc8aa82d74622ae3f993715792a7b6b
+│   │   ├── 94
+│   │   │   └── ed14cb1a28d900dda7f17310e14ca533fcf1d7
+│   │   ├── 95
+│   │   │   ├── 047d5641c62c08f18e8cd90d08f0d80165e11d
+│   │   │   ├── d46475424dd6958f6310699af0b6db3fc8f4c0
+│   │   │   └── f694a0750268e6005b9fa7761550bff51c3183
+│   │   ├── 96
+│   │   │   └── 46fa89fd67daa537725d25257e2829cfa3a8e0
+│   │   ├── 97
+│   │   │   ├── 6b521c5f48634302e1f85e60b5bd611a217f39
+│   │   │   └── c7515f05ed527756befe9efccfb646b8e3fcfd
+│   │   ├── 98
+│   │   │   └── b9dab4d88590ff98f905bc7d295898bf18d6fa
+│   │   ├── 99
+│   │   │   ├── 99a3d33d9821087c761ead583c99cc66005e5d
+│   │   │   └── d2791319fa98f84c49801d146afaf2591d65da
+│   │   ├── 9b
+│   │   │   └── e1a4de923a437b1b5d1cf2a7c86f6b6fb080e9
+│   │   ├── 9c
+│   │   │   ├── 5b4a836c0a3e0163ea959bf6c5ade33d881ca7
+│   │   │   └── 92d8351ceec86d60aa9a2362fb77085a4d0953
+│   │   ├── 9e
+│   │   │   ├── 4a75f2a52b729d18c70d76a8052dc18c55d9d7
+│   │   │   └── 9fa3ab88ac6749b99496d7d7fae89674927538
+│   │   ├── 9f
+│   │   │   └── c930912f60163de31b16fd62f7dcf3058a1516
+│   │   ├── a0
+│   │   │   └── 118c6d05d9020535218a20566027c41136d126
+│   │   ├── a1
+│   │   │   └── bef6d5a308c4e8cf01c9d53ece1fde5a5f4483
+│   │   ├── a2
+│   │   │   ├── 1c248b49e7a18894105579334c81cba7c7e60f
+│   │   │   └── 810fef13b1769a4efb3f7b737c824ee6333bd4
+│   │   ├── a3
+│   │   │   ├── 9851e5ff1478ff2e0ee30822f041f16a709330
+│   │   │   └── e9eaa9d9ef2f0622202b72c9fdbd49dd336243
+│   │   ├── a4
+│   │   │   └── 2f98c263d6597e2ec391a8bad26fc2b3caf522
+│   │   ├── a5
+│   │   │   └── 5a95c2f50c81135cc343c19aea25d929b62a0c
+│   │   ├── a6
+│   │   │   └── 8cbdadd8822cc01047fc5de36a77b800420afd
+│   │   ├── a7
+│   │   │   └── 82c69ca9e869add995950631312c9f555c0c40
+│   │   ├── a8
+│   │   │   └── 216f3156dac5eb83bfae1e31d55440478f28a7
+│   │   ├── a9
+│   │   │   └── 3fcf2a2bd0f29d8df8d5e25a20e32397fa5479
+│   │   ├── aa
+│   │   │   ├── d2518c17ec60caf3e0f724c4f7f9be63f4860e
+│   │   │   └── d476b0f7d5a6c0d8dce019b395c442a12cf001
+│   │   ├── ad
+│   │   │   ├── 29c21896e00aeda5dbf0a3766061a9f065cc65
+│   │   │   └── da897a1c22c01f684405a7e54d42a48224dc72
+│   │   ├── ae
+│   │   │   └── 6d92089b284b726643aff1e6d8e62266576397
+│   │   ├── b3
+│   │   │   └── fbaa05fed7e8d0b9f43a5545b814a109bc954f
+│   │   ├── b4
+│   │   │   ├── c15d657637d3c2daeac39bcfd17736a0f3e922
+│   │   │   └── fe399847b9bb3d31d5a1ece0c6e80c38b21c69
+│   │   ├── b5
+│   │   │   ├── 8cee968486addabae7bd12f480f8a1bbb60a89
+│   │   │   ├── 8df4927bd340e82692b5dea51cea87d912550a
+│   │   │   ├── 9fcef3a1c07609f371886651fd01cbb88472ac
+│   │   │   └── c66739bb54c0af377f7ce6424f453cdab4d229
+│   │   ├── b6
+│   │   │   ├── 692b325024f98e52c4acd61e68716e8be44410
+│   │   │   ├── 793b76e95be4a6784959475184ca8d8d69b825
+│   │   │   └── bf5b15590f185d572493cd3fcb57adc75e1c1f
+│   │   ├── b7
+│   │   │   └── 28196da7d027cc78d63aa68a6c9e55b3b15a18
+│   │   ├── b8
+│   │   │   └── 1c4234023c21f27353abca42538d18ac5fc421
+│   │   ├── b9
+│   │   │   └── 684f583c0f2afd0b09cfb84b45b6f41fd92dfb
+│   │   ├── ba
+│   │   │   ├── 688aeb4295b0e2d2137ed39da3b8b8e4e937dc
+│   │   │   └── dee49d6993d58e5f4bf7b64b54e3203388c17f
+│   │   ├── bb
+│   │   │   ├── aecd11db1ca74765fe9f64251d3731a58f3963
+│   │   │   └── af788703049470ddbed401274d87a2fd2b901c
+│   │   ├── bc
+│   │   │   └── b4f833872cba8bcaf262af0fc845b4cf868030
+│   │   ├── bd
+│   │   │   └── c60a7a9eae4a2b2c0e1ad9a611a089cd08a183
+│   │   ├── be
+│   │   │   └── 6eb1b46cca9d64a842b2f0152f546129edaefd
+│   │   ├── c0
+│   │   │   ├── 52d04aff6e7fcbf37fd79aa4d495c28a269066
+│   │   │   ├── b17c916854d592d2d61e3d4e9ce74ad7d5ea83
+│   │   │   └── d32fc250a9a4c805cb88c443fcef58edec4ce1
+│   │   ├── c1
+│   │   │   ├── bc220e6859019290b641e13e6b237a05e15d27
+│   │   │   └── f6de5681b89a54b66dde5e58b33754f8cd4805
+│   │   ├── c2
+│   │   │   ├── 0db3c7a49a59cfb4f49c4edcf3d1f3e0e869b9
+│   │   │   └── cf53e74c455f5821ee5097912611b2aca24395
+│   │   ├── c4
+│   │   │   ├── 61d2d34a584905283197d26268184d6b159572
+│   │   │   └── cd0768945528bf3db80207af24670ce557c4b3
+│   │   ├── c6
+│   │   │   ├── 16c3a3f7b9f7d71a90f82ad7982e19f1bc3f7f
+│   │   │   └── 8c9233e422ebeaaf3d6fc8765f223fd4eae5a2
+│   │   ├── c8
+│   │   │   └── 76cb825b914f7c9ad7850c86b7629d49b2fd5b
+│   │   ├── c9
+│   │   │   └── 66148b22bf9eedfbc9eddb9d8cb6534d073d0d
+│   │   ├── cb
+│   │   │   ├── 1dac6f841763b7862dabbbc90d1fa0e42d9d61
+│   │   │   └── 50507193b01405da1a1b6b70227ca10ef7d3f2
+│   │   ├── cc
+│   │   │   └── caea9e26bdce7586dee8f994b7e624c5ebf1b3
+│   │   ├── cd
+│   │   │   ├── 0b7673eaaf40bfcbe7c1598b34699672faf9cc
+│   │   │   └── c32cfcacd0f9637c28e5c8d73b808ecd7fbd95
+│   │   ├── cf
+│   │   │   ├── bf8b1addd6604623746b1af48aaef2e382dff0
+│   │   │   └── d9d60f005cd6dc170b7331c09051e17e980c33
+│   │   ├── d0
+│   │   │   ├── 537e9b284243ddd37b26a6629828d966e13d41
+│   │   │   └── 8b13ca46d4b0ce36df754ba9f126c452f14162
+│   │   ├── d2
+│   │   │   ├── 2f2530f16fba03840185a3a494209d0b0bc279
+│   │   │   ├── 36b5bae4cefff79bb0ec1d0d92735b7b729b42
+│   │   │   ├── 5056d7c735e3b7ea481e80bccc2cba28141aed
+│   │   │   ├── a2619a98a01dd09fddf47b3a73de35666bad47
+│   │   │   └── d01e23bb86832f906f9c1cfdf25d26e75b67ed
+│   │   ├── d4
+│   │   │   └── 08f5a3bff7820bcce16c4134ce126bd3fd8b54
+│   │   ├── d7
+│   │   │   └── f250f1202d1f4d58996f9c4a792d638752cfa2
+│   │   ├── d8
+│   │   │   └── a1a52f022fbef3a605fea1f82a1259612852d8
+│   │   ├── da
+│   │   │   └── 5a5410bdd1c187795a7dc52ad03e0b2716b018
+│   │   ├── db
+│   │   │   ├── 0f4fc491429c3d57eb63942c5ef4dfed0a1440
+│   │   │   └── 751e45161816cd9637f9af068e9363d9280a34
+│   │   ├── de
+│   │   │   └── 63a2927ffb79d81b3f60ed5622d6654d414514
+│   │   ├── e2
+│   │   │   ├── 49b57e65e208916ab94b3671541b6460ab66e8
+│   │   │   └── c9d6929edaf1bf4639653a1694c7459e4b550e
+│   │   ├── e3
+│   │   │   ├── 9246f930f31c6f52aba5058b451f6fd3099e0b
+│   │   │   └── ad45fc1ee81ff70acc0c9a2b7878d11bd1c27f
+│   │   ├── e5
+│   │   │   ├── 261721f44f9760739c1f56996ea1f9dd220049
+│   │   │   ├── 505a2fa5eb86a837bff45efcaadefaab01b8f5
+│   │   │   └── 89b0205a7dee3661c3d00250fd30a3012c99bd
+│   │   ├── e6
+│   │   │   ├── 7dca257632545030611098e9d36bcb0a4998b1
+│   │   │   └── b4f8c9a5ed628254b8da55b2a206380d9f4a7a
+│   │   ├── e7
+│   │   │   ├── 64147fd17694f7277cc383528eef47052ea41b
+│   │   │   └── 920912857e622c9b174b49d6e83561e5953122
+│   │   ├── e8
+│   │   │   └── 8ff2a885117c7fef56af5ce478b382e46b8db2
+│   │   ├── ea
+│   │   │   └── 2d64df4aef6ea7d5288d2fa77d96eac918a355
+│   │   ├── eb
+│   │   │   └── c80ca8ead07c64309aad26c0c356d119cfb959
+│   │   ├── ec
+│   │   │   ├── 68289db5f8aef627e04b0d577f7002920a18fb
+│   │   │   └── dd33cebf38a0e6468bce457bf48a9a62b32c91
+│   │   ├── ed
+│   │   │   └── dbe263a539f0e07f5ed24d43d85acfa80fcefd
+│   │   ├── ee
+│   │   │   └── aff9ffd78b376c21c87910fe7e0eacc47cda9b
+│   │   ├── ef
+│   │   │   └── 3c144837ed2c3b161490d91753ef2fe036ec02
+│   │   ├── f0
+│   │   │   └── 744d8b3aeeab43c2fb9019d0949ea94bf2e363
+│   │   ├── f2
+│   │   │   ├── 78b7c0b4bd2f2ca55ddeb6b374de2d432c29f3
+│   │   │   └── db4d8806c47915bace402177081016f3835ced
+│   │   ├── f4
+│   │   │   └── de0efc5022698a515054fc771f3305ab5f64e6
+│   │   ├── f5
+│   │   │   ├── 94f23d7710ceb8281c6c93671d7ee9945c0f88
+│   │   │   └── c17665167f8f4c0df3ac87770d98722a9daee9
+│   │   ├── f6
+│   │   │   └── 0d2ed9918129eae784ad403dc39d5cdcfa6ba3
+│   │   ├── f7
+│   │   │   └── 26f14120a892e21b9c5ee07cd84bd7a22b186a
+│   │   ├── fb
+│   │   │   └── 7dc4d4e48fee52cf7688be77b45e6c39af1897
+│   │   ├── fc
+│   │   │   ├── 403b3378f28f0ce64512947dfe4fe9bbfa8995
+│   │   │   └── a5e2b3c40e482e6ca145c5b883ecfa2d2c8f7c
+│   │   ├── fd
+│   │   │   └── 8306e108fd32514c496a96f4f6956591d2dde6
+│   │   ├── fe
+│   │   │   └── e35aa5fb2d7013a011bd8167915c48c7c4b7a6
+│   │   ├── info
+│   │   │   ├── commit-graph
+│   │   │   └── packs
+│   │   └── pack
+│   │       ├── pack-43d46fa10be62fefd8ac36acb9557f413009a6c5.idx
+│   │       ├── pack-43d46fa10be62fefd8ac36acb9557f413009a6c5.pack
+│   │       ├── pack-43d46fa10be62fefd8ac36acb9557f413009a6c5.rev
+│   │       ├── pack-a22eec5865f2a26fe0d84a6fe23fe67fd61c24b9.idx
+│   │       ├── pack-a22eec5865f2a26fe0d84a6fe23fe67fd61c24b9.pack
+│   │       └── pack-a22eec5865f2a26fe0d84a6fe23fe67fd61c24b9.rev
+│   ├── ORIG_HEAD
+│   ├── packed-refs
+│   └── refs
+│       ├── heads
+│       │   └── main
+│       ├── remotes
+│       │   └── origin
+│       │       ├── HEAD
+│       │       └── main
+│       └── tags
+├── .gitattributes
+├── git-command.py
+├── .github
+│   └── workflows
+│       └── maven-build.yml
+├── .gitignore
+├── inputs.txt
+├── jenkins
+│   ├── jenkins.yaml
+│   ├── jobs
+│   │   ├── job-configs.xml
+│   │   └── seed-job.groovy
+│   ├── pipelines
+│   │   ├── deployment-pipeline.groovy
+│   │   ├── security-scan-pipeline.groovy
+│   │   └── spring-petclinic-cicd-pipeline.groovy
+│   ├── plugins.txt
+│   └── secrets
+│       ├── credentials.xml
+│       └── secret-templates.xml
+├── Jenkinsfile
+├── k8s
+│   ├── apps
+│   │   ├── admin-server
+│   │   │   └── admin-server.yaml
+│   │   ├── api-gateway
+│   │   │   └── api-gateway.yaml
+│   │   ├── config-server
+│   │   │   └── config-server.yaml
+│   │   ├── customers-service
+│   │   │   └── customers-service.yaml
+│   │   ├── discovery-server
+│   │   │   └── discovery-server.yaml
+│   │   ├── genai-service
+│   │   │   └── genai-service.yaml
+│   │   ├── vets-service
+│   │   │   └── vets-service.yaml
+│   │   └── visits-service
+│   │       └── visits-service.yaml
+│   ├── base
+│   │   ├── admin-server.yaml
+│   │   ├── api-gateway.yaml
+│   │   ├── configmap.yaml
+│   │   ├── config-server.yaml
+│   │   ├── customers-service.yaml
+│   │   ├── deployment.yaml
+│   │   ├── discovery-server.yaml
+│   │   ├── genai-service.yaml
+│   │   ├── hpa.yaml
+│   │   ├── ingress.yaml
+│   │   ├── kustomization.yaml
+│   │   ├── namespace.yaml
+│   │   ├── rbac.yaml
+│   │   ├── service.yaml
+│   │   ├── vets-service.yaml
+│   │   └── visits-service.yaml
+│   ├── helm
+│   ├── manifests
+│   │   ├── argocd
+│   │   ├── monitoring
+│   │   └── security
+│   ├── namespaces
+│   │   └── petclinic-namespace.yaml
+│   └── overlays
+│       ├── dev
+│       │   ├── configmap.yaml
+│       │   ├── deployment-patch.yaml
+│       │   └── kustomization.yaml
+│       ├── prod
+│       │   ├── configmap.yaml
+│       │   ├── deployment-patch.yaml
+│       │   ├── kustomization.yaml
+│       │   └── secrets.yaml
+│       └── staging
+│           ├── configmap.yaml
+│           ├── deployment-patch.yaml
+│           └── kustomization.yaml
+├── LICENSE
+├── .mvn
+│   └── wrapper
+│       ├── maven-wrapper.jar
+│       └── maven-wrapper.properties
+├── mvnw
+├── mvnw.cmd
+├── .obsidian
+│   ├── appearance.json
+│   ├── app.json
+│   ├── backlink.json
+│   ├── community-plugins.json
+│   ├── core-plugins.json
+│   ├── graph.json
+│   ├── page-preview.json
+│   ├── plugins
+│   │   ├── code-emitter
+│   │   │   ├── main.js
+│   │   │   ├── manifest.json
+│   │   │   └── styles.css
+│   │   ├── editing-toolbar
+│   │   │   ├── data.json
+│   │   │   ├── main.js
+│   │   │   ├── manifest.json
+│   │   │   └── styles.css
+│   │   ├── highlightr-plugin
+│   │   │   ├── data.json
+│   │   │   ├── main.js
+│   │   │   ├── manifest.json
+│   │   │   └── styles.css
+│   │   ├── mermaid-popup
+│   │   │   ├── main.js
+│   │   │   ├── manifest.json
+│   │   │   └── styles.css
+│   │   ├── mermaid-themes
+│   │   │   ├── main.js
+│   │   │   ├── manifest.json
+│   │   │   └── styles.css
+│   │   ├── mermaid-tools
+│   │   │   ├── main.js
+│   │   │   ├── manifest.json
+│   │   │   └── styles.css
+│   │   ├── obsidian-emoji-toolbar
+│   │   │   ├── data.json
+│   │   │   ├── main.js
+│   │   │   ├── manifest.json
+│   │   │   └── styles.css
+│   │   ├── obsidian-git
+│   │   │   ├── main.js
+│   │   │   ├── manifest.json
+│   │   │   └── styles.css
+│   │   ├── obsidian-linter
+│   │   │   ├── data.json
+│   │   │   ├── main.js
+│   │   │   ├── manifest.json
+│   │   │   └── styles.css
+│   │   ├── obsidian-mind-map
+│   │   │   ├── main.js
+│   │   │   └── manifest.json
+│   │   ├── obsidian-shellcommands
+│   │   │   ├── main.js
+│   │   │   ├── manifest.json
+│   │   │   └── styles.css
+│   │   └── table-editor-obsidian
+│   │       ├── data.json
+│   │       ├── main.js
+│   │       ├── manifest.json
+│   │       └── styles.css
+│   ├── snippets
+│   │   └── view.css
+│   ├── themes
+│   │   ├── GitHub Theme
+│   │   │   ├── manifest.json
+│   │   │   └── theme.css
+│   │   ├── Obsidianite
+│   │   │   ├── manifest.json
+│   │   │   └── theme.css
+│   │   ├── Ono Sendai
+│   │   │   ├── manifest.json
+│   │   │   └── theme.css
+│   │   └── Things
+│   │       ├── manifest.json
+│   │       └── theme.css
+│   ├── workspace.json
+│   └── workspaces.json
+├── pom.xml
+├── PROJECT_UPDATE_SUMMARY.md
+├── README.md
+├── scripts
+│   ├── ansible
+│   │   ├── inventory-sync.sh
+│   │   └── run-playbook.sh
+│   ├── chaos
+│   │   ├── attacks_disable.json
+│   │   ├── attacks_enable_exception.json
+│   │   ├── attacks_enable_killapplication.json
+│   │   ├── attacks_enable_latency.json
+│   │   ├── attacks_enable_memory.json
+│   │   ├── call_chaos.sh
+│   │   ├── README.md
+│   │   ├── watcher_disable.json
+│   │   ├── watcher_enable_component.json
+│   │   ├── watcher_enable_controller.json
+│   │   ├── watcher_enable_repository.json
+│   │   ├── watcher_enable_restcontroller.json
+│   │   └── watcher_enable_service.json
+│   ├── deployment
+│   │   ├── deploy-app.sh
+│   │   └── rollback-app.sh
+│   ├── pushImages.sh
+│   ├── run_all.sh
+│   ├── security
+│   │   ├── compliance-check.sh
+│   │   ├── scan-images.sh
+│   │   └── validate-secrets.sh
+│   ├── tagImages.sh
+│   └── terraform
+│       ├── apply-all.sh
+│       ├── backend_setup.sh
+│       ├── init-all.sh
+│       ├── plan-all.sh
+│       └── .terraform_bucket_name
+├── spring-petclinic-admin-server
+│   ├── pom.xml
+│   ├── src
+│   │   └── main
+│   │       ├── java
+│   │       │   └── org
+│   │       │       └── springframework
+│   │       │           └── samples
+│   │       │               └── petclinic
+│   │       │                   └── admin
+│   │       │                       └── SpringBootAdminApplication.java
+│   │       └── resources
+│   │           ├── application.yml
+│   │           └── logback-spring.xml
+│   └── target
+│       ├── classes
+│       │   ├── application.yml
+│       │   ├── git.properties
+│       │   ├── logback-spring.xml
+│       │   ├── META-INF
+│       │   │   └── build-info.properties
+│       │   └── org
+│       │       └── springframework
+│       │           └── samples
+│       │               └── petclinic
+│       │                   └── admin
+│       │                       └── SpringBootAdminApplication.class
+│       ├── generated-sources
+│       │   └── annotations
+│       ├── maven-status
+│       │   └── maven-compiler-plugin
+│       │       └── compile
+│       │           └── default-compile
+│       │               └── inputFiles.lst
+│       └── test-classes
+├── spring-petclinic-api-gateway
+│   ├── .gitignore
+│   ├── pom.xml
+│   ├── src
+│   │   ├── main
+│   │   │   ├── java
+│   │   │   │   └── org
+│   │   │   │       └── springframework
+│   │   │   │           └── samples
+│   │   │   │               └── petclinic
+│   │   │   │                   └── api
+│   │   │   │                       ├── ApiGatewayApplication.java
+│   │   │   │                       ├── application
+│   │   │   │                       │   ├── CustomersServiceClient.java
+│   │   │   │                       │   └── VisitsServiceClient.java
+│   │   │   │                       ├── boundary
+│   │   │   │                       │   └── web
+│   │   │   │                       │       ├── ApiGatewayController.java
+│   │   │   │                       │       └── FallbackController.java
+│   │   │   │                       └── dto
+│   │   │   │                           ├── OwnerDetails.java
+│   │   │   │                           ├── PetDetails.java
+│   │   │   │                           ├── PetType.java
+│   │   │   │                           ├── VisitDetails.java
+│   │   │   │                           └── Visits.java
+│   │   │   └── resources
+│   │   │       ├── application.yml
+│   │   │       ├── logback-spring.xml
+│   │   │       ├── messages
+│   │   │       │   ├── messages_de.properties
+│   │   │       │   ├── messages_en.properties
+│   │   │       │   └── messages.properties
+│   │   │       └── static
+│   │   │           ├── css
+│   │   │           │   ├── header.css
+│   │   │           │   ├── petclinic.css
+│   │   │           │   ├── responsive.css
+│   │   │           │   └── typography.css
+│   │   │           ├── fonts
+│   │   │           │   ├── montserrat-webfont.eot
+│   │   │           │   ├── montserrat-webfont.svg
+│   │   │           │   ├── montserrat-webfont.ttf
+│   │   │           │   ├── montserrat-webfont.woff
+│   │   │           │   ├── varela_round-webfont.eot
+│   │   │           │   ├── varela_round-webfont.svg
+│   │   │           │   ├── varela_round-webfont.ttf
+│   │   │           │   └── varela_round-webfont.woff
+│   │   │           ├── images
+│   │   │           │   ├── favicon.png
+│   │   │           │   ├── pets.png
+│   │   │           │   ├── platform-bg.png
+│   │   │           │   ├── spring-logo-dataflow-mobile.png
+│   │   │           │   ├── spring-logo-dataflow.png
+│   │   │           │   └── spring-pivotal-logo.png
+│   │   │           ├── index.html
+│   │   │           ├── scripts
+│   │   │           │   ├── app.js
+│   │   │           │   ├── fragments
+│   │   │           │   │   ├── footer.html
+│   │   │           │   │   ├── nav.html
+│   │   │           │   │   └── welcome.html
+│   │   │           │   ├── genai
+│   │   │           │   │   └── chat.js
+│   │   │           │   ├── infrastructure
+│   │   │           │   │   ├── httpErrorHandlingInterceptor.js
+│   │   │           │   │   └── infrastructure.js
+│   │   │           │   ├── owner-details
+│   │   │           │   │   ├── owner-details.component.js
+│   │   │           │   │   ├── owner-details.controller.js
+│   │   │           │   │   ├── owner-details.js
+│   │   │           │   │   └── owner-details.template.html
+│   │   │           │   ├── owner-form
+│   │   │           │   │   ├── owner-form.component.js
+│   │   │           │   │   ├── owner-form.controller.js
+│   │   │           │   │   ├── owner-form.js
+│   │   │           │   │   └── owner-form.template.html
+│   │   │           │   ├── owner-list
+│   │   │           │   │   ├── owner-list.component.js
+│   │   │           │   │   ├── owner-list.controller.js
+│   │   │           │   │   ├── owner-list.js
+│   │   │           │   │   └── owner-list.template.html
+│   │   │           │   ├── pet-form
+│   │   │           │   │   ├── pet-form.component.js
+│   │   │           │   │   ├── pet-form.controller.js
+│   │   │           │   │   ├── pet-form.js
+│   │   │           │   │   └── pet-form.template.html
+│   │   │           │   ├── vet-list
+│   │   │           │   │   ├── vet-list.component.js
+│   │   │           │   │   ├── vet-list.controller.js
+│   │   │           │   │   ├── vet-list.js
+│   │   │           │   │   └── vet-list.template.html
+│   │   │           │   └── visits
+│   │   │           │       ├── visits.component.js
+│   │   │           │       ├── visits.controller.js
+│   │   │           │       ├── visits.js
+│   │   │           │       └── visits.template.html
+│   │   │           └── scss
+│   │   │               ├── header.scss
+│   │   │               ├── petclinic.scss
+│   │   │               ├── responsive.scss
+│   │   │               └── typography.scss
+│   │   └── test
+│   │       ├── java
+│   │       │   └── org
+│   │       │       └── springframework
+│   │       │           └── samples
+│   │       │               └── petclinic
+│   │       │                   └── api
+│   │       │                       ├── ApiGatewayApplicationTests.java
+│   │       │                       ├── application
+│   │       │                       │   └── VisitsServiceClientIntegrationTest.java
+│   │       │                       └── boundary
+│   │       │                           └── web
+│   │       │                               ├── ApiGatewayControllerTest.java
+│   │       │                               └── CircuitBreakerConfiguration.java
+│   │       ├── jmeter
+│   │       │   └── petclinic_test_plan.jmx
+│   │       └── resources
+│   │           └── application-test.yml
+│   └── target
+│       ├── classes
+│       │   ├── application.yml
+│       │   ├── git.properties
+│       │   ├── logback-spring.xml
+│       │   ├── messages
+│       │   │   ├── messages_de.properties
+│       │   │   ├── messages_en.properties
+│       │   │   └── messages.properties
+│       │   ├── META-INF
+│       │   │   └── build-info.properties
+│       │   ├── org
+│       │   │   └── springframework
+│       │   │       └── samples
+│       │   │           └── petclinic
+│       │   │               └── api
+│       │   │                   ├── ApiGatewayApplication.class
+│       │   │                   ├── application
+│       │   │                   │   ├── CustomersServiceClient.class
+│       │   │                   │   └── VisitsServiceClient.class
+│       │   │                   ├── boundary
+│       │   │                   │   └── web
+│       │   │                   │       ├── ApiGatewayController.class
+│       │   │                   │       └── FallbackController.class
+│       │   │                   └── dto
+│       │   │                       ├── OwnerDetails$OwnerDetailsBuilder.class
+│       │   │                       ├── OwnerDetails.class
+│       │   │                       ├── PetDetails$PetDetailsBuilder.class
+│       │   │                       ├── PetDetails.class
+│       │   │                       ├── PetType.class
+│       │   │                       ├── VisitDetails.class
+│       │   │                       └── Visits.class
+│       │   └── static
+│       │       ├── css
+│       │       │   ├── header.css
+│       │       │   ├── petclinic.css
+│       │       │   ├── responsive.css
+│       │       │   └── typography.css
+│       │       ├── fonts
+│       │       │   ├── montserrat-webfont.eot
+│       │       │   ├── montserrat-webfont.svg
+│       │       │   ├── montserrat-webfont.ttf
+│       │       │   ├── montserrat-webfont.woff
+│       │       │   ├── varela_round-webfont.eot
+│       │       │   ├── varela_round-webfont.svg
+│       │       │   ├── varela_round-webfont.ttf
+│       │       │   └── varela_round-webfont.woff
+│       │       ├── images
+│       │       │   ├── favicon.png
+│       │       │   ├── pets.png
+│       │       │   ├── platform-bg.png
+│       │       │   ├── spring-logo-dataflow-mobile.png
+│       │       │   ├── spring-logo-dataflow.png
+│       │       │   └── spring-pivotal-logo.png
+│       │       ├── index.html
+│       │       ├── scripts
+│       │       │   ├── app.js
+│       │       │   ├── fragments
+│       │       │   │   ├── footer.html
+│       │       │   │   ├── nav.html
+│       │       │   │   └── welcome.html
+│       │       │   ├── genai
+│       │       │   │   └── chat.js
+│       │       │   ├── infrastructure
+│       │       │   │   ├── httpErrorHandlingInterceptor.js
+│       │       │   │   └── infrastructure.js
+│       │       │   ├── owner-details
+│       │       │   │   ├── owner-details.component.js
+│       │       │   │   ├── owner-details.controller.js
+│       │       │   │   ├── owner-details.js
+│       │       │   │   └── owner-details.template.html
+│       │       │   ├── owner-form
+│       │       │   │   ├── owner-form.component.js
+│       │       │   │   ├── owner-form.controller.js
+│       │       │   │   ├── owner-form.js
+│       │       │   │   └── owner-form.template.html
+│       │       │   ├── owner-list
+│       │       │   │   ├── owner-list.component.js
+│       │       │   │   ├── owner-list.controller.js
+│       │       │   │   ├── owner-list.js
+│       │       │   │   └── owner-list.template.html
+│       │       │   ├── pet-form
+│       │       │   │   ├── pet-form.component.js
+│       │       │   │   ├── pet-form.controller.js
+│       │       │   │   ├── pet-form.js
+│       │       │   │   └── pet-form.template.html
+│       │       │   ├── vet-list
+│       │       │   │   ├── vet-list.component.js
+│       │       │   │   ├── vet-list.controller.js
+│       │       │   │   ├── vet-list.js
+│       │       │   │   └── vet-list.template.html
+│       │       │   └── visits
+│       │       │       ├── visits.component.js
+│       │       │       ├── visits.controller.js
+│       │       │       ├── visits.js
+│       │       │       └── visits.template.html
+│       │       └── scss
+│       │           ├── header.scss
+│       │           ├── petclinic.scss
+│       │           ├── responsive.scss
+│       │           └── typography.scss
+│       ├── generated-sources
+│       │   └── annotations
+│       ├── generated-test-sources
+│       │   └── test-annotations
+│       ├── maven-status
+│       │   └── maven-compiler-plugin
+│       │       └── compile
+│       │           └── default-compile
+│       │               └── inputFiles.lst
+│       └── test-classes
+│           ├── application-test.yml
+│           └── org
+│               └── springframework
+│                   └── samples
+│                       └── petclinic
+│                           └── api
+│                               ├── ApiGatewayApplicationTests.class
+│                               ├── application
+│                               │   └── VisitsServiceClientIntegrationTest.class
+│                               └── boundary
+│                                   └── web
+│                                       ├── ApiGatewayControllerTest.class
+│                                       └── CircuitBreakerConfiguration.class
+├── spring-petclinic-config-server
+│   ├── pom.xml
+│   ├── src
+│   │   ├── main
+│   │   │   ├── java
+│   │   │   │   └── org
+│   │   │   │       └── springframework
+│   │   │   │           └── samples
+│   │   │   │               └── petclinic
+│   │   │   │                   └── config
+│   │   │   │                       └── ConfigServerApplication.java
+│   │   │   └── resources
+│   │   │       ├── application.yml
+│   │   │       └── static
+│   │   │           └── index.html
+│   │   └── test
+│   │       ├── java
+│   │       │   └── org
+│   │       │       └── springframework
+│   │       │           └── samples
+│   │       │               └── petclinic
+│   │       │                   └── config
+│   │       │                       └── PetclinicConfigServerApplicationTests.java
+│   │       └── resources
+│   │           └── application.yml
+│   └── target
+│       ├── classes
+│       │   ├── application.yml
+│       │   ├── git.properties
+│       │   ├── META-INF
+│       │   │   └── build-info.properties
+│       │   ├── org
+│       │   │   └── springframework
+│       │   │       └── samples
+│       │   │           └── petclinic
+│       │   │               └── config
+│       │   │                   └── ConfigServerApplication.class
+│       │   └── static
+│       │       └── index.html
+│       ├── generated-sources
+│       │   └── annotations
+│       ├── maven-status
+│       │   └── maven-compiler-plugin
+│       │       └── compile
+│       │           └── default-compile
+│       │               └── inputFiles.lst
+│       └── test-classes
+│           ├── application.yml
+│           └── org
+│               └── springframework
+│                   └── samples
+│                       └── petclinic
+│                           └── config
+│                               └── PetclinicConfigServerApplicationTests.class
+├── spring-petclinic-customers-service
+│   ├── pom.xml
+│   ├── src
+│   │   ├── main
+│   │   │   ├── java
+│   │   │   │   └── org
+│   │   │   │       └── springframework
+│   │   │   │           └── samples
+│   │   │   │               └── petclinic
+│   │   │   │                   └── customers
+│   │   │   │                       ├── config
+│   │   │   │                       │   └── MetricConfig.java
+│   │   │   │                       ├── CustomersServiceApplication.java
+│   │   │   │                       ├── model
+│   │   │   │                       │   ├── Owner.java
+│   │   │   │                       │   ├── OwnerRepository.java
+│   │   │   │                       │   ├── Pet.java
+│   │   │   │                       │   ├── PetRepository.java
+│   │   │   │                       │   └── PetType.java
+│   │   │   │                       └── web
+│   │   │   │                           ├── mapper
+│   │   │   │                           │   ├── Mapper.java
+│   │   │   │                           │   └── OwnerEntityMapper.java
+│   │   │   │                           ├── OwnerRequest.java
+│   │   │   │                           ├── OwnerResource.java
+│   │   │   │                           ├── PetDetails.java
+│   │   │   │                           ├── PetRequest.java
+│   │   │   │                           ├── PetResource.java
+│   │   │   │                           └── ResourceNotFoundException.java
+│   │   │   └── resources
+│   │   │       ├── application.yml
+│   │   │       ├── db
+│   │   │       │   ├── hsqldb
+│   │   │       │   │   ├── data.sql
+│   │   │       │   │   └── schema.sql
+│   │   │       │   └── mysql
+│   │   │       │       ├── data.sql
+│   │   │       │       └── schema.sql
+│   │   │       └── logback-spring.xml
+│   │   └── test
+│   │       ├── java
+│   │       │   └── org
+│   │       │       └── springframework
+│   │       │           └── samples
+│   │       │               └── petclinic
+│   │       │                   └── customers
+│   │       │                       └── web
+│   │       │                           └── PetResourceTest.java
+│   │       └── resources
+│   │           └── application-test.yml
+│   └── target
+│       ├── classes
+│       │   ├── application.yml
+│       │   ├── db
+│       │   │   ├── hsqldb
+│       │   │   │   ├── data.sql
+│       │   │   │   └── schema.sql
+│       │   │   └── mysql
+│       │   │       ├── data.sql
+│       │   │       └── schema.sql
+│       │   ├── git.properties
+│       │   ├── logback-spring.xml
+│       │   ├── META-INF
+│       │   │   └── build-info.properties
+│       │   └── org
+│       │       └── springframework
+│       │           └── samples
+│       │               └── petclinic
+│       │                   └── customers
+│       │                       ├── config
+│       │                       │   └── MetricConfig.class
+│       │                       ├── CustomersServiceApplication.class
+│       │                       ├── model
+│       │                       │   ├── Owner.class
+│       │                       │   ├── OwnerRepository.class
+│       │                       │   ├── Pet.class
+│       │                       │   ├── PetRepository.class
+│       │                       │   └── PetType.class
+│       │                       └── web
+│       │                           ├── mapper
+│       │                           │   ├── Mapper.class
+│       │                           │   └── OwnerEntityMapper.class
+│       │                           ├── OwnerRequest.class
+│       │                           ├── OwnerResource.class
+│       │                           ├── PetDetails.class
+│       │                           ├── PetRequest.class
+│       │                           ├── PetResource.class
+│       │                           └── ResourceNotFoundException.class
+│       ├── generated-sources
+│       │   └── annotations
+│       ├── generated-test-sources
+│       │   └── test-annotations
+│       ├── maven-status
+│       │   └── maven-compiler-plugin
+│       │       └── compile
+│       │           └── default-compile
+│       │               └── inputFiles.lst
+│       └── test-classes
+│           ├── application-test.yml
+│           └── org
+│               └── springframework
+│                   └── samples
+│                       └── petclinic
+│                           └── customers
+│                               └── web
+│                                   └── PetResourceTest.class
+├── spring-petclinic-discovery-server
+│   ├── pom.xml
+│   ├── src
+│   │   ├── main
+│   │   │   ├── java
+│   │   │   │   └── org
+│   │   │   │       └── springframework
+│   │   │   │           └── samples
+│   │   │   │               └── petclinic
+│   │   │   │                   └── discovery
+│   │   │   │                       └── DiscoveryServerApplication.java
+│   │   │   └── resources
+│   │   │       └── application.yml
+│   │   └── test
+│   │       └── java
+│   │           └── org
+│   │               └── springframework
+│   │                   └── samples
+│   │                       └── petclinic
+│   │                           └── discovery
+│   │                               └── DiscoveryServerApplicationTests.java
+│   └── target
+│       ├── classes
+│       │   ├── application.yml
+│       │   ├── git.properties
+│       │   ├── META-INF
+│       │   │   └── build-info.properties
+│       │   └── org
+│       │       └── springframework
+│       │           └── samples
+│       │               └── petclinic
+│       │                   └── discovery
+│       │                       └── DiscoveryServerApplication.class
+│       ├── generated-sources
+│       │   └── annotations
+│       ├── maven-status
+│       │   └── maven-compiler-plugin
+│       │       └── compile
+│       │           └── default-compile
+│       │               └── inputFiles.lst
+│       └── test-classes
+│           └── org
+│               └── springframework
+│                   └── samples
+│                       └── petclinic
+│                           └── discovery
+│                               └── DiscoveryServerApplicationTests.class
+├── spring-petclinic-genai-service
+│   ├── .gitignore
+│   ├── pom.xml
+│   ├── src
+│   │   └── main
+│   │       ├── java
+│   │       │   └── org
+│   │       │       └── springframework
+│   │       │           └── samples
+│   │       │               └── petclinic
+│   │       │                   └── genai
+│   │       │                       ├── AIBeanConfiguration.java
+│   │       │                       ├── AIDataProvider.java
+│   │       │                       ├── dto
+│   │       │                       │   ├── OwnerDetails.java
+│   │       │                       │   ├── PetDetails.java
+│   │       │                       │   ├── PetRequest.java
+│   │       │                       │   ├── PetType.java
+│   │       │                       │   ├── Specialty.java
+│   │       │                       │   ├── Vet.java
+│   │       │                       │   └── VisitDetails.java
+│   │       │                       ├── GenAIServiceApplication.java
+│   │       │                       ├── PetclinicChatClient.java
+│   │       │                       ├── PetclinicTools.java
+│   │       │                       └── VectorStoreController.java
+│   │       └── resources
+│   │           ├── application.yml
+│   │           ├── logback-spring.xml
+│   │           └── vectorstore.json
+│   └── target
+│       ├── classes
+│       │   ├── application.yml
+│       │   ├── git.properties
+│       │   ├── logback-spring.xml
+│       │   ├── META-INF
+│       │   │   └── build-info.properties
+│       │   ├── org
+│       │   │   └── springframework
+│       │   │       └── samples
+│       │   │           └── petclinic
+│       │   │               └── genai
+│       │   │                   ├── AIBeanConfiguration.class
+│       │   │                   ├── AIDataProvider$1.class
+│       │   │                   ├── AIDataProvider.class
+│       │   │                   ├── dto
+│       │   │                   │   ├── OwnerDetails.class
+│       │   │                   │   ├── PetDetails.class
+│       │   │                   │   ├── PetRequest.class
+│       │   │                   │   ├── PetType.class
+│       │   │                   │   ├── Specialty.class
+│       │   │                   │   ├── Vet.class
+│       │   │                   │   └── VisitDetails.class
+│       │   │                   ├── GenAIServiceApplication.class
+│       │   │                   ├── OwnerRequest.class
+│       │   │                   ├── PetclinicChatClient.class
+│       │   │                   ├── PetclinicTools.class
+│       │   │                   ├── VectorStoreController$1.class
+│       │   │                   └── VectorStoreController.class
+│       │   └── vectorstore.json
+│       ├── generated-sources
+│       │   └── annotations
+│       ├── generated-test-sources
+│       │   └── test-annotations
+│       ├── maven-status
+│       │   └── maven-compiler-plugin
+│       │       └── compile
+│       │           └── default-compile
+│       │               └── inputFiles.lst
+│       └── test-classes
+├── spring-petclinic-vets-service
+│   ├── .gitignore
+│   ├── pom.xml
+│   ├── src
+│   │   ├── main
+│   │   │   ├── java
+│   │   │   │   └── org
+│   │   │   │       └── springframework
+│   │   │   │           └── samples
+│   │   │   │               └── petclinic
+│   │   │   │                   └── vets
+│   │   │   │                       ├── model
+│   │   │   │                       │   ├── Specialty.java
+│   │   │   │                       │   ├── Vet.java
+│   │   │   │                       │   └── VetRepository.java
+│   │   │   │                       ├── system
+│   │   │   │                       │   ├── CacheConfig.java
+│   │   │   │                       │   └── VetsProperties.java
+│   │   │   │                       ├── VetsServiceApplication.java
+│   │   │   │                       └── web
+│   │   │   │                           └── VetResource.java
+│   │   │   └── resources
+│   │   │       ├── application.yml
+│   │   │       ├── db
+│   │   │       │   ├── hsqldb
+│   │   │       │   │   ├── data.sql
+│   │   │       │   │   └── schema.sql
+│   │   │       │   └── mysql
+│   │   │       │       ├── data.sql
+│   │   │       │       └── schema.sql
+│   │   │       └── logback-spring.xml
+│   │   └── test
+│   │       ├── java
+│   │       │   └── org
+│   │       │       └── springframework
+│   │       │           └── samples
+│   │       │               └── petclinic
+│   │       │                   └── vets
+│   │       │                       └── web
+│   │       │                           └── VetResourceTest.java
+│   │       └── resources
+│   │           └── application-test.yml
+│   └── target
+│       ├── classes
+│       │   ├── application.yml
+│       │   ├── db
+│       │   │   ├── hsqldb
+│       │   │   │   ├── data.sql
+│       │   │   │   └── schema.sql
+│       │   │   └── mysql
+│       │   │       ├── data.sql
+│       │   │       └── schema.sql
+│       │   ├── git.properties
+│       │   ├── logback-spring.xml
+│       │   ├── META-INF
+│       │   │   ├── build-info.properties
+│       │   │   └── spring-configuration-metadata.json
+│       │   └── org
+│       │       └── springframework
+│       │           └── samples
+│       │               └── petclinic
+│       │                   └── vets
+│       │                       ├── model
+│       │                       │   ├── Specialty.class
+│       │                       │   ├── Vet.class
+│       │                       │   └── VetRepository.class
+│       │                       ├── system
+│       │                       │   ├── CacheConfig.class
+│       │                       │   ├── VetsProperties$Cache.class
+│       │                       │   └── VetsProperties.class
+│       │                       ├── VetsServiceApplication.class
+│       │                       └── web
+│       │                           └── VetResource.class
+│       ├── generated-sources
+│       │   └── annotations
+│       ├── generated-test-sources
+│       │   └── test-annotations
+│       ├── maven-status
+│       │   └── maven-compiler-plugin
+│       │       └── compile
+│       │           └── default-compile
+│       │               └── inputFiles.lst
+│       └── test-classes
+│           ├── application-test.yml
+│           └── org
+│               └── springframework
+│                   └── samples
+│                       └── petclinic
+│                           └── vets
+│                               └── web
+│                                   └── VetResourceTest.class
+├── spring-petclinic-visits-service
+│   ├── pom.xml
+│   ├── src
+│   │   ├── main
+│   │   │   ├── java
+│   │   │   │   └── org
+│   │   │   │       └── springframework
+│   │   │   │           └── samples
+│   │   │   │               └── petclinic
+│   │   │   │                   └── visits
+│   │   │   │                       ├── config
+│   │   │   │                       │   └── MetricConfig.java
+│   │   │   │                       ├── model
+│   │   │   │                       │   ├── Visit.java
+│   │   │   │                       │   └── VisitRepository.java
+│   │   │   │                       ├── VisitsServiceApplication.java
+│   │   │   │                       └── web
+│   │   │   │                           └── VisitResource.java
+│   │   │   └── resources
+│   │   │       ├── application.yml
+│   │   │       ├── db
+│   │   │       │   ├── hsqldb
+│   │   │       │   │   ├── data.sql
+│   │   │       │   │   └── schema.sql
+│   │   │       │   └── mysql
+│   │   │       │       ├── data.sql
+│   │   │       │       └── schema.sql
+│   │   │       └── logback-spring.xml
+│   │   └── test
+│   │       ├── java
+│   │       │   └── org
+│   │       │       └── springframework
+│   │       │           └── samples
+│   │       │               └── petclinic
+│   │       │                   └── visits
+│   │       │                       └── web
+│   │       │                           └── VisitResourceTest.java
+│   │       └── resources
+│   │           └── application-test.yml
+│   └── target
+│       ├── classes
+│       │   ├── application.yml
+│       │   ├── db
+│       │   │   ├── hsqldb
+│       │   │   │   ├── data.sql
+│       │   │   │   └── schema.sql
+│       │   │   └── mysql
+│       │   │       ├── data.sql
+│       │   │       └── schema.sql
+│       │   ├── git.properties
+│       │   ├── logback-spring.xml
+│       │   ├── META-INF
+│       │   │   └── build-info.properties
+│       │   └── org
+│       │       └── springframework
+│       │           └── samples
+│       │               └── petclinic
+│       │                   └── visits
+│       │                       ├── config
+│       │                       │   └── MetricConfig.class
+│       │                       ├── model
+│       │                       │   ├── Visit$VisitBuilder.class
+│       │                       │   ├── Visit.class
+│       │                       │   └── VisitRepository.class
+│       │                       ├── VisitsServiceApplication.class
+│       │                       └── web
+│       │                           ├── VisitResource$Visits.class
+│       │                           └── VisitResource.class
+│       ├── generated-sources
+│       │   └── annotations
+│       ├── generated-test-sources
+│       │   └── test-annotations
+│       ├── maven-status
+│       │   └── maven-compiler-plugin
+│       │       └── compile
+│       │           └── default-compile
+│       │               └── inputFiles.lst
+│       └── test-classes
+│           ├── application-test.yml
+│           └── org
+│               └── springframework
+│                   └── samples
+│                       └── petclinic
+│                           └── visits
+│                               └── web
+│                                   └── VisitResourceTest.class
+├── terraform
+│   ├── live
+│   │   ├── common.yaml
+│   │   ├── dev
+│   │   │   ├── alb
+│   │   │   │   ├── .terraform.lock.hcl
+│   │   │   │   ├── .terragrunt-cache
+│   │   │   │   └── terragrunt.hcl
+│   │   │   ├── ansible
+│   │   │   │   ├── .terraform.lock.hcl
+│   │   │   │   ├── .terragrunt-cache
+│   │   │   │   │   └── piIbuwmiCvogd5UZ-mRl8pSPbx4
+│   │   │   │   │       └── 7R_Kl3lR8dkPj_MfSgoHlzVxsKI
+│   │   │   │   │           ├── backend.tf
+│   │   │   │   │           ├── main.tf
+│   │   │   │   │           ├── outputs.tf
+│   │   │   │   │           ├── provider.tf
+│   │   │   │   │           ├── .terraform
+│   │   │   │   │           │   ├── providers
+│   │   │   │   │           │   │   └── registry.terraform.io
+│   │   │   │   │           │   │       └── hashicorp
+│   │   │   │   │           │   │           ├── aws
+│   │   │   │   │           │   │           │   └── 6.33.0
+│   │   │   │   │           │   │           │       └── linux_amd64
+│   │   │   │   │           │   │           │           ├── LICENSE.txt
+│   │   │   │   │           │   │           │           └── terraform-provider-aws_v6.33.0_x5
+│   │   │   │   │           │   │           ├── local
+│   │   │   │   │           │   │           │   └── 2.7.0
+│   │   │   │   │           │   │           │       └── linux_amd64
+│   │   │   │   │           │   │           │           ├── LICENSE.txt
+│   │   │   │   │           │   │           │           └── terraform-provider-local_v2.7.0_x5
+│   │   │   │   │           │   │           ├── null
+│   │   │   │   │           │   │           │   └── 3.2.4
+│   │   │   │   │           │   │           │       └── linux_amd64
+│   │   │   │   │           │   │           │           ├── LICENSE.txt
+│   │   │   │   │           │   │           │           └── terraform-provider-null_v3.2.4_x5
+│   │   │   │   │           │   │           ├── random
+│   │   │   │   │           │   │           │   └── 3.8.1
+│   │   │   │   │           │   │           │       └── linux_amd64
+│   │   │   │   │           │   │           │           ├── LICENSE.txt
+│   │   │   │   │           │   │           │           └── terraform-provider-random_v3.8.1_x5
+│   │   │   │   │           │   │           └── tls
+│   │   │   │   │           │   │               └── 4.2.1
+│   │   │   │   │           │   │                   └── linux_amd64
+│   │   │   │   │           │   │                       ├── LICENSE.txt
+│   │   │   │   │           │   │                       └── terraform-provider-tls_v4.2.1_x5
+│   │   │   │   │           │   └── terraform.tfstate
+│   │   │   │   │           ├── .terraform.lock.hcl
+│   │   │   │   │           ├── terragrunt.hcl
+│   │   │   │   │           ├── .terragrunt-module-manifest
+│   │   │   │   │           ├── .terragrunt-source-manifest
+│   │   │   │   │           ├── .terragrunt-source-version
+│   │   │   │   │           ├── tfplan
+│   │   │   │   │           ├── variables.tf
+│   │   │   │   │           └── versions.tf
+│   │   │   │   └── terragrunt.hcl
+│   │   │   ├── ec2-instances
+│   │   │   │   ├── .terraform.lock.hcl
+│   │   │   │   ├── .terragrunt-cache
+│   │   │   │   └── terragrunt.hcl
+│   │   │   ├── env.yaml
+│   │   │   ├── k8s-cluster
+│   │   │   │   ├── .terraform.lock.hcl
+│   │   │   │   ├── .terragrunt-cache
+│   │   │   │   └── terragrunt.hcl
+│   │   │   ├── key-pair
+│   │   │   │   ├── spms-dev.pem
+│   │   │   │   ├── .terraform.lock.hcl
+│   │   │   │   ├── .terragrunt-cache
+│   │   │   │   └── terragrunt.hcl
+│   │   │   ├── rds
+│   │   │   │   ├── .terraform.lock.hcl
+│   │   │   │   ├── .terragrunt-cache
+│   │   │   │   └── terragrunt.hcl
+│   │   │   ├── security-groups
+│   │   │   │   ├── .terraform.lock.hcl
+│   │   │   │   ├── .terragrunt-cache
+│   │   │   │   └── terragrunt.hcl
+│   │   │   ├── .terragrunt-cache
+│   │   │   │   ├── h3ir9suTniqUNcAjoCsM7VuswFg
+│   │   │   │   │   └── Sz-v4zVVfG4i2BvN6YKgoPlA50c
+│   │   │   │   │       ├── backend.tf
+│   │   │   │   │       ├── main.tf
+│   │   │   │   │       ├── outputs.tf
+│   │   │   │   │       ├── provider.tf
+│   │   │   │   │       ├── .terraform
+│   │   │   │   │       │   ├── providers
+│   │   │   │   │       │   │   └── registry.terraform.io
+│   │   │   │   │       │   │       └── hashicorp
+│   │   │   │   │       │   │           ├── aws
+│   │   │   │   │       │   │           │   └── 6.33.0
+│   │   │   │   │       │   │           │       └── linux_amd64
+│   │   │   │   │       │   │           │           ├── LICENSE.txt
+│   │   │   │   │       │   │           │           └── terraform-provider-aws_v6.33.0_x5
+│   │   │   │   │       │   │           ├── local
+│   │   │   │   │       │   │           │   └── 2.7.0
+│   │   │   │   │       │   │           │       └── linux_amd64
+│   │   │   │   │       │   │           │           ├── LICENSE.txt
+│   │   │   │   │       │   │           │           └── terraform-provider-local_v2.7.0_x5
+│   │   │   │   │       │   │           ├── random
+│   │   │   │   │       │   │           │   └── 3.8.1
+│   │   │   │   │       │   │           │       └── linux_amd64
+│   │   │   │   │       │   │           │           ├── LICENSE.txt
+│   │   │   │   │       │   │           │           └── terraform-provider-random_v3.8.1_x5
+│   │   │   │   │       │   │           └── tls
+│   │   │   │   │       │   │               └── 4.2.1
+│   │   │   │   │       │   │                   └── linux_amd64
+│   │   │   │   │       │   │                       ├── LICENSE.txt
+│   │   │   │   │       │   │                       └── terraform-provider-tls_v4.2.1_x5
+│   │   │   │   │       │   └── terraform.tfstate
+│   │   │   │   │       ├── .terraform.lock.hcl
+│   │   │   │   │       ├── terragrunt.hcl
+│   │   │   │   │       ├── .terragrunt-module-manifest
+│   │   │   │   │       ├── .terragrunt-source-manifest
+│   │   │   │   │       ├── .terragrunt-source-version
+│   │   │   │   │       ├── tfplan
+│   │   │   │   │       ├── variables.tf
+│   │   │   │   │       └── versions.tf
+│   │   │   │   ├── j5kUGzSbw8GJIynfwxDQEftKELE
+│   │   │   │   │   └── JaZmWbFhppiL4QbGZW8Y2Ny1brg
+│   │   │   │   │       ├── backend.tf
+│   │   │   │   │       ├── main.tf
+│   │   │   │   │       ├── outputs.tf
+│   │   │   │   │       ├── provider.tf
+│   │   │   │   │       ├── security-groups.tf
+│   │   │   │   │       ├── .terraform
+│   │   │   │   │       │   ├── providers
+│   │   │   │   │       │   │   └── registry.terraform.io
+│   │   │   │   │       │   │       └── hashicorp
+│   │   │   │   │       │   │           ├── aws
+│   │   │   │   │       │   │           │   └── 6.33.0
+│   │   │   │   │       │   │           │       └── linux_amd64
+│   │   │   │   │       │   │           │           ├── LICENSE.txt
+│   │   │   │   │       │   │           │           └── terraform-provider-aws_v6.33.0_x5
+│   │   │   │   │       │   │           ├── local
+│   │   │   │   │       │   │           │   └── 2.7.0
+│   │   │   │   │       │   │           │       └── linux_amd64
+│   │   │   │   │       │   │           │           ├── LICENSE.txt
+│   │   │   │   │       │   │           │           └── terraform-provider-local_v2.7.0_x5
+│   │   │   │   │       │   │           ├── random
+│   │   │   │   │       │   │           │   └── 3.8.1
+│   │   │   │   │       │   │           │       └── linux_amd64
+│   │   │   │   │       │   │           │           ├── LICENSE.txt
+│   │   │   │   │       │   │           │           └── terraform-provider-random_v3.8.1_x5
+│   │   │   │   │       │   │           └── tls
+│   │   │   │   │       │   │               └── 4.2.1
+│   │   │   │   │       │   │                   └── linux_amd64
+│   │   │   │   │       │   │                       ├── LICENSE.txt
+│   │   │   │   │       │   │                       └── terraform-provider-tls_v4.2.1_x5
+│   │   │   │   │       │   └── terraform.tfstate
+│   │   │   │   │       ├── .terraform.lock.hcl
+│   │   │   │   │       ├── terragrunt.hcl
+│   │   │   │   │       ├── .terragrunt-module-manifest
+│   │   │   │   │       ├── .terragrunt-source-manifest
+│   │   │   │   │       ├── .terragrunt-source-version
+│   │   │   │   │       ├── tfplan
+│   │   │   │   │       ├── variables.tf
+│   │   │   │   │       └── versions.tf
+│   │   │   │   ├── piIbuwmiCvogd5UZ-mRl8pSPbx4
+│   │   │   │   │   └── 7R_Kl3lR8dkPj_MfSgoHlzVxsKI
+│   │   │   │   │       ├── backend.tf
+│   │   │   │   │       ├── main.tf
+│   │   │   │   │       ├── outputs.tf
+│   │   │   │   │       ├── provider.tf
+│   │   │   │   │       ├── .terraform
+│   │   │   │   │       │   ├── providers
+│   │   │   │   │       │   │   └── registry.terraform.io
+│   │   │   │   │       │   │       └── hashicorp
+│   │   │   │   │       │   │           ├── aws
+│   │   │   │   │       │   │           │   └── 6.33.0
+│   │   │   │   │       │   │           │       └── linux_amd64
+│   │   │   │   │       │   │           │           ├── LICENSE.txt
+│   │   │   │   │       │   │           │           └── terraform-provider-aws_v6.33.0_x5
+│   │   │   │   │       │   │           ├── local
+│   │   │   │   │       │   │           │   └── 2.7.0
+│   │   │   │   │       │   │           │       └── linux_amd64
+│   │   │   │   │       │   │           │           ├── LICENSE.txt
+│   │   │   │   │       │   │           │           └── terraform-provider-local_v2.7.0_x5
+│   │   │   │   │       │   │           ├── null
+│   │   │   │   │       │   │           │   └── 3.2.4
+│   │   │   │   │       │   │           │       └── linux_amd64
+│   │   │   │   │       │   │           │           ├── LICENSE.txt
+│   │   │   │   │       │   │           │           └── terraform-provider-null_v3.2.4_x5
+│   │   │   │   │       │   │           ├── random
+│   │   │   │   │       │   │           │   └── 3.8.1
+│   │   │   │   │       │   │           │       └── linux_amd64
+│   │   │   │   │       │   │           │           ├── LICENSE.txt
+│   │   │   │   │       │   │           │           └── terraform-provider-random_v3.8.1_x5
+│   │   │   │   │       │   │           └── tls
+│   │   │   │   │       │   │               └── 4.2.1
+│   │   │   │   │       │   │                   └── linux_amd64
+│   │   │   │   │       │   │                       ├── LICENSE.txt
+│   │   │   │   │       │   │                       └── terraform-provider-tls_v4.2.1_x5
+│   │   │   │   │       │   └── terraform.tfstate
+│   │   │   │   │       ├── .terraform.lock.hcl
+│   │   │   │   │       ├── terragrunt.hcl
+│   │   │   │   │       ├── .terragrunt-module-manifest
+│   │   │   │   │       ├── .terragrunt-source-manifest
+│   │   │   │   │       ├── .terragrunt-source-version
+│   │   │   │   │       ├── tfplan
+│   │   │   │   │       ├── variables.tf
+│   │   │   │   │       └── versions.tf
+│   │   │   │   ├── pvwnSv08NyVwU_qE4bwd0QNf1rw
+│   │   │   │   │   └── JMbPm_d_pg69-Q9pKifi_6tCCiU
+│   │   │   │   │       ├── backend.tf
+│   │   │   │   │       ├── main.tf
+│   │   │   │   │       ├── outputs.tf
+│   │   │   │   │       ├── provider.tf
+│   │   │   │   │       ├── spms-dev.pem
+│   │   │   │   │       ├── .terraform
+│   │   │   │   │       │   ├── providers
+│   │   │   │   │       │   │   └── registry.terraform.io
+│   │   │   │   │       │   │       └── hashicorp
+│   │   │   │   │       │   │           ├── aws
+│   │   │   │   │       │   │           │   └── 6.33.0
+│   │   │   │   │       │   │           │       └── linux_amd64
+│   │   │   │   │       │   │           │           ├── LICENSE.txt
+│   │   │   │   │       │   │           │           └── terraform-provider-aws_v6.33.0_x5
+│   │   │   │   │       │   │           ├── local
+│   │   │   │   │       │   │           │   └── 2.7.0
+│   │   │   │   │       │   │           │       └── linux_amd64
+│   │   │   │   │       │   │           │           ├── LICENSE.txt
+│   │   │   │   │       │   │           │           └── terraform-provider-local_v2.7.0_x5
+│   │   │   │   │       │   │           ├── random
+│   │   │   │   │       │   │           │   └── 3.8.1
+│   │   │   │   │       │   │           │       └── linux_amd64
+│   │   │   │   │       │   │           │           ├── LICENSE.txt
+│   │   │   │   │       │   │           │           └── terraform-provider-random_v3.8.1_x5
+│   │   │   │   │       │   │           └── tls
+│   │   │   │   │       │   │               └── 4.2.1
+│   │   │   │   │       │   │                   └── linux_amd64
+│   │   │   │   │       │   │                       ├── LICENSE.txt
+│   │   │   │   │       │   │                       └── terraform-provider-tls_v4.2.1_x5
+│   │   │   │   │       │   └── terraform.tfstate
+│   │   │   │   │       ├── .terraform.lock.hcl
+│   │   │   │   │       ├── terragrunt.hcl
+│   │   │   │   │       ├── .terragrunt-module-manifest
+│   │   │   │   │       ├── .terragrunt-source-manifest
+│   │   │   │   │       ├── .terragrunt-source-version
+│   │   │   │   │       ├── tfplan
+│   │   │   │   │       ├── variables.tf
+│   │   │   │   │       └── versions.tf
+│   │   │   │   ├── qhDeQefs1OxbI6n2RJqQ7Hn7rRg
+│   │   │   │   │   └── 8kBOy3dg3zFvS1JmGMaknEb8WRU
+│   │   │   │   │       ├── backend.tf
+│   │   │   │   │       ├── main.tf
+│   │   │   │   │       ├── outputs.tf
+│   │   │   │   │       ├── policies.tf
+│   │   │   │   │       ├── provider.tf
+│   │   │   │   │       ├── .terraform
+│   │   │   │   │       │   ├── providers
+│   │   │   │   │       │   │   └── registry.terraform.io
+│   │   │   │   │       │   │       └── hashicorp
+│   │   │   │   │       │   │           ├── aws
+│   │   │   │   │       │   │           │   └── 6.33.0
+│   │   │   │   │       │   │           │       └── linux_amd64
+│   │   │   │   │       │   │           │           ├── LICENSE.txt
+│   │   │   │   │       │   │           │           └── terraform-provider-aws_v6.33.0_x5
+│   │   │   │   │       │   │           ├── local
+│   │   │   │   │       │   │           │   └── 2.7.0
+│   │   │   │   │       │   │           │       └── linux_amd64
+│   │   │   │   │       │   │           │           ├── LICENSE.txt
+│   │   │   │   │       │   │           │           └── terraform-provider-local_v2.7.0_x5
+│   │   │   │   │       │   │           ├── random
+│   │   │   │   │       │   │           │   └── 3.8.1
+│   │   │   │   │       │   │           │       └── linux_amd64
+│   │   │   │   │       │   │           │           ├── LICENSE.txt
+│   │   │   │   │       │   │           │           └── terraform-provider-random_v3.8.1_x5
+│   │   │   │   │       │   │           └── tls
+│   │   │   │   │       │   │               └── 4.2.1
+│   │   │   │   │       │   │                   └── linux_amd64
+│   │   │   │   │       │   │                       ├── LICENSE.txt
+│   │   │   │   │       │   │                       └── terraform-provider-tls_v4.2.1_x5
+│   │   │   │   │       │   └── terraform.tfstate
+│   │   │   │   │       ├── .terraform.lock.hcl
+│   │   │   │   │       ├── terragrunt.hcl
+│   │   │   │   │       ├── .terragrunt-module-manifest
+│   │   │   │   │       ├── .terragrunt-source-manifest
+│   │   │   │   │       ├── .terragrunt-source-version
+│   │   │   │   │       ├── tfplan
+│   │   │   │   │       ├── variables.tf
+│   │   │   │   │       └── versions.tf
+│   │   │   │   ├── QhhmUoECXHXqoqkD-JzdA314PWk
+│   │   │   │   │   └── dvADhVzMEHnldZz-Iv3CICM1FYI
+│   │   │   │   │       ├── backend.tf
+│   │   │   │   │       ├── data.tf
+│   │   │   │   │       ├── main.tf
+│   │   │   │   │       ├── outputs.tf
+│   │   │   │   │       ├── provider.tf
+│   │   │   │   │       ├── .terraform
+│   │   │   │   │       │   ├── providers
+│   │   │   │   │       │   │   └── registry.terraform.io
+│   │   │   │   │       │   │       └── hashicorp
+│   │   │   │   │       │   │           ├── aws
+│   │   │   │   │       │   │           │   └── 6.33.0
+│   │   │   │   │       │   │           │       └── linux_amd64
+│   │   │   │   │       │   │           │           ├── LICENSE.txt
+│   │   │   │   │       │   │           │           └── terraform-provider-aws_v6.33.0_x5
+│   │   │   │   │       │   │           ├── local
+│   │   │   │   │       │   │           │   └── 2.7.0
+│   │   │   │   │       │   │           │       └── linux_amd64
+│   │   │   │   │       │   │           │           ├── LICENSE.txt
+│   │   │   │   │       │   │           │           └── terraform-provider-local_v2.7.0_x5
+│   │   │   │   │       │   │           ├── random
+│   │   │   │   │       │   │           │   └── 3.8.1
+│   │   │   │   │       │   │           │       └── linux_amd64
+│   │   │   │   │       │   │           │           ├── LICENSE.txt
+│   │   │   │   │       │   │           │           └── terraform-provider-random_v3.8.1_x5
+│   │   │   │   │       │   │           └── tls
+│   │   │   │   │       │   │               └── 4.2.1
+│   │   │   │   │       │   │                   └── linux_amd64
+│   │   │   │   │       │   │                       ├── LICENSE.txt
+│   │   │   │   │       │   │                       └── terraform-provider-tls_v4.2.1_x5
+│   │   │   │   │       │   └── terraform.tfstate
+│   │   │   │   │       ├── .terraform.lock.hcl
+│   │   │   │   │       ├── terragrunt.hcl
+│   │   │   │   │       ├── .terragrunt-module-manifest
+│   │   │   │   │       ├── .terragrunt-source-manifest
+│   │   │   │   │       ├── .terragrunt-source-version
+│   │   │   │   │       ├── tfplan
+│   │   │   │   │       ├── variables.tf
+│   │   │   │   │       └── versions.tf
+│   │   │   │   ├── U_O2q13zKAWeRbkiJo7lbhn9U9E
+│   │   │   │   │   └── Lc-Su1ZO05haMdeZhNzTlgQb0ls
+│   │   │   │   │       ├── backend.tf
+│   │   │   │   │       ├── main.tf
+│   │   │   │   │       ├── outputs.tf
+│   │   │   │   │       ├── provider.tf
+│   │   │   │   │       ├── .terraform
+│   │   │   │   │       │   ├── providers
+│   │   │   │   │       │   │   └── registry.terraform.io
+│   │   │   │   │       │   │       └── hashicorp
+│   │   │   │   │       │   │           ├── aws
+│   │   │   │   │       │   │           │   └── 6.33.0
+│   │   │   │   │       │   │           │       └── linux_amd64
+│   │   │   │   │       │   │           │           ├── LICENSE.txt
+│   │   │   │   │       │   │           │           └── terraform-provider-aws_v6.33.0_x5
+│   │   │   │   │       │   │           ├── local
+│   │   │   │   │       │   │           │   └── 2.7.0
+│   │   │   │   │       │   │           │       └── linux_amd64
+│   │   │   │   │       │   │           │           ├── LICENSE.txt
+│   │   │   │   │       │   │           │           └── terraform-provider-local_v2.7.0_x5
+│   │   │   │   │       │   │           ├── random
+│   │   │   │   │       │   │           │   └── 3.8.1
+│   │   │   │   │       │   │           │       └── linux_amd64
+│   │   │   │   │       │   │           │           ├── LICENSE.txt
+│   │   │   │   │       │   │           │           └── terraform-provider-random_v3.8.1_x5
+│   │   │   │   │       │   │           └── tls
+│   │   │   │   │       │   │               └── 4.2.1
+│   │   │   │   │       │   │                   └── linux_amd64
+│   │   │   │   │       │   │                       ├── LICENSE.txt
+│   │   │   │   │       │   │                       └── terraform-provider-tls_v4.2.1_x5
+│   │   │   │   │       │   └── terraform.tfstate
+│   │   │   │   │       ├── .terraform.lock.hcl
+│   │   │   │   │       ├── terragrunt.hcl
+│   │   │   │   │       ├── .terragrunt-module-manifest
+│   │   │   │   │       ├── .terragrunt-source-manifest
+│   │   │   │   │       ├── .terragrunt-source-version
+│   │   │   │   │       ├── tfplan
+│   │   │   │   │       ├── variables.tf
+│   │   │   │   │       └── versions.tf
+│   │   │   │   └── v60bkDuD6V8HRhya1nqkzYRXr18
+│   │   │   │       └── qZ-_kRpMQgSk629LKXnqfhUZ2bs
+│   │   │   │           ├── backend.tf
+│   │   │   │           ├── main.tf
+│   │   │   │           ├── outputs.tf
+│   │   │   │           ├── provider.tf
+│   │   │   │           ├── .terraform
+│   │   │   │           │   ├── providers
+│   │   │   │           │   │   └── registry.terraform.io
+│   │   │   │           │   │       └── hashicorp
+│   │   │   │           │   │           ├── aws
+│   │   │   │           │   │           │   └── 6.33.0
+│   │   │   │           │   │           │       └── linux_amd64
+│   │   │   │           │   │           │           ├── LICENSE.txt
+│   │   │   │           │   │           │           └── terraform-provider-aws_v6.33.0_x5
+│   │   │   │           │   │           ├── local
+│   │   │   │           │   │           │   └── 2.7.0
+│   │   │   │           │   │           │       └── linux_amd64
+│   │   │   │           │   │           │           ├── LICENSE.txt
+│   │   │   │           │   │           │           └── terraform-provider-local_v2.7.0_x5
+│   │   │   │           │   │           ├── random
+│   │   │   │           │   │           │   └── 3.8.1
+│   │   │   │           │   │           │       └── linux_amd64
+│   │   │   │           │   │           │           ├── LICENSE.txt
+│   │   │   │           │   │           │           └── terraform-provider-random_v3.8.1_x5
+│   │   │   │           │   │           └── tls
+│   │   │   │           │   │               └── 4.2.1
+│   │   │   │           │   │                   └── linux_amd64
+│   │   │   │           │   │                       ├── LICENSE.txt
+│   │   │   │           │   │                       └── terraform-provider-tls_v4.2.1_x5
+│   │   │   │           │   └── terraform.tfstate
+│   │   │   │           ├── .terraform.lock.hcl
+│   │   │   │           ├── terragrunt.hcl
+│   │   │   │           ├── .terragrunt-module-manifest
+│   │   │   │           ├── .terragrunt-source-manifest
+│   │   │   │           ├── .terragrunt-source-version
+│   │   │   │           ├── tfplan
+│   │   │   │           ├── variables.tf
+│   │   │   │           └── versions.tf
+│   │   │   └── vpc
+│   │   │       ├── .terraform.lock.hcl
+│   │   │       ├── .terragrunt-cache
+│   │   │       │   └── v60bkDuD6V8HRhya1nqkzYRXr18
+│   │   │       │       └── qZ-_kRpMQgSk629LKXnqfhUZ2bs
+│   │   │       │           ├── backend.tf
+│   │   │       │           ├── main.tf
+│   │   │       │           ├── outputs.tf
+│   │   │       │           ├── provider.tf
+│   │   │       │           ├── .terraform
+│   │   │       │           │   └── terraform.tfstate
+│   │   │       │           ├── terragrunt.hcl
+│   │   │       │           ├── .terragrunt-module-manifest
+│   │   │       │           ├── .terragrunt-source-manifest
+│   │   │       │           ├── .terragrunt-source-version
+│   │   │       │           ├── variables.tf
+│   │   │       │           └── versions.tf
+│   │   │       └── terragrunt.hcl
+│   │   ├── prod
+│   │   │   ├── alb
+│   │   │   │   └── terragrunt.hcl
+│   │   │   ├── ansible
+│   │   │   │   └── terragrunt.hcl
+│   │   │   ├── bastion
+│   │   │   │   ├── .terraform.lock.hcl
+│   │   │   │   └── terragrunt.hcl
+│   │   │   ├── ec2-instances
+│   │   │   │   ├── .terraform.lock.hcl
+│   │   │   │   └── terragrunt.hcl
+│   │   │   ├── env.yaml
+│   │   │   ├── k8s-cluster
+│   │   │   │   └── terragrunt.hcl
+│   │   │   ├── key-pair
+│   │   │   │   ├── .terraform.lock.hcl
+│   │   │   │   └── terragrunt.hcl
+│   │   │   ├── rds
+│   │   │   │   └── terragrunt.hcl
+│   │   │   └── vpc
+│   │   │       ├── .terraform.lock.hcl
+│   │   │       └── terragrunt.hcl
+│   │   └── staging
+│   │       ├── alb
+│   │       │   └── terragrunt.hcl
+│   │       ├── ansible
+│   │       │   └── terragrunt.hcl
+│   │       ├── bastion
+│   │       │   └── terragrunt.hcl
+│   │       ├── ec2-instances
+│   │       │   ├── .terraform.lock.hcl
+│   │       │   └── terragrunt.hcl
+│   │       ├── env.yaml
+│   │       ├── k8s-cluster
+│   │       │   └── terragrunt.hcl
+│   │       ├── key-pair
+│   │       │   ├── .terraform.lock.hcl
+│   │       │   └── terragrunt.hcl
+│   │       ├── rds
+│   │       │   └── terragrunt.hcl
+│   │       └── vpc
+│   │           ├── .terraform.lock.hcl
+│   │           └── terragrunt.hcl
+│   ├── modules
+│   │   ├── ansible
+│   │   │   ├── main.tf
+│   │   │   ├── outputs.tf
+│   │   │   └── variables.tf
+│   │   ├── compute
+│   │   │   ├── ec2-instances
+│   │   │   │   ├── main.tf
+│   │   │   │   ├── outputs.tf
+│   │   │   │   └── variables.tf
+│   │   │   └── k8s-node
+│   │   │       ├── data.tf
+│   │   │       ├── main.tf
+│   │   │       ├── outputs.tf
+│   │   │       └── variables.tf
+│   │   ├── database
+│   │   │   └── rds
+│   │   │       ├── main.tf
+│   │   │       ├── outputs.tf
+│   │   │       ├── security-groups.tf
+│   │   │       └── variables.tf
+│   │   ├── networking
+│   │   │   ├── alb
+│   │   │   │   ├── main.tf
+│   │   │   │   ├── outputs.tf
+│   │   │   │   └── variables.tf
+│   │   │   └── vpc
+│   │   │       ├── main.tf
+│   │   │       ├── outputs.tf
+│   │   │       ├── .terraform.lock.hcl
+│   │   │       └── variables.tf
+│   │   ├── scripts
+│   │   │   ├── .bashrc
+│   │   │   ├── bastion_bootstrap.sh.tftpl
+│   │   │   ├── jenkins_bootstrap.sh.tftpl
+│   │   │   ├── README.md
+│   │   │   ├── sonarqube_bootstrap.sh.tftpl
+│   │   │   └── worker_bootstrap.sh.tftpl
+│   │   └── security
+│   │       ├── iam
+│   │       │   ├── main.tf
+│   │       │   ├── outputs.tf
+│   │       │   ├── policies.tf
+│   │       │   └── variables.tf
+│   │       └── key-pair
+│   │           ├── main.tf
+│   │           ├── outputs.tf
+│   │           └── variables.tf
+│   └── root.hcl
+├── text
+├── vars.txt
+└── .vscode
+    └── settings.json
+
+1248 directories, 1790 files

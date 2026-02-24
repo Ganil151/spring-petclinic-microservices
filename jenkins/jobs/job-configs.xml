@@ -1,0 +1,44 @@
+<?xml version='1.1' encoding='UTF-8'?>
+<!-- Job Configuration Templates for Spring Petclinic Microservices -->
+<project>
+  <description>Spring Petclinic Microservices CI/CD Jobs</description>
+  <keepDependencies>false</keepDependencies>
+  <properties>
+    <hudson.model.ParametersDefinitionProperty>
+      <parameterDefinitions>
+        <hudson.model.StringParameterDefinition>
+          <name>BRANCH</name>
+          <defaultValue>main</defaultValue>
+          <description>Git branch to build</description>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.BooleanParameterDefinition>
+          <name>RUN_SECURITY_SCAN</name>
+          <defaultValue>true</defaultValue>
+          <description>Run security scans</description>
+        </hudson.model.BooleanParameterDefinition>
+        <hudson.model.ChoiceParameterDefinition>
+          <name>ENVIRONMENT</name>
+          <choices class="java.util.Arrays">
+            <string>dev</string>
+            <string>staging</string>
+            <string>production</string>
+          </choices>
+          <description>Target deployment environment</description>
+        </hudson.model.ChoiceParameterDefinition>
+      </parameterDefinitions>
+    </hudson.model.ParametersDefinitionProperty>
+    <org.jenkinsci.plugins.workflow.job.properties.PipelineTriggersJobProperty>
+      <triggers>
+        <hudson.triggers.TimerTrigger>
+          <spec>H 2 * * *</spec>
+        </hudson.triggers.TimerTrigger>
+      </triggers>
+    </org.jenkinsci.plugins.workflow.job.properties.PipelineTriggersJobProperty>
+  </properties>
+  <definition class="org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition">
+    <scriptPath>Jenkinsfile</scriptPath>
+    <sandbox>true</sandbox>
+  </definition>
+  <triggers/>
+  <disabled>false</disabled>
+</project>
