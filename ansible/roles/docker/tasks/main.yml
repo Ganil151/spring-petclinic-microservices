@@ -31,26 +31,26 @@
     state: absent
   tags: docker
 
-- name: Install Docker via amazon-linux-extras (The AWS Way)
+- name: Ensure broken repo is gone
+  ansible.builtin.file:
+    path: /etc/yum.repos.d/docker-ce.repo
+    state: absent
+  tags: docker
+
+- name: Install Docker via Amazon Extras
   ansible.builtin.shell: "amazon-linux-extras install docker -y"
   args:
     creates: /usr/bin/docker
   tags: docker
 
-- name: Install Docker Compose plugin
-  ansible.builtin.yum:
-    name: docker-compose-plugin
-    state: present
-  tags: docker
-
-- name: Enable and start Docker
+- name: Start and Enable Docker
   ansible.builtin.systemd:
     name: docker
     state: started
     enabled: true
   tags: docker
 
-- name: Add ec2-user to Docker group
+- name: Add user to docker group
   ansible.builtin.user:
     name: ec2-user
     groups: docker
