@@ -116,7 +116,9 @@ max_unavailable: "25%"
 readiness_probe_initial_delay: 30
 liveness_probe_initial_delay: 60
 
-
+#=======================================================
+#                     Flow Diagram
+#=======================================================
 
 # ┌─────────────────────────────────────────────────────────┐
 # │ Terragrunt (terraform/live/dev/k8s-cluster/)           │
