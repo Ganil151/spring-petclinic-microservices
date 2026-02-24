@@ -25,6 +25,7 @@ ansible_ssh_common_args=-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/n
 
 # Environment Configuration
 app_env=${var.environment}
+project_name=${var.project_name}
 
 # 🧪 Industrial Rigor: SSH Proxy Tunneling through Bastion
 # Applied per-host below for private instances
