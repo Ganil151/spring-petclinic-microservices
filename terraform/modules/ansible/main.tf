@@ -37,7 +37,7 @@ vpc_id=${var.vpc_id}
 
 [jenkins_masters]
 %{ if var.bastion_ip != "" }
-jenkins-master ansible_host=${var.jenkins_master_priv} private_ip=${var.jenkins_master_priv} ansible_ssh_common_args='-o ProxyCommand="ssh -W %%h:%%p -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ${var.ssh_user}@${var.bastion_ip}"'
+jenkins-master ansible_host=${var.jenkins_master_priv} private_ip=${var.jenkins_master_priv} ansible_ssh_common_args='-o ProxyJump=${var.ssh_user}@${var.bastion_ip} -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ForwardAgent=yes'
 %{ else }
 jenkins-master ansible_host=${var.jenkins_master_priv} private_ip=${var.jenkins_master_priv}
 %{ endif }
@@ -53,7 +53,7 @@ jenkins_agent_port=50000
 
 [sonarqube_servers]
 %{ if var.bastion_ip != "" }
-sonarqube-server ansible_host=${var.sonarqube_priv} private_ip=${var.sonarqube_priv} ansible_ssh_common_args='-o ProxyCommand="ssh -W %%h:%%p -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ${var.ssh_user}@${var.bastion_ip}"'
+sonarqube-server ansible_host=${var.sonarqube_priv} private_ip=${var.sonarqube_priv} ansible_ssh_common_args='-o ProxyJump=${var.ssh_user}@${var.bastion_ip} -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ForwardAgent=yes'
 %{ else }
 sonarqube-server ansible_host=${var.sonarqube_priv} private_ip=${var.sonarqube_priv}
 %{ endif }
@@ -69,7 +69,7 @@ sonarqube_http_port=9000
 [k8s_workers]
 %{ for idx, ip in var.worker_node_priv_ips }
 %{ if var.bastion_ip != "" }
-worker-node-${idx + 1} ansible_host=${ip} private_ip=${ip} ansible_ssh_common_args='-o ProxyCommand="ssh -W %%h:%%p -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ${var.ssh_user}@${var.bastion_ip}"'
+worker-node-${idx + 1} ansible_host=${ip} private_ip=${ip} ansible_ssh_common_args='-o ProxyJump=${var.ssh_user}@${var.bastion_ip} -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ForwardAgent=yes'
 %{ else }
 worker-node-${idx + 1} ansible_host=${ip} private_ip=${ip}
 %{ endif }
