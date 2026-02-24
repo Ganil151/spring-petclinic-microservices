@@ -1,19 +1,44 @@
 ---
+# =============================================================================
+# Kubernetes Setup Role — Metadata
+# Purpose: Role definition for Ansible Galaxy compatibility
+# Alignment: Terragrunt EKS outputs → Ansible configuration
+# =============================================================================
+
 galaxy_info:
   role_name: kubernetes_setup
   author: Spring Petclinic Team
-  description: Sets up Kubernetes cluster for Spring Petclinic Microservices
+  description: Configures Kubernetes resources for Spring Petclinic Microservices on EKS
   company: Spring Petclinic
   license: Apache-2.0
   min_ansible_version: "2.14"
+  
+  # Repository tracking
+  issue_tracker: https://github.com/your-org/spring-petclinic-microservices/issues
+  repository: https://github.com/your-org/spring-petclinic-microservices
+  
+  # Platform support
   platforms:
     - name: Amazon
       versions:
         - 2
+    - name: Ubuntu
+      versions:
+        - focal
+        - jammy
+  
+  # Discoverability tags
   galaxy_tags:
     - kubernetes
     - k8s
     - container
     - orchestration
+    - aws
+    - eks
+    - spring
+    - microservices
+    - cloud
+    - devops
 
+# Role dependencies (empty = standalone execution)
 dependencies: []
