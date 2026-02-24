@@ -21,13 +21,10 @@ locals {
 ansible_user=${var.ssh_user}
 ansible_ssh_private_key_file=${var.ssh_key_file}
 ansible_python_interpreter=/usr/bin/python3
+ansible_ssh_common_args=-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null
 
 # 🧪 Industrial Rigor: SSH Proxy Tunneling through Bastion
-%{ if var.bastion_ip != "" }
-ansible_ssh_common_args='-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ProxyCommand="ssh -W %h:%p -q ${var.ssh_user}@${var.bastion_ip} -i ${var.ssh_key_file} -o StrictHostKeyChecking=no"'
-%{ else }
-ansible_ssh_common_args='-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
-%{ endif }
+# Applied per-host below for private instances
 
 # AWS Configuration
 aws_region=${var.aws_region}
@@ -39,7 +36,11 @@ vpc_id=${var.vpc_id}
 # ─────────────────────────────────────────────────────────────────────────────
 
 [jenkins_masters]
+%{ if var.bastion_ip != "" }
+jenkins-master ansible_host=${var.jenkins_master_priv} private_ip=${var.jenkins_master_priv} ansible_ssh_common_args='-o ProxyCommand="ssh -W %%h:%%p -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ${var.ssh_user}@${var.bastion_ip}"'
+%{ else }
 jenkins-master ansible_host=${var.jenkins_master_priv} private_ip=${var.jenkins_master_priv}
+%{ endif }
 
 [jenkins_masters:vars]
 ansible_roles=java,docker,awscli,jenkins,security_tools
@@ -51,7 +52,11 @@ jenkins_agent_port=50000
 # ─────────────────────────────────────────────────────────────────────────────
 
 [sonarqube_servers]
+%{ if var.bastion_ip != "" }
+sonarqube-server ansible_host=${var.sonarqube_priv} private_ip=${var.sonarqube_priv} ansible_ssh_common_args='-o ProxyCommand="ssh -W %%h:%%p -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ${var.ssh_user}@${var.bastion_ip}"'
+%{ else }
 sonarqube-server ansible_host=${var.sonarqube_priv} private_ip=${var.sonarqube_priv}
+%{ endif }
 
 [sonarqube_servers:vars]
 ansible_roles=java,docker,awscli,sonarqube,security_tools
@@ -63,7 +68,11 @@ sonarqube_http_port=9000
 
 [k8s_workers]
 %{ for idx, ip in var.worker_node_priv_ips }
+%{ if var.bastion_ip != "" }
+worker-node-${idx + 1} ansible_host=${ip} private_ip=${ip} ansible_ssh_common_args='-o ProxyCommand="ssh -W %%h:%%p -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ${var.ssh_user}@${var.bastion_ip}"'
+%{ else }
 worker-node-${idx + 1} ansible_host=${ip} private_ip=${ip}
+%{ endif }
 %{ endfor }
 
 [k8s_workers:vars]
