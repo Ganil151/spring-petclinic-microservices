@@ -65,8 +65,8 @@ mock_roles:
   - geerlingguy.java
   - geerlingguy.jenkins
 
-# Loop var prefix
-loop_var_prefix: "{item}"
+# Loop var prefix (quoted to prevent YAML alias interpretation)
+loop_var_prefix: '"{item}"'
 
 # Rules specific configuration
 rules:
