@@ -41,7 +41,8 @@
     name: audit
     state: present
   when:
-    - "'audit' not in ansible_cmdline or ansible_cmdline.audit is defined"
+    - package_install_result.failed is defined
+    - package_install_result.failed
   tags: security
 
 # ── Fail2ban ──────────────────────────────────────────────────────────────────
@@ -63,6 +64,9 @@
     owner: root
     group: root
   notify: Restart fail2ban
+  when:
+    - package_install_result is defined
+    - not (package_install_result.failed | default(false))
   tags:
     - security
     - fail2ban
@@ -72,6 +76,9 @@
     name: fail2ban
     state: started
     enabled: true
+  when:
+    - package_install_result is defined
+    - not (package_install_result.failed | default(false))
   tags:
     - security
     - fail2ban
@@ -82,6 +89,9 @@
     name: auditd
     state: started
     enabled: true
+  when:
+    - package_install_result is defined
+    - not (package_install_result.failed | default(false)) or (package_install_result is mapping and 'audit' in (package_install_result.results | default([])))
   tags:
     - security
     - audit
@@ -100,6 +110,9 @@
     - "-w /etc/shadow -p wa -k shadow_changes"
     - "-w /etc/sudoers -p wa -k sudoers_changes"
   notify: Reload auditd rules
+  when:
+    - package_install_result is defined
+    - not (package_install_result.failed | default(false)) or (package_install_result is mapping and 'audit' in (package_install_result.results | default([])))
   tags:
     - security
     - audit

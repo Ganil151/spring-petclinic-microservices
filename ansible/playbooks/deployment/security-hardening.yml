@@ -24,7 +24,7 @@
   hosts: all
   become: true
   gather_facts: true
-  
+
   vars:
     # Security Configuration
     security_ssh_port: 22
@@ -38,29 +38,29 @@
     security_ssh_x11_forwarding: "no"
     security_ssh_allow_tcp_forwarding: "no"
     security_ssh_permit_empty_passwords: "no"
-    
+
     # Fail2ban Configuration
     security_fail2ban_enabled: true
     security_fail2ban_bantime: 3600
     security_fail2ban_findtime: 600
     security_fail2ban_maxretry: 3
-    
+
     # Firewall Configuration
     security_firewall_enabled: true
     security_firewall_allowed_tcp_ports:
-      - 22    # SSH
-      - 80    # HTTP
-      - 443   # HTTPS
-    
+      - 22 # SSH
+      - 80 # HTTP
+      - 443 # HTTPS
+
     # Audit Configuration
     security_audit_enabled: true
     security_audit_log_retention_days: 90
-    
+
     # User Configuration
     security_sudo_wheel_group: true
     security_password_minlen: 12
     security_password_retry: 3
-    
+
   pre_tasks:
     - name: Display security hardening start
       ansible.builtin.debug:
@@ -93,28 +93,52 @@
         regexp: "^#?{{ item.key }} "
         line: "{{ item.key }} {{ item.value }}"
         state: present
-        validate: 'sshd -t -f %s'
+        validate: "sshd -t -f %s"
       loop:
-        - { key: 'PermitRootLogin', value: '{{ security_ssh_permit_root_login }}' }
-        - { key: 'PasswordAuthentication', value: '{{ security_ssh_password_authentication }}' }
-        - { key: 'PubkeyAuthentication', value: '{{ security_ssh_pubkey_authentication }}' }
-        - { key: 'MaxAuthTries', value: '{{ security_ssh_max_auth_tries }}' }
-        - { key: 'ClientAliveInterval', value: '{{ security_ssh_client_alive_interval }}' }
-        - { key: 'ClientAliveCountMax', value: '{{ security_ssh_client_alive_count_max }}' }
-        - { key: 'LoginGraceTime', value: '{{ security_ssh_login_grace_time }}' }
-        - { key: 'X11Forwarding', value: '{{ security_ssh_x11_forwarding }}' }
-        - { key: 'AllowTcpForwarding', value: '{{ security_ssh_allow_tcp_forwarding }}' }
-        - { key: 'PermitEmptyPasswords', value: '{{ security_ssh_permit_empty_passwords }}' }
-        - { key: 'Protocol', value: '2' }
-        - { key: 'HostbasedAuthentication', value: 'no' }
-        - { key: 'PermitUserEnvironment', value: 'no' }
-        - { key: 'UsePAM', value: 'yes' }
-        - { key: 'PrintMotd', value: 'no' }
-        - { key: 'PrintLastLog', value: 'yes' }
-        - { key: 'TCPKeepAlive', value: 'yes' }
-        - { key: 'Compression', value: 'delayed' }
-        - { key: 'StrictModes', value: 'yes' }
-        - { key: 'IgnoreRhosts', value: 'yes' }
+        - {
+            key: "PermitRootLogin",
+            value: "{{ security_ssh_permit_root_login }}",
+          }
+        - {
+            key: "PasswordAuthentication",
+            value: "{{ security_ssh_password_authentication }}",
+          }
+        - {
+            key: "PubkeyAuthentication",
+            value: "{{ security_ssh_pubkey_authentication }}",
+          }
+        - { key: "MaxAuthTries", value: "{{ security_ssh_max_auth_tries }}" }
+        - {
+            key: "ClientAliveInterval",
+            value: "{{ security_ssh_client_alive_interval }}",
+          }
+        - {
+            key: "ClientAliveCountMax",
+            value: "{{ security_ssh_client_alive_count_max }}",
+          }
+        - {
+            key: "LoginGraceTime",
+            value: "{{ security_ssh_login_grace_time }}",
+          }
+        - { key: "X11Forwarding", value: "{{ security_ssh_x11_forwarding }}" }
+        - {
+            key: "AllowTcpForwarding",
+            value: "{{ security_ssh_allow_tcp_forwarding }}",
+          }
+        - {
+            key: "PermitEmptyPasswords",
+            value: "{{ security_ssh_permit_empty_passwords }}",
+          }
+        - { key: "Protocol", value: "2" }
+        - { key: "HostbasedAuthentication", value: "no" }
+        - { key: "PermitUserEnvironment", value: "no" }
+        - { key: "UsePAM", value: "yes" }
+        - { key: "PrintMotd", value: "no" }
+        - { key: "PrintLastLog", value: "yes" }
+        - { key: "TCPKeepAlive", value: "yes" }
+        - { key: "Compression", value: "delayed" }
+        - { key: "StrictModes", value: "yes" }
+        - { key: "IgnoreRhosts", value: "yes" }
       notify: Restart SSH
       tags:
         - security
@@ -137,7 +161,7 @@
           ╚══════════════════════════════════════════════════════════════╝
         owner: root
         group: root
-        mode: '0644'
+        mode: "0644"
       tags:
         - security
         - ssh
@@ -148,7 +172,7 @@
         regexp: "^#?Banner "
         line: "Banner /etc/ssh/banner"
         state: present
-        validate: 'sshd -t -f %s'
+        validate: "sshd -t -f %s"
       notify: Restart SSH
       tags:
         - security
@@ -215,7 +239,7 @@
         permanent: true
         state: enabled
         immediate: true
-      when: 
+      when:
         - security_firewall_enabled | bool
         - "'jenkins_masters' in group_names"
       tags:
@@ -228,7 +252,7 @@
         permanent: true
         state: enabled
         immediate: true
-      when: 
+      when:
         - security_firewall_enabled | bool
         - "'sonarqube_servers' in group_names"
       tags:
@@ -238,13 +262,40 @@
     # =============================================================================
     # Fail2ban Configuration
     # =============================================================================
+    # ── EPEL Repository Setup ────────────────────────────────────────────────────
+    - name: Install EPEL repository (required for fail2ban on Amazon Linux 2)
+      ansible.builtin.yum:
+        name: epel-release
+        state: present
+      when:
+        - security_fail2ban_enabled | bool
+        - ansible_os_family == "RedHat"
+      tags:
+        - security
+        - fail2ban
+
     - name: Install fail2ban
       ansible.builtin.yum:
-        name: 
+        name:
           - fail2ban
           - fail2ban-systemd
         state: present
+      register: fail2ban_install_result
+      ignore_errors: true
       when: security_fail2ban_enabled | bool
+      tags:
+        - security
+        - fail2ban
+
+    - name: Install fail2ban from amazon-linux-extras (fallback for Amazon Linux 2)
+      ansible.builtin.shell: amazon-linux-extras install epel -y && yum install -y fail2ban fail2ban-systemd
+      args:
+        warn: no
+      when:
+        - security_fail2ban_enabled | bool
+        - ansible_distribution == "Amazon"
+        - fail2ban_install_result is defined
+        - fail2ban_install_result.failed
       tags:
         - security
         - fail2ban
@@ -255,7 +306,7 @@
         dest: /etc/fail2ban/jail.local
         owner: root
         group: root
-        mode: '0644'
+        mode: "0644"
       notify: Restart fail2ban
       when: security_fail2ban_enabled | bool
       tags:
@@ -299,7 +350,7 @@
         path: /etc/audit/rules.d/audit.rules
         line: "{{ item }}"
         create: true
-        mode: '0600'
+        mode: "0600"
       loop:
         - "-w /etc/ssh/sshd_config -p wa -k sshd_config"
         - "-w /var/log/secure -p wa -k secure_log"
@@ -315,9 +366,9 @@
     - name: Ensure sudo group has wheel privileges
       ansible.builtin.lineinfile:
         path: /etc/sudoers
-        regexp: '^%wheel'
-        line: '%wheel ALL=(ALL) ALL'
-        validate: 'visudo -cf %s'
+        regexp: "^%wheel"
+        line: "%wheel ALL=(ALL) ALL"
+        validate: "visudo -cf %s"
       when: security_sudo_wheel_group | bool
       tags:
         - security
@@ -329,11 +380,11 @@
         regexp: "^#?{{ item.key }} ="
         line: "{{ item.key }} = {{ item.value }}"
       loop:
-        - { key: 'minlen', value: '{{ security_password_minlen }}' }
-        - { key: 'dcredit', value: '-1' }
-        - { key: 'ucredit', value: '-1' }
-        - { key: 'ocredit', value: '-1' }
-        - { key: 'lcredit', value: '-1' }
+        - { key: "minlen", value: "{{ security_password_minlen }}" }
+        - { key: "dcredit", value: "-1" }
+        - { key: "ucredit", value: "-1" }
+        - { key: "ocredit", value: "-1" }
+        - { key: "lcredit", value: "-1" }
       tags:
         - security
         - users
@@ -346,7 +397,7 @@
         path: /etc/modprobe.d/{{ item }}.conf
         line: "install {{ item }} /bin/true"
         create: true
-        mode: '0644'
+        mode: "0644"
       loop:
         - cramfs
         - freevxfs
@@ -368,18 +419,18 @@
         state: present
         reload: true
       loop:
-        - { name: 'net.ipv4.tcp_syncookies', value: '1' }
-        - { name: 'net.ipv4.conf.all.accept_redirects', value: '0' }
-        - { name: 'net.ipv4.conf.default.accept_redirects', value: '0' }
-        - { name: 'net.ipv4.conf.all.send_redirects', value: '0' }
-        - { name: 'net.ipv4.conf.default.send_redirects', value: '0' }
-        - { name: 'net.ipv4.conf.all.accept_source_route', value: '0' }
-        - { name: 'net.ipv4.conf.default.accept_source_route', value: '0' }
-        - { name: 'net.ipv4.icmp_echo_ignore_broadcasts', value: '1' }
-        - { name: 'net.ipv4.conf.all.log_martians', value: '1' }
-        - { name: 'net.ipv4.conf.default.log_martians', value: '1' }
-        - { name: 'kernel.randomize_va_space', value: '2' }
-        - { name: 'kernel.exec-shield', value: '1' }
+        - { name: "net.ipv4.tcp_syncookies", value: "1" }
+        - { name: "net.ipv4.conf.all.accept_redirects", value: "0" }
+        - { name: "net.ipv4.conf.default.accept_redirects", value: "0" }
+        - { name: "net.ipv4.conf.all.send_redirects", value: "0" }
+        - { name: "net.ipv4.conf.default.send_redirects", value: "0" }
+        - { name: "net.ipv4.conf.all.accept_source_route", value: "0" }
+        - { name: "net.ipv4.conf.default.accept_source_route", value: "0" }
+        - { name: "net.ipv4.icmp_echo_ignore_broadcasts", value: "1" }
+        - { name: "net.ipv4.conf.all.log_martians", value: "1" }
+        - { name: "net.ipv4.conf.default.log_martians", value: "1" }
+        - { name: "kernel.randomize_va_space", value: "2" }
+        - { name: "kernel.exec-shield", value: "1" }
       tags:
         - security
         - hardening
