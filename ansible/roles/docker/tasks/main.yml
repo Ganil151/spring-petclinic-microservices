@@ -10,16 +10,18 @@
       ansible.builtin.file:
         path: /etc/yum.repos.d/docker-ce.repo
         state: absent
+      become: true
 
     - name: Clean all yum metadata
       ansible.builtin.command: yum clean all
-      
+      become: true
 
     - name: Remove yum cache directory
       ansible.builtin.file:
         path: /var/cache/yum
         state: absent
-  
+      become: true
+
 - name: Remove old Docker versions
   ansible.builtin.yum:
     name:
