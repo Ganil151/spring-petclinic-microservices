@@ -32,8 +32,6 @@
   tags: docker
 
 - name: Install Docker via Amazon Extras
-  # PROFESSOR'S NOTE: We use 'command' instead of 'shell' for better security
-  # and ensure no deprecated parameters like 'warn' exist.
   ansible.builtin.command: amazon-linux-extras install docker -y
   args:
     creates: /usr/bin/docker
