@@ -1,8 +1,7 @@
 ---
 # =============================================================================
 # Kubernetes Setup Role — Metadata
-# Purpose: Role definition for Ansible Galaxy compatibility
-# Alignment: Terragrunt EKS outputs → Ansible configuration
+# Location: ansible/roles/kubernetes_setup/meta/main.yml
 # =============================================================================
 
 galaxy_info:
@@ -17,15 +16,12 @@ galaxy_info:
   issue_tracker: https://github.com/your-org/spring-petclinic-microservices/issues
   repository: https://github.com/your-org/spring-petclinic-microservices
   
-  # Platform support
+  # Platform support (MUST match actual infrastructure)
   platforms:
     - name: Amazon
       versions:
         - 2
-    - name: Ubuntu
-      versions:
-        - focal
-        - jammy
+    # ← REMOVE Ubuntu entries unless actually tested/deployed
   
   # Discoverability tags
   galaxy_tags:
@@ -39,6 +35,7 @@ galaxy_info:
     - microservices
     - cloud
     - devops
+    - amazon-linux
 
 # Role dependencies (empty = standalone execution)
 dependencies: []
