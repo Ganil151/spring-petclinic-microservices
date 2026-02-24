@@ -1,4 +1,3 @@
----
 # =============================================================================
 # Docker Role — tasks/main.yml (Amazon Linux 2 Optimized)
 # =============================================================================
@@ -15,18 +14,20 @@
       ansible.builtin.command: yum clean all
       # PROFESSOR'S NOTE: We removed any hidden 'warn' parameters 
       # and used the explicit command string.
+      changed_when: true  # ← ADD: Explicitly declare state change
 
     - name: Remove yum cache directory
       ansible.builtin.file:
         path: /var/cache/yum
         state: absent
+      # ← CONSIDER: This is aggressive; yum clean all usually suffices
 
 - name: Remove old Docker versions
   ansible.builtin.yum:
     name:
       - docker
       - docker-common
-      - docker-selinux
+      - docker-selinux  # ← NOTE: Package renamed to container-selinux on newer AL2
       - docker-engine
     state: absent
   tags: docker
@@ -34,8 +35,10 @@
 - name: Install Docker via Amazon Extras
   ansible.builtin.command: amazon-linux-extras install docker -y
   args:
-    creates: /usr/bin/docker
+    creates: /usr/bin/docker  # ← GOOD: Idempotency guard
   tags: docker
+  # ← CONSIDER: Use ansible.builtin.yum with name: docker and update_cache: yes
+  #    for better Ansible-native integration and error handling
 
 - name: Start and Enable Docker
   ansible.builtin.systemd:
@@ -50,9 +53,12 @@
     groups: docker
     append: true
   tags: docker
+  # ← ⚠️ SECURITY NOTE: docker group = root-equivalent access
+  #    Document this risk in your security compliance docs
 
 - name: Verify Docker installation
   ansible.builtin.command: docker --version
   register: docker_version_output
   changed_when: false
   tags: docker
+  # ← GOOD: Read-only check with proper changed_when declaration
