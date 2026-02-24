@@ -18,15 +18,15 @@ jenkins:
             containers:
               - name: "maven"
                 image: "maven:3-eclipse-temurin-17"
-                command: "cat"
+                command: ["cat"]
                 ttyEnabled: true
               - name: "docker"
                 image: "docker:latest"
-                command: "cat"
+                command: ["cat"]
                 ttyEnabled: true
               - name: "kubectl"
                 image: "bitnami/kubectl:latest"
-                command: "cat"
+                command: ["cat"]
                 ttyEnabled: true
 
 unclassified:
@@ -36,6 +36,4 @@ unclassified:
 
 security:
   apiToken:
-    creationAllowed: true
-  roleBasedCanary:
-    enabled: true
+    creationOfExistingTokensEnabled: false

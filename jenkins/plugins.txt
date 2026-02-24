@@ -1,0 +1,42 @@
+# Jenkins Plugins for Spring Petclinic Microservices
+# Format: plugin-id:version
+
+# Kubernetes & Cloud
+kubernetes:latest
+kubernetes-cli:latest
+kubernetes-credentials:latest
+
+# Docker
+docker-plugin:latest
+docker-workflow:latest
+
+# Maven & Build Tools
+maven-plugin:latest
+
+# Security & Analysis
+sonar:latest
+owasp-dependency-check:latest
+
+# Git & SCM
+git:latest
+git-parameter:latest
+
+# Pipeline & Workflow
+workflow-aggregator:latest
+workflow-job:latest
+pipeline-utility-steps:latest
+
+# Credentials & Security
+credentials:latest
+credentials-binding:latest
+
+# Notifications
+slack:latest
+email-ext:latest
+
+# Job Configuration
+job-dsl:latest
+configuration-as-code:latest
+
+# Role-Based Security
+role-strategy:latest

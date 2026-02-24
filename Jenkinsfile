@@ -25,10 +25,13 @@ pipeline {
         }
 
         stage('Security & Audit') {
-            when { expression { params.RUN_SECURITY_SCAN } }
+            when { expression { params.RUN_SECURITY_SCAN != null ? params.RUN_SECURITY_SCAN : true } }
             steps {
-                echo "Referencing Security Pipeline from /jenkins folder..."
-                load "jenkins/pipelines/security-scan-pipeline.groovy"
+                script {
+                    echo "Referencing Security Pipeline from /jenkins folder..."
+                    def securityScan = load "jenkins/pipelines/security-scan-pipeline.groovy"
+                    securityScan.call()
+                }
             }
         }
 
@@ -42,8 +45,11 @@ pipeline {
 
         stage('Containerize & Deploy') {
             steps {
-                echo "Referencing Deployment Pipeline from /jenkins folder..."
-                load "jenkins/pipelines/deployment-pipeline.groovy"
+                script {
+                    echo "Referencing Deployment Pipeline from /jenkins folder..."
+                    def deployment = load "jenkins/pipelines/deployment-pipeline.groovy"
+                    deployment.call()
+                }
             }
         }
     }
