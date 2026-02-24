@@ -91,7 +91,7 @@
     enabled: true
   when:
     - package_install_result is defined
-    - not (package_install_result.failed | default(false)) or (package_install_result is mapping and 'audit' in (package_install_result.results | default([])))
+    - not (package_install_result.failed | default(false))
   tags:
     - security
     - audit
@@ -112,7 +112,7 @@
   notify: Reload auditd rules
   when:
     - package_install_result is defined
-    - not (package_install_result.failed | default(false)) or (package_install_result is mapping and 'audit' in (package_install_result.results | default([])))
+    - not (package_install_result.failed | default(false))
   tags:
     - security
     - audit

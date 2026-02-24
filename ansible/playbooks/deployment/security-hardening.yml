@@ -308,6 +308,83 @@
         group: root
         mode: "0644"
       notify: Restart fail2ban
+      when:
+        - security_fail2ban_enabled | bool
+        - fail2ban_install_result is defined
+        - not (fail2ban_install_result.failed | default(false))
+      tags:
+        - security
+        - fail2ban
+
+    - name: Enable and start fail2ban
+      ansible.builtin.systemd:
+        name: fail2ban
+        state: started
+        enabled: true
+      when:
+        - security_fail2ban_enabled | bool
+        - fail2ban_install_result is defined
+        - not (fail2ban_install_result.failed | default(false))
+      tags:
+        - security
+        - fail2ban
+
+    # =============================================================================
+    # Audit Configuration
+    # =============================================================================
+    - name: Install auditd
+      ansible.builtin.yum:
+        name: audit
+        state: present
+      register: audit_install_result
+      ignore_errors: true
+      when: security_audit_enabled | default(true) | bool
+      tags:
+        - security
+        - audit
+
+    - name: Enable and start auditd
+      ansible.builtin.systemd:
+        name: auditd
+        state: started
+        enabled: true
+      when:
+        - security_audit_enabled | default(true) | bool
+        - audit_install_result is defined
+        - not (audit_install_result.failed | default(false))
+      tags:
+        - security
+        - audit
+
+    - name: Configure audit rules
+      ansible.builtin.lineinfile:
+        path: /etc/audit/rules.d/audit.rules
+        line: "{{ item }}"
+        create: true
+        mode: "0600"
+      loop:
+        - "-w /etc/ssh/sshd_config -p wa -k sshd_config"
+        - "-w /var/log/secure -p wa -k secure_log"
+        - "-w /etc/passwd -p wa -k passwd_changes"
+        - "-w /etc/group -p wa -k group_changes"
+        - "-w /etc/shadow -p wa -k shadow_changes"
+        - "-w /etc/sudoers -p wa -k sudoers_changes"
+      when:
+        - security_audit_enabled | default(true) | bool
+        - audit_install_result is defined
+        - not (audit_install_result.failed | default(false))
+      tags:
+        - security
+        - audit
+
+    - name: Create fail2ban jail.local configuration
+      ansible.builtin.template:
+        src: templates/fail2ban_jail_local.j2
+        dest: /etc/fail2ban/jail.local
+        owner: root
+        group: root
+        mode: "0644"
+      notify: Restart fail2ban
       when: security_fail2ban_enabled | bool
       tags:
         - security
