@@ -3,6 +3,11 @@
 # Docker Role — tasks/main.yml (Amazon Linux 2 Optimized)
 # =============================================================================
 
+- name: Clean up broken Docker repo
+  ansible.builtin.file:
+    path: /etc/yum.repos.d/docker-ce.repo
+    state: absent
+
 - name: Remove old Docker versions
   ansible.builtin.yum:
     name:
@@ -61,7 +66,3 @@
   changed_when: false
   tags: docker
 
-- name: Clean up broken Docker repo
-  ansible.builtin.file:
-    path: /etc/yum.repos.d/docker-ce.repo
-    state: absent
