@@ -5,8 +5,9 @@
 # =============================================================================
 
 
-- name: Restart Docker
+- name: Configure Docker daemon
   ansible.builtin.systemd:
+    src: daemon.json.j2
     name: docker
     state: restarted
     daemon_reload: true
