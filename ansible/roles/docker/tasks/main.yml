@@ -3,11 +3,6 @@
 # Docker Role — tasks/main.yml (Amazon Linux 2 Optimized)
 # =============================================================================
 
----
-# =============================================================================
-# Docker Role — tasks/main.yml (Fixed for Amazon Linux 2)
-# =============================================================================
-
 - name: Clean up broken CentOS Docker repo
   ansible.builtin.file:
     path: /etc/yum.repos.d/docker-ce.repo
@@ -55,4 +50,3 @@
   register: docker_version_output
   changed_when: false
   tags: docker
-
