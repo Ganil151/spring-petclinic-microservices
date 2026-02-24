@@ -1,0 +1,25 @@
+{# =============================================================================
+   Namespace Template for Spring Petclinic
+   Location: ansible/roles/kubernetes_setup/templates/namespace.yaml.j2
+   Purpose: Create isolated namespace with resource labels
+   ============================================================================= #}
+{# Variables expected:
+   - default_namespace: Namespace name (default: petclinic)
+   - app_env: Environment (dev/staging/prod)
+   - project_name: Project identifier (default: spring-petclinic)
+#}
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: {{ default_namespace | default('petclinic') }}
+  labels:
+    app.kubernetes.io/name: {{ project_name | default('spring-petclinic') }}
+    app.kubernetes.io/instance: {{ default_namespace | default('petclinic') }}
+    app.kubernetes.io/environment: {{ app_env | default('dev') }}
+    app.kubernetes.io/managed-by: ansible
+    pod-security.kubernetes.io/enforce: {{ pod_security_standards | default('baseline') }}
+    pod-security.kubernetes.io/audit: {{ pod_security_standards | default('baseline') }}
+    pod-security.kubernetes.io/warn: {{ pod_security_standards | default('baseline') }}
+  annotations:
+    description: "Namespace for {{ project_name | default('spring-petclinic') }} {{ app_env | default('dev') }} environment"
+    owner: "platform-team@{{ project_name | default('spring-petclinic') }}.com"
