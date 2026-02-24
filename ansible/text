@@ -1,0 +1,985 @@
+.
+├── 300
+│   ├── bastion-host
+│   ├── jenkins-master
+│   ├── sonarqube-server
+│   ├── worker-node-1
+│   └── worker-node-2
+├── ansible.cfg
+├── .ansible-lint.yml
+├── collections
+│   ├── ansible_collections
+│   │   ├── kubernetes
+│   │   │   └── core
+│   │   │       ├── .ansible-lint
+│   │   │       ├── .ansible-lint-ignore
+│   │   │       ├── bindep.txt
+│   │   │       ├── CHANGELOG.rst
+│   │   │       ├── changelogs
+│   │   │       │   ├── changelog.yaml
+│   │   │       │   └── config.yaml
+│   │   │       ├── codecov.yml
+│   │   │       ├── CONTRIBUTING.md
+│   │   │       ├── docs
+│   │   │       │   ├── docsite
+│   │   │       │   │   ├── extra-docs.yml
+│   │   │       │   │   └── rst
+│   │   │       │   │       ├── kubernetes_scenarios
+│   │   │       │   │       │   ├── k8s_intro.rst
+│   │   │       │   │       │   ├── k8s_scenarios.rst
+│   │   │       │   │       │   └── scenario_k8s_object.rst
+│   │   │       │   │       └── scenario_guide.rst
+│   │   │       │   ├── kubernetes.core.helm_info_module.rst
+│   │   │       │   ├── kubernetes.core.helm_module.rst
+│   │   │       │   ├── kubernetes.core.helm_plugin_info_module.rst
+│   │   │       │   ├── kubernetes.core.helm_plugin_module.rst
+│   │   │       │   ├── kubernetes.core.helm_pull_module.rst
+│   │   │       │   ├── kubernetes.core.helm_registry_auth_module.rst
+│   │   │       │   ├── kubernetes.core.helm_repository_module.rst
+│   │   │       │   ├── kubernetes.core.helm_template_module.rst
+│   │   │       │   ├── kubernetes.core.k8s_cluster_info_module.rst
+│   │   │       │   ├── kubernetes.core.k8s_cp_module.rst
+│   │   │       │   ├── kubernetes.core.k8s_drain_module.rst
+│   │   │       │   ├── kubernetes.core.k8s_exec_module.rst
+│   │   │       │   ├── kubernetes.core.k8s_info_module.rst
+│   │   │       │   ├── kubernetes.core.k8s_json_patch_module.rst
+│   │   │       │   ├── kubernetes.core.k8s_log_module.rst
+│   │   │       │   ├── kubernetes.core.k8s_lookup.rst
+│   │   │       │   ├── kubernetes.core.k8s_module.rst
+│   │   │       │   ├── kubernetes.core.k8s_rollback_module.rst
+│   │   │       │   ├── kubernetes.core.k8s_scale_module.rst
+│   │   │       │   ├── kubernetes.core.k8s_service_module.rst
+│   │   │       │   ├── kubernetes.core.k8s_taint_module.rst
+│   │   │       │   ├── kubernetes.core.kubectl_connection.rst
+│   │   │       │   └── kubernetes.core.kustomize_lookup.rst
+│   │   │       ├── FILES.json
+│   │   │       ├── .github
+│   │   │       │   ├── patchback.yml
+│   │   │       │   └── workflows
+│   │   │       │       ├── changelog.yaml
+│   │   │       │       ├── galaxy-import.yaml
+│   │   │       │       ├── integration-tests.yaml
+│   │   │       │       ├── label-new-prs.yaml
+│   │   │       │       ├── linters.yaml
+│   │   │       │       ├── sanity-tests.yaml
+│   │   │       │       └── unit-tests.yaml
+│   │   │       ├── .gitignore
+│   │   │       ├── LICENSE
+│   │   │       ├── Makefile
+│   │   │       ├── MANIFEST.json
+│   │   │       ├── meta
+│   │   │       │   └── runtime.yml
+│   │   │       ├── plugins
+│   │   │       │   ├── action
+│   │   │       │   │   ├── helm_info.py -> k8s_info.py
+│   │   │       │   │   ├── helm_plugin_info.py -> k8s_info.py
+│   │   │       │   │   ├── helm_plugin.py -> k8s_info.py
+│   │   │       │   │   ├── helm.py -> k8s_info.py
+│   │   │       │   │   ├── helm_repository.py -> k8s_info.py
+│   │   │       │   │   ├── k8s_cluster_info.py -> k8s_info.py
+│   │   │       │   │   ├── k8s_cp.py -> k8s_info.py
+│   │   │       │   │   ├── k8s_drain.py -> k8s_info.py
+│   │   │       │   │   ├── k8s_exec.py -> k8s_info.py
+│   │   │       │   │   ├── k8s_info.py
+│   │   │       │   │   ├── k8s_json_patch.py -> k8s_info.py
+│   │   │       │   │   ├── k8s_log.py -> k8s_info.py
+│   │   │       │   │   ├── k8s.py -> k8s_info.py
+│   │   │       │   │   ├── k8s_rollback.py -> k8s_info.py
+│   │   │       │   │   ├── k8s_scale.py -> k8s_info.py
+│   │   │       │   │   └── k8s_service.py -> k8s_info.py
+│   │   │       │   ├── connection
+│   │   │       │   │   └── kubectl.py
+│   │   │       │   ├── doc_fragments
+│   │   │       │   │   ├── helm_common_options.py
+│   │   │       │   │   ├── __init__.py
+│   │   │       │   │   ├── k8s_auth_options.py
+│   │   │       │   │   ├── k8s_delete_options.py
+│   │   │       │   │   ├── k8s_name_options.py
+│   │   │       │   │   ├── k8s_resource_options.py
+│   │   │       │   │   ├── k8s_scale_options.py
+│   │   │       │   │   ├── k8s_state_options.py
+│   │   │       │   │   ├── k8s_wait_options.py
+│   │   │       │   │   └── __pycache__
+│   │   │       │   │       ├── k8s_auth_options.cpython-314.pyc
+│   │   │       │   │       ├── k8s_delete_options.cpython-314.pyc
+│   │   │       │   │       ├── k8s_name_options.cpython-314.pyc
+│   │   │       │   │       ├── k8s_resource_options.cpython-314.pyc
+│   │   │       │   │       └── k8s_wait_options.cpython-314.pyc
+│   │   │       │   ├── filter
+│   │   │       │   │   ├── k8s_config_resource_name.yml
+│   │   │       │   │   └── k8s.py
+│   │   │       │   ├── lookup
+│   │   │       │   │   ├── k8s.py
+│   │   │       │   │   └── kustomize.py
+│   │   │       │   ├── modules
+│   │   │       │   │   ├── helm_info.py
+│   │   │       │   │   ├── helm_plugin_info.py
+│   │   │       │   │   ├── helm_plugin.py
+│   │   │       │   │   ├── helm_pull.py
+│   │   │       │   │   ├── helm.py
+│   │   │       │   │   ├── helm_registry_auth.py
+│   │   │       │   │   ├── helm_repository.py
+│   │   │       │   │   ├── helm_template.py
+│   │   │       │   │   ├── __init__.py
+│   │   │       │   │   ├── k8s_cluster_info.py
+│   │   │       │   │   ├── k8s_cp.py
+│   │   │       │   │   ├── k8s_drain.py
+│   │   │       │   │   ├── k8s_exec.py
+│   │   │       │   │   ├── k8s_info.py
+│   │   │       │   │   ├── k8s_json_patch.py
+│   │   │       │   │   ├── k8s_log.py
+│   │   │       │   │   ├── k8s.py
+│   │   │       │   │   ├── k8s_rollback.py
+│   │   │       │   │   ├── k8s_scale.py
+│   │   │       │   │   ├── k8s_service.py
+│   │   │       │   │   └── k8s_taint.py
+│   │   │       │   └── module_utils
+│   │   │       │       ├── ansiblemodule.py
+│   │   │       │       ├── apply.py
+│   │   │       │       ├── args_common.py
+│   │   │       │       ├── client
+│   │   │       │       │   ├── discovery.py
+│   │   │       │       │   └── resource.py
+│   │   │       │       ├── common.py
+│   │   │       │       ├── copy.py
+│   │   │       │       ├── exceptions.py
+│   │   │       │       ├── hashes.py
+│   │   │       │       ├── helm_args_common.py
+│   │   │       │       ├── helm.py
+│   │   │       │       ├── __init__.py
+│   │   │       │       ├── k8s
+│   │   │       │       │   ├── client.py
+│   │   │       │       │   ├── core.py
+│   │   │       │       │   ├── exceptions.py
+│   │   │       │       │   ├── resource.py
+│   │   │       │       │   ├── runner.py
+│   │   │       │       │   ├── service.py
+│   │   │       │       │   └── waiter.py
+│   │   │       │       ├── k8sdynamicclient.py
+│   │   │       │       ├── selector.py
+│   │   │       │       ├── _version.py
+│   │   │       │       └── version.py
+│   │   │       ├── PSF-license.txt
+│   │   │       ├── README.md
+│   │   │       ├── requirements.txt
+│   │   │       ├── setup.cfg
+│   │   │       ├── test-requirements.txt
+│   │   │       ├── tests
+│   │   │       │   ├── config.yml
+│   │   │       │   ├── integration
+│   │   │       │   │   └── targets
+│   │   │       │   │       ├── helm
+│   │   │       │   │       │   ├── aliases
+│   │   │       │   │       │   ├── defaults
+│   │   │       │   │       │   │   └── main.yml
+│   │   │       │   │       │   ├── files
+│   │   │       │   │       │   │   ├── appversionless-chart
+│   │   │       │   │       │   │   │   ├── Chart.yaml
+│   │   │       │   │       │   │   │   └── templates
+│   │   │       │   │       │   │   │       └── configmap.yaml
+│   │   │       │   │       │   │   ├── appversionless-chart-v2
+│   │   │       │   │       │   │   │   ├── Chart.yaml
+│   │   │       │   │       │   │   │   └── templates
+│   │   │       │   │       │   │   │       └── configmap.yaml
+│   │   │       │   │       │   │   ├── dep-up
+│   │   │       │   │       │   │   │   ├── Chart.yaml
+│   │   │       │   │       │   │   │   └── values.yaml
+│   │   │       │   │       │   │   ├── test-chart
+│   │   │       │   │       │   │   │   ├── Chart.yaml
+│   │   │       │   │       │   │   │   └── templates
+│   │   │       │   │       │   │   │       └── configmap.yaml
+│   │   │       │   │       │   │   ├── test-chart-v2
+│   │   │       │   │       │   │   │   ├── Chart.yaml
+│   │   │       │   │       │   │   │   └── templates
+│   │   │       │   │       │   │   │       └── configmap.yaml
+│   │   │       │   │       │   │   ├── test-crds
+│   │   │       │   │       │   │   │   ├── Chart.yaml
+│   │   │       │   │       │   │   │   └── crds
+│   │   │       │   │       │   │   │       └── crd.yaml
+│   │   │       │   │       │   │   └── values.yaml
+│   │   │       │   │       │   ├── library
+│   │   │       │   │       │   │   ├── helm_test_pending.py
+│   │   │       │   │       │   │   └── helm_test_version.py
+│   │   │       │   │       │   ├── meta
+│   │   │       │   │       │   │   └── main.yml
+│   │   │       │   │       │   ├── playbook.yaml
+│   │   │       │   │       │   ├── runme.sh
+│   │   │       │   │       │   └── tasks
+│   │   │       │   │       │       ├── install.yml
+│   │   │       │   │       │       ├── main.yml
+│   │   │       │   │       │       ├── run_test.yml
+│   │   │       │   │       │       ├── test_crds.yml
+│   │   │       │   │       │       ├── test_helm_insecure.yml
+│   │   │       │   │       │       ├── test_helm_not_installed.yml
+│   │   │       │   │       │       ├── test_helm_reset_then_reuse_values.yml
+│   │   │       │   │       │       ├── test_helm_reuse_values.yml
+│   │   │       │   │       │       ├── test_helm_take_ownership.yml
+│   │   │       │   │       │       ├── test_helm_uninstall.yml
+│   │   │       │   │       │       ├── test_helm_version.yml
+│   │   │       │   │       │       ├── test_helm_with_space_into_chart_name.yml
+│   │   │       │   │       │       ├── test_read_envvars.yml
+│   │   │       │   │       │       ├── tests_chart
+│   │   │       │   │       │       │   ├── from_local_path.yml
+│   │   │       │   │       │       │   ├── from_repository.yml
+│   │   │       │   │       │       │   └── from_url.yml
+│   │   │       │   │       │       ├── tests_chart.yml
+│   │   │       │   │       │       ├── test_skip_schema_validation.yml
+│   │   │       │   │       │       └── test_up_dep.yml
+│   │   │       │   │       ├── helm_diff
+│   │   │       │   │       │   ├── aliases
+│   │   │       │   │       │   ├── defaults
+│   │   │       │   │       │   │   └── main.yml
+│   │   │       │   │       │   ├── files
+│   │   │       │   │       │   │   ├── test-chart
+│   │   │       │   │       │   │   │   ├── Chart.yaml
+│   │   │       │   │       │   │   │   └── templates
+│   │   │       │   │       │   │   │       └── configmap.yaml
+│   │   │       │   │       │   │   ├── test-chart-deployment-time
+│   │   │       │   │       │   │   │   ├── Chart.yaml
+│   │   │       │   │       │   │   │   └── templates
+│   │   │       │   │       │   │   │       └── configmap.yaml
+│   │   │       │   │       │   │   └── test-chart-reuse-values
+│   │   │       │   │       │   │       ├── Chart.yaml
+│   │   │       │   │       │   │       ├── templates
+│   │   │       │   │       │   │       │   └── configmap.yaml
+│   │   │       │   │       │   │       └── values.yaml
+│   │   │       │   │       │   ├── meta
+│   │   │       │   │       │   │   └── main.yml
+│   │   │       │   │       │   ├── playbook.yaml
+│   │   │       │   │       │   ├── runme.sh
+│   │   │       │   │       │   └── tasks
+│   │   │       │   │       │       ├── main.yml
+│   │   │       │   │       │       ├── reset_then_reuse_values.yml
+│   │   │       │   │       │       └── reuse_values.yml
+│   │   │       │   │       ├── helm_kubeconfig
+│   │   │       │   │       │   ├── aliases
+│   │   │       │   │       │   ├── defaults
+│   │   │       │   │       │   │   └── main.yml
+│   │   │       │   │       │   ├── meta
+│   │   │       │   │       │   │   └── main.yml
+│   │   │       │   │       │   ├── playbook.yaml
+│   │   │       │   │       │   ├── runme.sh
+│   │   │       │   │       │   └── tasks
+│   │   │       │   │       │       ├── from_in_memory_kubeconfig.yml
+│   │   │       │   │       │       ├── from_kubeconfig_with_cacert.yml
+│   │   │       │   │       │       ├── from_kubeconfig_with_validate_certs.yml
+│   │   │       │   │       │       ├── main.yml
+│   │   │       │   │       │       └── tests_helm_auth.yml
+│   │   │       │   │       ├── helm_plain_http
+│   │   │       │   │       │   ├── aliases
+│   │   │       │   │       │   ├── inventory.ini
+│   │   │       │   │       │   ├── playbooks
+│   │   │       │   │       │   │   ├── play.yaml
+│   │   │       │   │       │   │   └── tasks
+│   │   │       │   │       │   │       └── test.yaml
+│   │   │       │   │       │   └── runme.sh
+│   │   │       │   │       ├── helm_plugin
+│   │   │       │   │       │   ├── aliases
+│   │   │       │   │       │   ├── defaults
+│   │   │       │   │       │   │   └── main.yml
+│   │   │       │   │       │   ├── files
+│   │   │       │   │       │   │   └── sample_plugin
+│   │   │       │   │       │   │       └── plugin.yaml
+│   │   │       │   │       │   ├── meta
+│   │   │       │   │       │   │   └── main.yml
+│   │   │       │   │       │   ├── playbook.yaml
+│   │   │       │   │       │   ├── runme.sh
+│   │   │       │   │       │   └── tasks
+│   │   │       │   │       │       └── main.yml
+│   │   │       │   │       ├── helm_pull
+│   │   │       │   │       │   ├── aliases
+│   │   │       │   │       │   ├── playbook.yaml
+│   │   │       │   │       │   ├── runme.sh
+│   │   │       │   │       │   └── tasks
+│   │   │       │   │       │       └── main.yml
+│   │   │       │   │       ├── helm_registry_auth
+│   │   │       │   │       │   ├── aliases
+│   │   │       │   │       │   ├── defaults
+│   │   │       │   │       │   │   └── main.yaml
+│   │   │       │   │       │   ├── files
+│   │   │       │   │       │   │   └── registry.password
+│   │   │       │   │       │   ├── meta
+│   │   │       │   │       │   │   └── main.yml
+│   │   │       │   │       │   ├── playbook.yaml
+│   │   │       │   │       │   ├── runme.sh
+│   │   │       │   │       │   └── tasks
+│   │   │       │   │       │       └── main.yaml
+│   │   │       │   │       ├── helm_repository
+│   │   │       │   │       │   ├── aliases
+│   │   │       │   │       │   ├── defaults
+│   │   │       │   │       │   │   └── main.yml
+│   │   │       │   │       │   ├── meta
+│   │   │       │   │       │   │   └── main.yml
+│   │   │       │   │       │   ├── playbook.yaml
+│   │   │       │   │       │   ├── runme.sh
+│   │   │       │   │       │   └── tasks
+│   │   │       │   │       │       └── main.yml
+│   │   │       │   │       ├── helm_set_values
+│   │   │       │   │       │   ├── aliases
+│   │   │       │   │       │   ├── defaults
+│   │   │       │   │       │   │   └── main.yml
+│   │   │       │   │       │   ├── meta
+│   │   │       │   │       │   │   └── main.yml
+│   │   │       │   │       │   ├── playbook.yaml
+│   │   │       │   │       │   ├── runme.sh
+│   │   │       │   │       │   └── tasks
+│   │   │       │   │       │       └── main.yml
+│   │   │       │   │       ├── install_helm
+│   │   │       │   │       │   ├── aliases
+│   │   │       │   │       │   ├── defaults
+│   │   │       │   │       │   │   └── main.yml
+│   │   │       │   │       │   └── tasks
+│   │   │       │   │       │       └── main.yml
+│   │   │       │   │       ├── k8s_access_review
+│   │   │       │   │       │   ├── aliases
+│   │   │       │   │       │   ├── playbook.yaml
+│   │   │       │   │       │   ├── runme.sh
+│   │   │       │   │       │   └── tasks
+│   │   │       │   │       │       └── main.yml
+│   │   │       │   │       ├── k8s_append_hash
+│   │   │       │   │       │   ├── aliases
+│   │   │       │   │       │   ├── defaults
+│   │   │       │   │       │   │   └── main.yml
+│   │   │       │   │       │   ├── meta
+│   │   │       │   │       │   │   └── main.yml
+│   │   │       │   │       │   ├── playbook.yaml
+│   │   │       │   │       │   ├── runme.sh
+│   │   │       │   │       │   └── tasks
+│   │   │       │   │       │       └── main.yml
+│   │   │       │   │       ├── k8s_apply
+│   │   │       │   │       │   ├── aliases
+│   │   │       │   │       │   ├── defaults
+│   │   │       │   │       │   │   └── main.yml
+│   │   │       │   │       │   ├── meta
+│   │   │       │   │       │   │   └── main.yml
+│   │   │       │   │       │   ├── playbook.yaml
+│   │   │       │   │       │   ├── runme.sh
+│   │   │       │   │       │   └── tasks
+│   │   │       │   │       │       ├── main.yml
+│   │   │       │   │       │       └── server_side_apply.yml
+│   │   │       │   │       ├── k8s_check_mode
+│   │   │       │   │       │   ├── aliases
+│   │   │       │   │       │   ├── defaults
+│   │   │       │   │       │   │   └── main.yml
+│   │   │       │   │       │   ├── meta
+│   │   │       │   │       │   │   └── main.yml
+│   │   │       │   │       │   ├── playbook.yaml
+│   │   │       │   │       │   ├── runme.sh
+│   │   │       │   │       │   └── tasks
+│   │   │       │   │       │       ├── check_mode.yml
+│   │   │       │   │       │       └── main.yml
+│   │   │       │   │       ├── k8s_cluster_info
+│   │   │       │   │       │   ├── aliases
+│   │   │       │   │       │   ├── playbook.yaml
+│   │   │       │   │       │   ├── runme.sh
+│   │   │       │   │       │   └── tasks
+│   │   │       │   │       │       └── main.yml
+│   │   │       │   │       ├── k8s_copy
+│   │   │       │   │       │   ├── aliases
+│   │   │       │   │       │   ├── defaults
+│   │   │       │   │       │   │   └── main.yml
+│   │   │       │   │       │   ├── files
+│   │   │       │   │       │   │   ├── archive.tar
+│   │   │       │   │       │   │   ├── data
+│   │   │       │   │       │   │   │   ├── ansible
+│   │   │       │   │       │   │   │   │   ├── collection.txt
+│   │   │       │   │       │   │   │   │   └── module.txt
+│   │   │       │   │       │   │   │   ├── file.txt
+│   │   │       │   │       │   │   │   └── teams
+│   │   │       │   │       │   │   │       └── ansible.txt
+│   │   │       │   │       │   │   ├── simple_file.txt
+│   │   │       │   │       │   │   └── simple_zip_file.txt.gz
+│   │   │       │   │       │   ├── library
+│   │   │       │   │       │   │   └── kubectl_file_compare.py
+│   │   │       │   │       │   ├── meta
+│   │   │       │   │       │   │   └── main.yml
+│   │   │       │   │       │   ├── playbook.yaml
+│   │   │       │   │       │   ├── runme.sh
+│   │   │       │   │       │   ├── tasks
+│   │   │       │   │       │   │   ├── main.yml
+│   │   │       │   │       │   │   ├── test_check_mode.yml
+│   │   │       │   │       │   │   ├── test_copy_directory.yml
+│   │   │       │   │       │   │   ├── test_copy_errors.yml
+│   │   │       │   │       │   │   ├── test_copy_file.yml
+│   │   │       │   │       │   │   ├── test_copy_item_with_space_in_its_name.yml
+│   │   │       │   │       │   │   ├── test_copy_large_file.yml
+│   │   │       │   │       │   │   ├── test_init_container_pod.yml
+│   │   │       │   │       │   │   └── test_multi_container_pod.yml
+│   │   │       │   │       │   └── templates
+│   │   │       │   │       │       ├── pods_definition_init.j2
+│   │   │       │   │       │       └── pods_definition.j2
+│   │   │       │   │       ├── k8s_crd
+│   │   │       │   │       │   ├── aliases
+│   │   │       │   │       │   ├── defaults
+│   │   │       │   │       │   │   └── main.yml
+│   │   │       │   │       │   ├── files
+│   │   │       │   │       │   │   ├── crd-resource.yml
+│   │   │       │   │       │   │   └── setup-crd.yml
+│   │   │       │   │       │   ├── meta
+│   │   │       │   │       │   │   └── main.yml
+│   │   │       │   │       │   ├── playbook.yaml
+│   │   │       │   │       │   ├── runme.sh
+│   │   │       │   │       │   └── tasks
+│   │   │       │   │       │       └── main.yml
+│   │   │       │   │       ├── k8s_delete
+│   │   │       │   │       │   ├── aliases
+│   │   │       │   │       │   ├── defaults
+│   │   │       │   │       │   │   └── main.yml
+│   │   │       │   │       │   ├── files
+│   │   │       │   │       │   │   └── deployments.yaml
+│   │   │       │   │       │   ├── meta
+│   │   │       │   │       │   │   └── main.yml
+│   │   │       │   │       │   ├── playbook.yaml
+│   │   │       │   │       │   ├── runme.sh
+│   │   │       │   │       │   └── tasks
+│   │   │       │   │       │       └── main.yml
+│   │   │       │   │       ├── k8s_diff
+│   │   │       │   │       │   ├── aliases
+│   │   │       │   │       │   ├── defaults
+│   │   │       │   │       │   │   └── main.yml
+│   │   │       │   │       │   ├── meta
+│   │   │       │   │       │   │   └── main.yml
+│   │   │       │   │       │   ├── playbook.yaml
+│   │   │       │   │       │   ├── runme.sh
+│   │   │       │   │       │   ├── tasks
+│   │   │       │   │       │   │   └── main.yml
+│   │   │       │   │       │   └── templates
+│   │   │       │   │       │       └── pod.j2
+│   │   │       │   │       ├── k8s_drain
+│   │   │       │   │       │   ├── aliases
+│   │   │       │   │       │   ├── defaults
+│   │   │       │   │       │   │   └── main.yml
+│   │   │       │   │       │   ├── meta
+│   │   │       │   │       │   │   └── main.yml
+│   │   │       │   │       │   ├── playbook.yaml
+│   │   │       │   │       │   ├── runme.sh
+│   │   │       │   │       │   └── tasks
+│   │   │       │   │       │       └── main.yml
+│   │   │       │   │       ├── k8s_exec
+│   │   │       │   │       │   ├── aliases
+│   │   │       │   │       │   ├── defaults
+│   │   │       │   │       │   │   └── main.yml
+│   │   │       │   │       │   ├── meta
+│   │   │       │   │       │   │   └── main.yml
+│   │   │       │   │       │   ├── playbook.yaml
+│   │   │       │   │       │   ├── runme.sh
+│   │   │       │   │       │   └── tasks
+│   │   │       │   │       │       └── main.yml
+│   │   │       │   │       ├── k8s_full
+│   │   │       │   │       │   ├── aliases
+│   │   │       │   │       │   ├── defaults
+│   │   │       │   │       │   │   └── main.yml
+│   │   │       │   │       │   ├── meta
+│   │   │       │   │       │   │   └── main.yml
+│   │   │       │   │       │   ├── playbook.yaml
+│   │   │       │   │       │   ├── runme.sh
+│   │   │       │   │       │   └── tasks
+│   │   │       │   │       │       └── main.yml
+│   │   │       │   │       ├── k8s_gc
+│   │   │       │   │       │   ├── aliases
+│   │   │       │   │       │   ├── defaults
+│   │   │       │   │       │   │   └── main.yml
+│   │   │       │   │       │   ├── meta
+│   │   │       │   │       │   │   └── main.yml
+│   │   │       │   │       │   ├── playbook.yaml
+│   │   │       │   │       │   ├── runme.sh
+│   │   │       │   │       │   └── tasks
+│   │   │       │   │       │       └── main.yml
+│   │   │       │   │       ├── k8s_generate_name
+│   │   │       │   │       │   ├── aliases
+│   │   │       │   │       │   ├── playbook.yaml
+│   │   │       │   │       │   ├── runme.sh
+│   │   │       │   │       │   └── tasks
+│   │   │       │   │       │       └── main.yml
+│   │   │       │   │       ├── k8s_hide_fields
+│   │   │       │   │       │   ├── aliases
+│   │   │       │   │       │   ├── defaults
+│   │   │       │   │       │   │   └── main.yml
+│   │   │       │   │       │   ├── meta
+│   │   │       │   │       │   │   └── main.yml
+│   │   │       │   │       │   ├── playbook.yaml
+│   │   │       │   │       │   ├── runme.sh
+│   │   │       │   │       │   └── tasks
+│   │   │       │   │       │       └── main.yml
+│   │   │       │   │       ├── k8s_info
+│   │   │       │   │       │   ├── aliases
+│   │   │       │   │       │   ├── defaults
+│   │   │       │   │       │   │   └── main.yml
+│   │   │       │   │       │   ├── meta
+│   │   │       │   │       │   │   └── main.yml
+│   │   │       │   │       │   ├── playbook.yaml
+│   │   │       │   │       │   ├── runme.sh
+│   │   │       │   │       │   └── tasks
+│   │   │       │   │       │       ├── api-server-caching.yml
+│   │   │       │   │       │       ├── discovery.yml
+│   │   │       │   │       │       ├── main.yml
+│   │   │       │   │       │       └── wait.yml
+│   │   │       │   │       ├── k8s_json_patch
+│   │   │       │   │       │   ├── aliases
+│   │   │       │   │       │   ├── defaults
+│   │   │       │   │       │   │   └── main.yml
+│   │   │       │   │       │   ├── meta
+│   │   │       │   │       │   │   └── main.yml
+│   │   │       │   │       │   ├── playbook.yaml
+│   │   │       │   │       │   ├── runme.sh
+│   │   │       │   │       │   └── tasks
+│   │   │       │   │       │       └── main.yml
+│   │   │       │   │       ├── k8s_json_patch_hide_fields
+│   │   │       │   │       │   ├── aliases
+│   │   │       │   │       │   ├── defaults
+│   │   │       │   │       │   │   └── main.yml
+│   │   │       │   │       │   ├── meta
+│   │   │       │   │       │   │   └── main.yml
+│   │   │       │   │       │   ├── playbook.yaml
+│   │   │       │   │       │   ├── runme.sh
+│   │   │       │   │       │   └── tasks
+│   │   │       │   │       │       └── main.yml
+│   │   │       │   │       ├── k8s_label_selectors
+│   │   │       │   │       │   ├── aliases
+│   │   │       │   │       │   ├── defaults
+│   │   │       │   │       │   │   └── main.yml
+│   │   │       │   │       │   ├── meta
+│   │   │       │   │       │   │   └── main.yml
+│   │   │       │   │       │   ├── playbook.yaml
+│   │   │       │   │       │   ├── runme.sh
+│   │   │       │   │       │   └── tasks
+│   │   │       │   │       │       └── main.yml
+│   │   │       │   │       ├── k8s_lists
+│   │   │       │   │       │   ├── aliases
+│   │   │       │   │       │   ├── defaults
+│   │   │       │   │       │   │   └── main.yml
+│   │   │       │   │       │   ├── meta
+│   │   │       │   │       │   │   └── main.yml
+│   │   │       │   │       │   ├── playbook.yaml
+│   │   │       │   │       │   ├── runme.sh
+│   │   │       │   │       │   └── tasks
+│   │   │       │   │       │       └── main.yml
+│   │   │       │   │       ├── k8s_log
+│   │   │       │   │       │   ├── aliases
+│   │   │       │   │       │   ├── defaults
+│   │   │       │   │       │   │   └── main.yml
+│   │   │       │   │       │   ├── meta
+│   │   │       │   │       │   │   └── main.yml
+│   │   │       │   │       │   ├── playbook.yaml
+│   │   │       │   │       │   ├── runme.sh
+│   │   │       │   │       │   └── tasks
+│   │   │       │   │       │       └── main.yml
+│   │   │       │   │       ├── k8s_manifest_url
+│   │   │       │   │       │   ├── aliases
+│   │   │       │   │       │   ├── defaults
+│   │   │       │   │       │   │   └── main.yml
+│   │   │       │   │       │   ├── meta
+│   │   │       │   │       │   │   └── main.yml
+│   │   │       │   │       │   ├── playbook.yaml
+│   │   │       │   │       │   ├── runme.sh
+│   │   │       │   │       │   └── tasks
+│   │   │       │   │       │       └── main.yml
+│   │   │       │   │       ├── k8s_merge_type
+│   │   │       │   │       │   ├── aliases
+│   │   │       │   │       │   ├── defaults
+│   │   │       │   │       │   │   └── main.yml
+│   │   │       │   │       │   ├── meta
+│   │   │       │   │       │   │   └── main.yml
+│   │   │       │   │       │   ├── playbook.yaml
+│   │   │       │   │       │   ├── runme.sh
+│   │   │       │   │       │   └── tasks
+│   │   │       │   │       │       └── main.yml
+│   │   │       │   │       ├── k8s_patched
+│   │   │       │   │       │   ├── aliases
+│   │   │       │   │       │   ├── defaults
+│   │   │       │   │       │   │   └── main.yml
+│   │   │       │   │       │   ├── meta
+│   │   │       │   │       │   │   └── main.yml
+│   │   │       │   │       │   ├── playbook.yaml
+│   │   │       │   │       │   ├── runme.sh
+│   │   │       │   │       │   └── tasks
+│   │   │       │   │       │       └── main.yml
+│   │   │       │   │       ├── k8s_rollback
+│   │   │       │   │       │   ├── aliases
+│   │   │       │   │       │   ├── defaults
+│   │   │       │   │       │   │   └── main.yml
+│   │   │       │   │       │   ├── meta
+│   │   │       │   │       │   │   └── main.yml
+│   │   │       │   │       │   ├── playbook.yaml
+│   │   │       │   │       │   ├── runme.sh
+│   │   │       │   │       │   └── tasks
+│   │   │       │   │       │       └── main.yml
+│   │   │       │   │       ├── k8s_scale
+│   │   │       │   │       │   ├── aliases
+│   │   │       │   │       │   ├── defaults
+│   │   │       │   │       │   │   └── main.yml
+│   │   │       │   │       │   ├── files
+│   │   │       │   │       │   │   └── deployment.yaml
+│   │   │       │   │       │   ├── meta
+│   │   │       │   │       │   │   └── main.yml
+│   │   │       │   │       │   ├── playbook.yaml
+│   │   │       │   │       │   ├── runme.sh
+│   │   │       │   │       │   └── tasks
+│   │   │       │   │       │       └── main.yml
+│   │   │       │   │       ├── k8s_taint
+│   │   │       │   │       │   ├── aliases
+│   │   │       │   │       │   ├── defaults
+│   │   │       │   │       │   │   └── main.yml
+│   │   │       │   │       │   ├── meta
+│   │   │       │   │       │   │   └── main.yml
+│   │   │       │   │       │   ├── playbook.yaml
+│   │   │       │   │       │   ├── runme.sh
+│   │   │       │   │       │   └── tasks
+│   │   │       │   │       │       └── main.yml
+│   │   │       │   │       ├── k8s_template
+│   │   │       │   │       │   ├── aliases
+│   │   │       │   │       │   ├── defaults
+│   │   │       │   │       │   │   └── main.yml
+│   │   │       │   │       │   ├── meta
+│   │   │       │   │       │   │   └── main.yml
+│   │   │       │   │       │   ├── playbook.yaml
+│   │   │       │   │       │   ├── runme.sh
+│   │   │       │   │       │   ├── tasks
+│   │   │       │   │       │   │   └── main.yml
+│   │   │       │   │       │   └── templates
+│   │   │       │   │       │       ├── pod_one.j2
+│   │   │       │   │       │       ├── pod_three.j2
+│   │   │       │   │       │       ├── pod_two.j2
+│   │   │       │   │       │       └── pod_with_bad_namespace.j2
+│   │   │       │   │       ├── k8s_user_impersonation
+│   │   │       │   │       │   ├── aliases
+│   │   │       │   │       │   ├── defaults
+│   │   │       │   │       │   │   └── main.yml
+│   │   │       │   │       │   ├── meta
+│   │   │       │   │       │   │   └── main.yml
+│   │   │       │   │       │   ├── playbook.yaml
+│   │   │       │   │       │   ├── runme.sh
+│   │   │       │   │       │   └── tasks
+│   │   │       │   │       │       └── main.yml
+│   │   │       │   │       ├── k8s_validate
+│   │   │       │   │       │   ├── aliases
+│   │   │       │   │       │   ├── defaults
+│   │   │       │   │       │   │   └── main.yml
+│   │   │       │   │       │   ├── meta
+│   │   │       │   │       │   │   └── main.yml
+│   │   │       │   │       │   ├── playbook.yaml
+│   │   │       │   │       │   ├── runme.sh
+│   │   │       │   │       │   └── tasks
+│   │   │       │   │       │       └── main.yml
+│   │   │       │   │       ├── k8s_waiter
+│   │   │       │   │       │   ├── aliases
+│   │   │       │   │       │   ├── defaults
+│   │   │       │   │       │   │   └── main.yml
+│   │   │       │   │       │   ├── meta
+│   │   │       │   │       │   │   └── main.yml
+│   │   │       │   │       │   ├── playbook.yaml
+│   │   │       │   │       │   ├── runme.sh
+│   │   │       │   │       │   └── tasks
+│   │   │       │   │       │       └── main.yml
+│   │   │       │   │       ├── lookup_k8s
+│   │   │       │   │       │   ├── aliases
+│   │   │       │   │       │   ├── defaults
+│   │   │       │   │       │   │   └── main.yml
+│   │   │       │   │       │   ├── meta
+│   │   │       │   │       │   │   └── main.yml
+│   │   │       │   │       │   ├── playbook.yaml
+│   │   │       │   │       │   ├── runme.sh
+│   │   │       │   │       │   └── tasks
+│   │   │       │   │       │       └── main.yml
+│   │   │       │   │       ├── lookup_kustomize
+│   │   │       │   │       │   ├── aliases
+│   │   │       │   │       │   ├── defaults
+│   │   │       │   │       │   │   └── main.yml
+│   │   │       │   │       │   ├── meta
+│   │   │       │   │       │   │   └── main.yml
+│   │   │       │   │       │   ├── playbook.yaml
+│   │   │       │   │       │   ├── runme.sh
+│   │   │       │   │       │   └── tasks
+│   │   │       │   │       │       └── main.yml
+│   │   │       │   │       ├── push_to_helm_registry
+│   │   │       │   │       │   ├── aliases
+│   │   │       │   │       │   ├── defaults
+│   │   │       │   │       │   │   └── main.yml
+│   │   │       │   │       │   └── tasks
+│   │   │       │   │       │       └── main.yml
+│   │   │       │   │       ├── remove_namespace
+│   │   │       │   │       │   ├── aliases
+│   │   │       │   │       │   └── tasks
+│   │   │       │   │       │       └── main.yml
+│   │   │       │   │       ├── setup_helm_registry
+│   │   │       │   │       │   ├── aliases
+│   │   │       │   │       │   ├── defaults
+│   │   │       │   │       │   │   └── main.yml
+│   │   │       │   │       │   ├── handlers
+│   │   │       │   │       │   │   └── main.yml
+│   │   │       │   │       │   └── tasks
+│   │   │       │   │       │       ├── main.yml
+│   │   │       │   │       │       ├── remove_docker_container.yml
+│   │   │       │   │       │       └── teardown_registry.yml
+│   │   │       │   │       ├── setup_kubeconfig
+│   │   │       │   │       │   ├── aliases
+│   │   │       │   │       │   ├── defaults
+│   │   │       │   │       │   │   └── main.yml
+│   │   │       │   │       │   ├── library
+│   │   │       │   │       │   │   └── test_inventory_read_credentials.py
+│   │   │       │   │       │   └── tasks
+│   │   │       │   │       │       └── main.yml
+│   │   │       │   │       └── setup_namespace
+│   │   │       │   │           ├── aliases
+│   │   │       │   │           ├── defaults
+│   │   │       │   │           │   └── main.yml
+│   │   │       │   │           └── tasks
+│   │   │       │   │               ├── create.yml
+│   │   │       │   │               └── main.yml
+│   │   │       │   ├── sanity
+│   │   │       │   │   ├── ignore-2.16.txt
+│   │   │       │   │   ├── ignore-2.17.txt
+│   │   │       │   │   ├── ignore-2.18.txt
+│   │   │       │   │   ├── ignore-2.19.txt
+│   │   │       │   │   ├── ignore-2.20.txt
+│   │   │       │   │   └── ignore-2.21.txt
+│   │   │       │   └── unit
+│   │   │       │       ├── conftest.py
+│   │   │       │       ├── modules
+│   │   │       │       │   ├── test_helm_template_module.py
+│   │   │       │       │   ├── test_helm_template.py
+│   │   │       │       │   └── test_module_helm.py
+│   │   │       │       ├── module_utils
+│   │   │       │       │   ├── fixtures
+│   │   │       │       │   │   ├── clusteroperator.yml
+│   │   │       │       │   │   ├── definitions.yml
+│   │   │       │       │   │   ├── deployments.yml
+│   │   │       │       │   │   └── pods.yml
+│   │   │       │       │   ├── test_apply.py
+│   │   │       │       │   ├── test_client.py
+│   │   │       │       │   ├── test_common.py
+│   │   │       │       │   ├── test_core.py
+│   │   │       │       │   ├── test_discoverer.py
+│   │   │       │       │   ├── test_hashes.py
+│   │   │       │       │   ├── test_helm.py
+│   │   │       │       │   ├── test_hide_fields.py
+│   │   │       │       │   ├── test_kubeconfig_redaction.py
+│   │   │       │       │   ├── test_marshal.py
+│   │   │       │       │   ├── test_resource.py
+│   │   │       │       │   ├── test_runner.py
+│   │   │       │       │   ├── test_selector.py
+│   │   │       │       │   ├── test_service.py
+│   │   │       │       │   └── test_waiter.py
+│   │   │       │       ├── requirements.txt
+│   │   │       │       └── utils
+│   │   │       │           └── ansible_module_mock.py
+│   │   │       ├── tox.ini
+│   │   │       └── .yamllint
+│   │   └── kubernetes.core-6.3.0.info
+│   │       └── GALAXY.yml
+│   └── requirements.yml
+├── .gitignore
+├── group_vars
+│   ├── all.yml
+│   ├── bastion_hosts.yml
+│   ├── cicd.yml
+│   ├── database.yml
+│   ├── dev.yml
+│   ├── jenkins_masters.yml
+│   ├── k8s_cluster.yml
+│   ├── k8s_workers.yml
+│   ├── monitoring.yml
+│   ├── production.yml
+│   ├── sonarqube_servers.yml
+│   └── staging.yml
+├── host_vars
+│   ├── jenkins-master.yml
+│   ├── k8s-control.yml
+│   ├── k8s-worker-01.yml
+│   ├── sonarqube.yml
+│   └── worker-node.yml
+├── inventory
+│   ├── aws
+│   │   └── ec2.yml
+│   ├── hosts
+│   └── plugins
+│       └── aws_ec2.yml
+├── meta
+│   └── runtime.yml
+├── playbooks
+│   ├── deployment
+│   │   ├── bastion-setup.yml
+│   │   ├── jenkins-setup.yml
+│   │   ├── monitoring-stack.yml
+│   │   └── security-hardening.yml
+│   ├── provisioning
+│   │   ├── k8s-cluster.yml
+│   │   ├── prerequisites.yml
+│   │   ├── rds-provision.yml
+│   │   └── vpc-network.yml
+│   ├── security
+│   │   ├── gitops-operator.yml
+│   │   ├── trivy-scan.yml
+│   │   └── vault-integration.yml
+│   └── site.yml
+├── plugins
+│   ├── filter
+│   └── lookup
+├── README.md
+├── requirements.yml
+├── roles
+│   ├── awscli
+│   │   ├── defaults
+│   │   │   └── main.yml
+│   │   ├── handlers
+│   │   ├── meta
+│   │   │   └── main.yml
+│   │   ├── tasks
+│   │   │   └── main.yml
+│   │   ├── templates
+│   │   └── vars
+│   ├── cloudwatch_agent
+│   │   ├── handlers
+│   │   │   └── main.yml
+│   │   ├── tasks
+│   │   │   └── main.yml
+│   │   └── templates
+│   │       └── amazon-cloudwatch-agent.json.j2
+│   ├── common
+│   │   ├── files
+│   │   │   └── bashrc
+│   │   ├── tasks
+│   │   │   └── main.yml
+│   │   └── templates
+│   │       └── motd.j2
+│   ├── docker
+│   │   ├── defaults
+│   │   │   └── main.yml
+│   │   ├── handlers
+│   │   │   └── main.yml
+│   │   ├── meta
+│   │   │   └── main.yml
+│   │   ├── tasks
+│   │   │   └── main.yml
+│   │   ├── templates
+│   │   │   └── daemon.json.j2
+│   │   └── vars
+│   │       └── main.yml
+│   ├── git
+│   │   └── tasks
+│   │       └── main.yml
+│   ├── gitops_operator
+│   │   ├── defaults
+│   │   ├── handlers
+│   │   ├── meta
+│   │   ├── tasks
+│   │   │   └── main.yml
+│   │   ├── templates
+│   │   └── vars
+│   ├── helm
+│   │   ├── defaults
+│   │   │   └── main.yml
+│   │   ├── handlers
+│   │   ├── meta
+│   │   │   └── main.yml
+│   │   ├── tasks
+│   │   │   └── main.yml
+│   │   ├── templates
+│   │   └── vars
+│   ├── infracost
+│   │   ├── tasks
+│   │   │   └── main.yml
+│   │   └── templates
+│   ├── java
+│   │   ├── defaults
+│   │   │   └── main.yml
+│   │   ├── handlers
+│   │   ├── meta
+│   │   │   └── main.yml
+│   │   ├── tasks
+│   │   │   └── main.yml
+│   │   ├── templates
+│   │   └── vars
+│   │       └── main.yml
+│   ├── jenkins
+│   │   ├── defaults
+│   │   │   └── main.yml
+│   │   ├── handlers
+│   │   │   └── main.yml
+│   │   ├── meta
+│   │   │   └── main.yml
+│   │   ├── tasks
+│   │   │   └── main.yml
+│   │   ├── templates
+│   │   └── vars
+│   │       └── main.yml
+│   ├── kubectl
+│   │   ├── defaults
+│   │   │   └── main.yml
+│   │   ├── handlers
+│   │   ├── meta
+│   │   │   └── main.yml
+│   │   ├── tasks
+│   │   │   └── main.yml
+│   │   ├── templates
+│   │   └── vars
+│   ├── kubernetes_setup
+│   │   ├── defaults
+│   │   │   └── main.yml
+│   │   ├── files
+│   │   ├── handlers
+│   │   │   └── main.yml
+│   │   ├── meta
+│   │   │   └── main.yml
+│   │   ├── tasks
+│   │   │   └── main.yml
+│   │   ├── templates
+│   │   └── vars
+│   │       └── main.yml
+│   ├── maven
+│   │   └── tasks
+│   │       └── main.yml
+│   ├── security_tools
+│   │   ├── defaults
+│   │   │   └── main.yml
+│   │   ├── handlers
+│   │   │   └── main.yml
+│   │   ├── meta
+│   │   │   └── main.yml
+│   │   ├── tasks
+│   │   │   └── main.yml
+│   │   ├── templates
+│   │   └── vars
+│   ├── sonarqube
+│   │   └── tasks
+│   │       └── main.yml
+│   ├── terraform
+│   │   └── tasks
+│   │       └── main.yml
+│   ├── terragrunt
+│   │   └── tasks
+│   │       └── main.yml
+│   ├── trivy_scan
+│   │   ├── defaults
+│   │   ├── handlers
+│   │   ├── meta
+│   │   ├── tasks
+│   │   │   └── main.yml
+│   │   ├── templates
+│   │   └── vars
+│   └── vault_integration
+│       ├── defaults
+│       ├── handlers
+│       ├── meta
+│       ├── tasks
+│       │   └── main.yml
+│       ├── templates
+│       └── vars
+├── scripts
+│   ├── bootstrap.sh
+│   └── vault-unseal.sh
+├── templates
+│   └── fail2ban_jail_local.j2
+├── tests
+│   └── integration
+├── text
+├── vault
+│   ├── config
+│   │   └── vault-connection.yml
+│   ├── policies
+│   └── secrets
+│       ├── db-creds.yml
+│       └── prod-vault.yml
+└── .vault_pass
+
+369 directories, 614 files

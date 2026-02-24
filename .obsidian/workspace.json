@@ -205,6 +205,7 @@
   },
   "active": "e8a8bfd7c13c69fd",
   "lastOpenFiles": [
+    "ansible/text",
     "text",
     "ansible/roles/docker/tasks/test_yaml.yml",
     "docs/ANSIBLE_DEBUG_LOG.md",
@@ -216,7 +217,6 @@
     "ansible/roles/kubernetes_setup/handlers/main.yml",
     "ansible/roles/kubernetes_setup/defaults/main.yml",
     "ansible/roles/kubernetes_setup/meta/main.yml",
-    "ansible/collections/ansible_collections/kubernetes/core/plugins/doc_fragments/__pycache__/k8s_name_options.cpython-314.pyc",
     "ansible/collections/ansible_collections/kubernetes/core/README.md",
     "ansible/collections/ansible_collections/kubernetes/core/CONTRIBUTING.md",
     "docs/INFRA_AUDIT.md",
