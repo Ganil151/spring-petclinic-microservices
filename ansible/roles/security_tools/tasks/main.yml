@@ -5,6 +5,14 @@
 # =============================================================================
 
 # ── Package Installation ──────────────────────────────────────────────────────
+# Note: fail2ban requires the EPEL repository on Amazon Linux 2
+- name: Enable EPEL Repository (Amazon Linux 2)
+  ansible.builtin.shell: amazon-linux-extras install epel -y
+  when: ansible_distribution == "Amazon"
+  register: epel_install_result
+  changed_when: "'epel' in epel_install_result.stdout"
+  tags: security
+
 - name: Install security packages
   ansible.builtin.yum:
     name:
