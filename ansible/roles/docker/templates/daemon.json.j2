@@ -1,4 +1,13 @@
 
+- name: Configure Docker daemon
+  ansible.builtin.template:
+    src: daemon.json.j2
+    dest: /etc/docker/daemon.json
+    owner: root
+    group: root
+    mode: '0644'
+  notify: Restart Docker
+  tags: docker, security
 {
   "storage-driver": "{{ docker_daemon_options.storage_driver | default('overlay2') }}",
   "log-driver": "{{ docker_daemon_options.log_driver | default('json-file') }}",
