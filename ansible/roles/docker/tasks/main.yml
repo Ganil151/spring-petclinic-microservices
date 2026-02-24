@@ -3,10 +3,16 @@
 # Docker Role — tasks/main.yml (Amazon Linux 2 Optimized)
 # =============================================================================
 
-- name: Clean up broken Docker repo
+---
+# =============================================================================
+# Docker Role — tasks/main.yml (Fixed for Amazon Linux 2)
+# =============================================================================
+
+- name: Clean up broken CentOS Docker repo
   ansible.builtin.file:
     path: /etc/yum.repos.d/docker-ce.repo
     state: absent
+  tags: docker
 
 - name: Remove old Docker versions
   ansible.builtin.yum:
@@ -18,8 +24,7 @@
     state: absent
   tags: docker
 
-# Fix: Use amazon-linux-extras instead of adding the CentOS repository
-- name: Install Docker via amazon-linux-extras
+- name: Install Docker via amazon-linux-extras (The AWS Way)
   ansible.builtin.shell: "amazon-linux-extras install docker -y"
   args:
     creates: /usr/bin/docker
@@ -29,21 +34,6 @@
   ansible.builtin.yum:
     name: docker-compose-plugin
     state: present
-  tags: docker
-
-- name: Create Docker configuration directory
-  ansible.builtin.file:
-    path: /etc/docker
-    state: directory
-    mode: '0755'
-  tags: docker
-
-- name: Configure Docker daemon
-  ansible.builtin.template:
-    src: daemon.json.j2
-    dest: /etc/docker/daemon.json
-    mode: '0644'
-  notify: Restart Docker
   tags: docker
 
 - name: Enable and start Docker
