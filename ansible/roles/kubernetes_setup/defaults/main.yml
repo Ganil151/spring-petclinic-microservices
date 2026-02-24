@@ -1,49 +1,117 @@
 ---
 # =============================================================================
-# Kubernetes Setup Role - Defaults
+# Kubernetes Setup Role — Defaults
+# Location: ansible/roles/kubernetes_setup/defaults/main.yml
 # Purpose: Default variables for EKS cluster configuration & K8s resource deployment
-# Alignment: Must match Terragrunt EKS module outputs
+# Alignment: Must match Terragrunt EKS module outputs (terraform/live/*/k8s-cluster/)
+# Override: Use group_vars/{dev,staging,prod}.yml for environment-specific values
 # =============================================================================
 
-# --- AWS & Cluster Context (Critical for Terragrunt Integration) ---
+# -----------------------------------------------------------------------------
+# AWS & Cluster Context (Critical for Terragrunt Integration)
+# These should be passed via Terragrunt post-apply-hook as extra_vars:
+#   -e eks_cluster_name={{ outputs.eks_cluster_name }}
+#   -e eks_cluster_endpoint={{ outputs.eks_cluster_endpoint }}
+#   -e eks_cluster_ca_certificate={{ outputs.eks_cluster_ca_certificate }}
+# -----------------------------------------------------------------------------
 aws_region: "us-east-1"
-eks_cluster_name: "petclinic-eks"          # ← MUST match Terragrunt output
-eks_cluster_endpoint: ""                   # ← Typically passed via extra_vars from Terragrunt
-eks_cluster_ca_certificate: ""             # ← Typically passed via extra_vars from Terragrunt
+eks_cluster_name: "petclinic-eks-dev"              # ← Override per environment
+eks_cluster_endpoint: ""                           # ← Populated from Terragrunt outputs
+eks_cluster_ca_certificate: ""                     # ← Populated from Terragrunt outputs
 
-# --- Kubernetes Version Control ---
-kubernetes_version: "1.28"                 # ← Pin minor version; avoid 'latest' in prod
-control_plane_upgrade: false               # ← Safety flag for major version jumps
+# -----------------------------------------------------------------------------
+# Kubernetes Version Control
+# Pin minor version to prevent accidental control plane upgrades
+# -----------------------------------------------------------------------------
+kubernetes_version: "1.28"                         # ← Match EKS supported versions
+control_plane_upgrade: false                       # ← Safety flag; set true after testing
 
-# --- Namespace & Networking ---
-default_namespace: "petclinic"
-service_type: "ClusterIP"                  # ← Internal only; use ALB Ingress for external
-vpc_cni_configure_rps: true                # ← Tune Network Performance
+# -----------------------------------------------------------------------------
+# Namespace & Networking Configuration
+# -----------------------------------------------------------------------------
+default_namespace: "petclinic"                     # ← Isolated namespace for app
+service_type: "ClusterIP"                          # ← Internal; use ALB Ingress for external
+vpc_cni_configure_rps: true                        # ← Enable Receive Packet Steering for performance
 
-# --- IAM Roles for Service Accounts (IRSA) ---
-oidc_provider_enabled: true                # ← Required for AWS SDK access from pods
-oidc_provider_arn: ""                      # ← Terragrunt output
+# -----------------------------------------------------------------------------
+# IAM Roles for Service Accounts (IRSA)
+# Required for pods to access AWS services without node-level credentials
+# -----------------------------------------------------------------------------
+oidc_provider_enabled: true                        # ← Enable OIDC identity provider
+oidc_provider_arn: ""                              # ← Populated from Terragrunt outputs
 
-# --- Helm Charts (Spring Petclinic Dependencies) ---
+# -----------------------------------------------------------------------------
+# Helm Charts (Spring Petclinic Dependencies)
+# Declarative chart management; versions should be pinned for reproducibility
+# -----------------------------------------------------------------------------
 helm_charts:
   - name: aws-load-balancer-controller
     namespace: kube-system
     version: "1.6.0"
     repo: https://aws.github.io/eks-charts
+    values: {}                                     # ← Override with chart-specific values
   - name: external-dns
     namespace: kube-system
     version: "1.12.0"
     repo: https://kubernetes-sigs.github.io/external-dns/
+    values: {}
   - name: spring-petclinic
     namespace: "{{ default_namespace }}"
     version: "1.0.0"
-    repo: https://your-private-chart-museum.com
+    repo: https://your-private-chart-museum.com    # ← Replace with actual ChartMuseum URL
+    values:
+      replicaCount: 2
+      resources:
+        requests:
+          memory: "512Mi"
+          cpu: "250m"
+        limits:
+          memory: "1Gi"
+          cpu: "500m"
 
-# --- Resource Quotas (Governance) ---
+# -----------------------------------------------------------------------------
+# Resource Quotas & Limits (Governance)
+# Prevent resource exhaustion; enforce team-level quotas
+# -----------------------------------------------------------------------------
 resource_quotas_enabled: true
 cpu_limit: "4"
 memory_limit: "8Gi"
+pod_limit: "20"
+configmap_limit: "10"
+secret_limit: "10"
 
-# --- Security Context ---
-pod_security_standards: "baseline"         # ← Enforce PSS
-network_policies_enabled: true
+# -----------------------------------------------------------------------------
+# Security Context & Policy Enforcement
+# -----------------------------------------------------------------------------
+pod_security_standards: "baseline"                 # ← Options: privileged, baseline, restricted
+network_policies_enabled: true                     # ← Enable NetworkPolicy CRDs
+seccomp_profile: "RuntimeDefault"                  # ← Enforce seccomp for pod security
+
+# -----------------------------------------------------------------------------
+# Logging & Observability (CloudWatch Integration)
+# -----------------------------------------------------------------------------
+cloudwatch_log_group: "petclinic-eks-logs"         # ← Centralized log aggregation
+cloudwatch_log_retention_days: 30                  # ← Compliance-driven retention
+enable_prometheus_metrics: true                    # ← Export custom app metrics
+
+# -----------------------------------------------------------------------------
+# Environment Context (Override in group_vars/)
+# -----------------------------------------------------------------------------
+app_env: "dev"                                     # ← dev, staging, prod
+project_name: "spring-petclinic"                   # ← Consistent naming prefix
+
+# -----------------------------------------------------------------------------
+# Kubeconfig & CLI Configuration
+# -----------------------------------------------------------------------------
+kubeconfig_path: "~/.kube/config"                  # ← Default kubectl config location
+kubectl_context: "{{ eks_cluster_name }}"          # ← Auto-select cluster context
+kubectl_timeout: "30s"                             # ← Command timeout for kubectl ops
+
+# -----------------------------------------------------------------------------
+# Rollout Strategy & Health Checks
+# -----------------------------------------------------------------------------
+deployment_strategy: "RollingUpdate"
+max_surge: "25%"
+max_unavailable: "25%"
+readiness_probe_initial_delay: 30
+liveness_probe_initial_delay: 60
