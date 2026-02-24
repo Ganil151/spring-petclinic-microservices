@@ -1,0 +1,208 @@
+# =============================================================================
+# Ansible Best Practices .gitignore
+# For Spring Petclinic Microservices
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Sensitive Files - NEVER commit these
+# -----------------------------------------------------------------------------
+# Vault password files
+.vault_pass
+.vault_pass.txt
+vault_pass.txt
+*.vault_pass
+vault-password
+.vault_password
+
+# Private keys and certificates
+*.key
+*.pem
+*.crt
+*.p12
+*.pfx
+*.jks
+
+# Credential files
+*.credentials
+credentials.yml
+credentials.yaml
+*.secret
+*.secrets
+
+# AWS credentials
+.aws/
+aws_credentials
+boto.cfg
+
+# Kubernetes configs
+kubeconfig
+kubeconfig.yaml
+kubeconfig.yml
+.kube/
+
+# Environment files with secrets
+.env
+.env.local
+.env.*.local
+*.env
+
+# -----------------------------------------------------------------------------
+# Generated/Temporary Files
+# -----------------------------------------------------------------------------
+# Ansible retry files
+*.retry
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Ansible fact cache
+ansible_facts/
+/tmp/ansible_facts
+
+# Ansible inventory cache
+/tmp/ansible_inventory_cache
+
+# Ansible temporary files
+.ansible/
+.ansible/tmp/
+/tmp/ansible-*
+/tmp/ansible.log
+
+# Local temporary files
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+.*.swp
+.*.swo
+
+# Backup files
+*.bak
+*.backup
+*.orig
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# -----------------------------------------------------------------------------
+# IDE and Editor Files
+# -----------------------------------------------------------------------------
+# JetBrains IDEs
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# VS Code
+.vscode/
+*.code-workspace
+
+# Vim
+*.vim
+*.vimrc
+.gvimrc
+
+# Emacs
+*~
+\#*\#
+.*.elc
+
+# -----------------------------------------------------------------------------
+# Testing and Coverage
+# -----------------------------------------------------------------------------
+# Test output
+tests/output/
+test_results/
+coverage/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+
+# Unit test
+.pytest_cache/
+.cache/
+mypy_cache/
+.hypothesis/
+
+# -----------------------------------------------------------------------------
+# Ansible Galaxy and Collections
+# -----------------------------------------------------------------------------
+# Galaxy downloaded collections (if not managed in repo)
+collections/ansible_collections/*/
+!collections/requirements.yml
+
+# Galaxy info directories
+*.info/
+
+# Collection build artifacts
+*.tar.gz
+galaxy.yml.build
+
+# Changelog cache
+changelogs/.plugin-cache.yaml
+
+# -----------------------------------------------------------------------------
+# Helm Charts (generated)
+# -----------------------------------------------------------------------------
+*-chart-*.tgz
+charts/*.tgz
+
+# -----------------------------------------------------------------------------
+# Integration Test Generated Files
+# -----------------------------------------------------------------------------
+tests/integration/cloud-config-*
+tests/integration/inventory
+tests/integration/*-*.yml
+
+# -----------------------------------------------------------------------------
+# Log Files
+# -----------------------------------------------------------------------------
+*.log
+logs/
+
+# -----------------------------------------------------------------------------
+# Terraform (if used alongside Ansible)
+# -----------------------------------------------------------------------------
+*.tfstate
+*.tfstate.*
+*.tfplan
+.terraform/
+.terraform.lock.hcl
+
+# -----------------------------------------------------------------------------
+# Keep these (exceptions for tracked files)
+# -----------------------------------------------------------------------------
+# But keep the collections requirements
+!collections/requirements.yml
+
+# Keep vault config structure but not unencrypted secrets
+!vault/config/
+!vault/policies/
