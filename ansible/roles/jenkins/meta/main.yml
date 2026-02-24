@@ -1,0 +1,21 @@
+---
+galaxy_info:
+  role_name: jenkins
+  author: Spring Petclinic Team
+  description: Installs and configures Jenkins CI/CD server
+  company: Spring Petclinic
+  license: Apache-2.0
+  min_ansible_version: "2.14"
+  platforms:
+    - name: Amazon
+      versions:
+        - 2
+  galaxy_tags:
+    - jenkins
+    - ci
+    - cd
+    - cicd
+
+dependencies:
+  - role: java
+  - role: docker

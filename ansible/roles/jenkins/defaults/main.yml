@@ -1,0 +1,51 @@
+---
+# Jenkins Defaults
+
+# Jenkins version (use 'latest' for latest stable)
+jenkins_version: "latest"
+
+# Jenkins user and group
+jenkins_user: jenkins
+jenkins_group: jenkins
+
+# Jenkins home directory
+jenkins_home: /var/lib/jenkins
+
+# Jenkins HTTP port
+jenkins_http_port: 8080
+
+# Jenkins HTTPS configuration
+jenkins_https_enabled: false
+jenkins_https_port: 8443
+jenkins_https_keystore_path: /etc/jenkins/keystore.jks
+
+# Jenkins URL
+jenkins_url: "http://localhost:{{ jenkins_http_port }}"
+
+# Jenkins admin credentials
+jenkins_admin_user: admin
+jenkins_admin_password: ""  # Set via vault
+
+# Jenkins plugins to install
+jenkins_plugins:
+  - kubernetes
+  - kubernetes-cli
+  - kubernetes-credentials
+  - docker-plugin
+  - git
+  - github
+  - pipeline
+  - blueocean
+  - configuration-as-code
+
+# Jenkins agent configuration
+jenkins_agent_port: 50000
+jenkins_agent_jnlp_port: 50000
+
+# Jenkins Java options
+jenkins_java_opts: "-Xmx2g -Xms512m"
+
+# Backup configuration
+jenkins_backup_enabled: true
+jenkins_backup_dir: /var/backups/jenkins
+jenkins_backup_retention_days: 7
