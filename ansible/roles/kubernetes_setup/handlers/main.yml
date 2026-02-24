@@ -1,13 +1,18 @@
 ---
+# =============================================================================
 # Kubernetes Setup Handlers
+# Purpose: Respond to configuration changes requiring service restarts
+# =============================================================================
 
 - name: Restart kubelet
   ansible.builtin.systemd:
     name: kubelet
     state: restarted
     daemon_reload: true
+  tags: kubernetes, never
 
 - name: Restart containerd
   ansible.builtin.systemd:
     name: containerd
     state: restarted
+  tags: kubernetes,
