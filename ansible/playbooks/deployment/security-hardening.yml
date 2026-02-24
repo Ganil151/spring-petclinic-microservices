@@ -129,7 +129,6 @@
             key: "PermitEmptyPasswords",
             value: "{{ security_ssh_permit_empty_passwords }}",
           }
-        - { key: "Protocol", value: "2" }
         - { key: "HostbasedAuthentication", value: "no" }
         - { key: "PermitUserEnvironment", value: "no" }
         - { key: "UsePAM", value: "yes" }
