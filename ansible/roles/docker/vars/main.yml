@@ -2,24 +2,9 @@
 # Docker Role Variables
 # =============================================================================
 
-# Docker version (default: latest)
-docker_version: "latest"
-
-# Storage driver
-docker_storage_driver: "overlay2"
-
-# Users to add to Docker group
-docker_users:
-  - ec2-user
-
-# Docker daemon configuration
-docker_daemon_options:
-  storage-driver: overlay2
-  log-driver: json-file
-  log-opts:
-    max-size: "10m"
-    max-file: "3"
-  live-restore: true
+Unexpected scalar token in YAML stream: "enabled"YAML
+Unexpected map-value-ind token in YAML stream: ":"YAML
+Unexpected scalar token in YAML stream: "true" at line 51, column 18:
 
 # Docker registries to configure
 docker_registries: []
