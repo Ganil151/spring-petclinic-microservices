@@ -165,7 +165,7 @@ inputs = {
     bastion_hosts = {
       enabled = true
       vars = {
-        ansible_roles = "docker,git,security_tools"
+        ansible_roles = "docker,git,awscli,terraform,terragrunt,kubectl,helm,infracost,security_tools"
       }
     }
 
@@ -173,7 +173,7 @@ inputs = {
     jenkins_masters = {
       enabled = true
       vars = {
-        ansible_roles  = "java,docker,awscli,jenkins,security_tools"
+        ansible_roles  = "java,docker,awscli,git,maven,terraform,terragrunt,infracost,kubectl,helm,kubernetes_setup,jenkins,trivy_scan,security_tools"
         jenkins_memory = "2g"
         jenkins_cpu    = "2.0"
       }
@@ -193,7 +193,7 @@ inputs = {
     k8s_workers = {
       enabled = true
       vars = {
-        ansible_roles = "java,docker,awscli,maven,kubectl,helm"
+        ansible_roles = "docker,awscli,kubectl,helm,security_tools"
         k8s_max_pods  = 110
       }
     }
