@@ -203,7 +203,7 @@ inputs = {
   tags = {
     Project     = "spring-petclinic"
     Environment = "dev"
-    ManagedBy   = "Terraform"
+    ManagedBy   = "Gsm"
     Team        = "DevOps"
   }
 }
