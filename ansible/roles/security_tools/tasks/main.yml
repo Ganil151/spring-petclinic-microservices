@@ -4,6 +4,14 @@
 # Installs fail2ban, audit, and hardens sysctl on Amazon Linux 2
 # =============================================================================
 
+# ── EPEL Repository Setup ────────────────────────────────────────────────────
+- name: Install EPEL repository (required for fail2ban on Amazon Linux 2)
+  ansible.builtin.yum:
+    name: epel-release
+    state: present
+  when: ansible_os_family == "RedHat"
+  tags: security
+
 # ── Package Installation ──────────────────────────────────────────────────────
 - name: Install security packages
   ansible.builtin.yum:
@@ -12,6 +20,28 @@
       - fail2ban-systemd
       - audit
     state: present
+  register: package_install_result
+  ignore_errors: true
+  tags: security
+
+# ── Handle fail2ban installation failure ──────────────────────────────────────
+- name: Install fail2ban from amazon-linux-extras (fallback for Amazon Linux 2)
+  ansible.builtin.shell: amazon-linux-extras install epel -y && yum install -y fail2ban fail2ban-systemd
+  args:
+    warn: no
+  when:
+    - ansible_distribution == "Amazon"
+    - package_install_result.failed is defined
+    - package_install_result.failed
+  tags: security
+
+# ── Final security packages installation (for cases where first attempt failed) ──
+- name: Retry installing audit if not installed
+  ansible.builtin.yum:
+    name: audit
+    state: present
+  when:
+    - "'audit' not in ansible_cmdline or ansible_cmdline.audit is defined"
   tags: security
 
 # ── Fail2ban ──────────────────────────────────────────────────────────────────
@@ -29,7 +59,7 @@
       enabled  = true
       port     = ssh
       logpath  = %(sshd_log)s
-    mode: '0644'
+    mode: "0644"
     owner: root
     group: root
   notify: Restart fail2ban
@@ -61,7 +91,7 @@
     path: /etc/audit/rules.d/audit.rules
     line: "{{ item }}"
     create: true
-    mode: '0600'
+    mode: "0600"
   loop:
     - "-w /etc/ssh/sshd_config -p wa -k sshd_config"
     - "-w /var/log/secure -p wa -k secure_log"
@@ -83,17 +113,17 @@
     state: present
     reload: true
   loop:
-    - { name: 'net.ipv4.tcp_syncookies', value: '1' }
-    - { name: 'net.ipv4.conf.all.accept_redirects', value: '0' }
-    - { name: 'net.ipv4.conf.default.accept_redirects', value: '0' }
-    - { name: 'net.ipv4.conf.all.send_redirects', value: '0' }
-    - { name: 'net.ipv4.conf.default.send_redirects', value: '0' }
-    - { name: 'net.ipv4.conf.all.accept_source_route', value: '0' }
-    - { name: 'net.ipv4.conf.default.accept_source_route', value: '0' }
-    - { name: 'net.ipv4.icmp_echo_ignore_broadcasts', value: '1' }
-    - { name: 'net.ipv4.conf.all.log_martians', value: '1' }
-    - { name: 'net.ipv4.conf.default.log_martians', value: '1' }
-    - { name: 'kernel.randomize_va_space', value: '2' }
+    - { name: "net.ipv4.tcp_syncookies", value: "1" }
+    - { name: "net.ipv4.conf.all.accept_redirects", value: "0" }
+    - { name: "net.ipv4.conf.default.accept_redirects", value: "0" }
+    - { name: "net.ipv4.conf.all.send_redirects", value: "0" }
+    - { name: "net.ipv4.conf.default.send_redirects", value: "0" }
+    - { name: "net.ipv4.conf.all.accept_source_route", value: "0" }
+    - { name: "net.ipv4.conf.default.accept_source_route", value: "0" }
+    - { name: "net.ipv4.icmp_echo_ignore_broadcasts", value: "1" }
+    - { name: "net.ipv4.conf.all.log_martians", value: "1" }
+    - { name: "net.ipv4.conf.default.log_martians", value: "1" }
+    - { name: "kernel.randomize_va_space", value: "2" }
   tags:
     - security
     - hardening
