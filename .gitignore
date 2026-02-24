@@ -12,10 +12,12 @@ target/
 *.rar
 
 # ==========================================
-# Terraform
+# Terraform & Terragrunt
 # ==========================================
-# Local .terraform directories
+# Local .terraform and .terragrunt-cache directories
 **/.terraform/*
+**/.terragrunt-cache/*
+.terragrunt-source-manifest
 
 # .tfstate files
 *.tfstate
@@ -25,32 +27,24 @@ target/
 crash.log
 crash.*.log
 
-# Exclude all .tfvars files, which are likely to contain sensitive data, such as
-# password, private keys, and other secrets. These should not be part of version 
-# control as they are data based configuration files.
-# *.tfvars
-# *.tfvars.json
-
-# Ignore override files as they are usually used to override resources locally and so
-# are not checked in
+# Ignore override files
 override.tf
 override.tf.json
 *_override.tf
 *_override.tf.json
 
-# Include override files you do wish to add to version control using negated pattern
-# !example_override.tf
-
-# Include plugin cache directory
+# Plugin cache and CLI config
 .terraform.lock.hcl
-
-# Ignore CLI configuration files
 .terraformrc
 terraform.rc
 
-# Ignore plan files
+# Ignore plan files and local artifacts
 tfplan
 tfplan.json
+plan_output.txt 
+tfplan_move_sonar 
+tfplan*
+.tfplan.binary
 
 # ==========================================
 # Python (Infra Testing & Ansible)
@@ -82,7 +76,7 @@ ansible/inventory/hosts.raw
 ansible/.vault_pass
 
 # ==========================================
-# Secrets & Credentials
+# Secrets & Credentials (CRITICAL)
 # ==========================================
 *.pem
 *.key
@@ -98,26 +92,17 @@ secrets.json
 *.truststore
 
 # ==========================================
-# IDEs
+# IDEs & OS Specific
 # ==========================================
-# IntelliJ IDEA
 .idea/
 *.iml
 *.iws
 out/
-
-# Eclipse
 .settings/
 .classpath
 .project
 .factorypath
-
-# VS Code
 .vscode/
-
-# ==========================================
-# OS Specific
-# ==========================================
 .DS_Store
 .DS_Store?
 ._*
@@ -127,32 +112,13 @@ ehthumbs.db
 Thumbs.db
 
 # ==========================================
-# Project Specific
+# Project Specific & Security Tools
 # ==========================================
 .java-version
 .amazonq
 generated/
 nohup.out
 docker-compose.override.yml
-
-# ==========================================
-# Checkov & infracost
-# ==========================================
 .binary
 .checkov
 .infracost
-.tfplan.binary
-.tfplan
-.tfplan.json
-
-# ==========================================
-# Terraform
-# ==========================================
-plan_output.txt 
-tfplan_move_sonar 
-tfplan*
-
-# ==========================================
-# Terragrunt
-# ==========================================
-.terragrunt-*
