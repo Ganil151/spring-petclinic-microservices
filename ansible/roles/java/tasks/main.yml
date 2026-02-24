@@ -11,9 +11,15 @@
   failed_when: false
   tags: java
 
+- name: Add Amazon Corretto Repository (Amazon Linux 2)
+  ansible.builtin.shell: rpm --import https://yum.corretto.aws/corretto.key && curl -L -o /etc/yum.repos.d/corretto.repo https://yum.corretto.aws/corretto.repo
+  args:
+    creates: /etc/yum.repos.d/corretto.repo
+  tags: java
+
 - name: Install Amazon Corretto 21
   ansible.builtin.yum:
-    name: java-21-amazon-corretto
+    name: java-21-amazon-corretto-devel
     state: present
   when: java_installed.rc != 0 or '21' not in (java_installed.stderr | default(''))
   tags: java
