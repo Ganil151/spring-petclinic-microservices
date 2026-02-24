@@ -205,6 +205,7 @@
   },
   "active": "e8a8bfd7c13c69fd",
   "lastOpenFiles": [
+    "ansible/roles/docker/tasks/test_yaml.yml",
     "docs/ANSIBLE_DEBUG_LOG.md",
     "ansible/roles/jenkins/vars/main.yml",
     "ansible/roles/jenkins/handlers/main.yml",
@@ -248,7 +249,6 @@
     "docs/SECURITY_COMPLIANCE.md",
     "docs/ARCHITECTURE.md",
     "ansible/README.md",
-    "docs/REDUNDANCY_AUDIT.md",
     "docs/microservices-architecture-diagram.jpg",
     "docs/grafana-custom-metrics-dashboard.png"
   ]
