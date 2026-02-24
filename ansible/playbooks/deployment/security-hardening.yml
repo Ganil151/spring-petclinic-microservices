@@ -261,40 +261,13 @@
     # =============================================================================
     # Fail2ban Configuration
     # =============================================================================
-    # ── EPEL Repository Setup ────────────────────────────────────────────────────
-    - name: Install EPEL repository (required for fail2ban on Amazon Linux 2)
-      ansible.builtin.yum:
-        name: epel-release
-        state: present
-      when:
-        - security_fail2ban_enabled | bool
-        - ansible_os_family == "RedHat"
-      tags:
-        - security
-        - fail2ban
-
     - name: Install fail2ban
       ansible.builtin.yum:
         name:
           - fail2ban
           - fail2ban-systemd
         state: present
-      register: fail2ban_install_result
-      ignore_errors: true
       when: security_fail2ban_enabled | bool
-      tags:
-        - security
-        - fail2ban
-
-    - name: Install fail2ban from amazon-linux-extras (fallback for Amazon Linux 2)
-      ansible.builtin.shell: amazon-linux-extras install epel -y && yum install -y fail2ban fail2ban-systemd
-      args:
-        warn: no
-      when:
-        - security_fail2ban_enabled | bool
-        - ansible_distribution == "Amazon"
-        - fail2ban_install_result is defined
-        - fail2ban_install_result.failed
       tags:
         - security
         - fail2ban
@@ -307,10 +280,7 @@
         group: root
         mode: "0644"
       notify: Restart fail2ban
-      when:
-        - security_fail2ban_enabled | bool
-        - fail2ban_install_result is defined
-        - not (fail2ban_install_result.failed | default(false))
+      when: security_fail2ban_enabled | bool
       tags:
         - security
         - fail2ban
@@ -320,10 +290,7 @@
         name: fail2ban
         state: started
         enabled: true
-      when:
-        - security_fail2ban_enabled | bool
-        - fail2ban_install_result is defined
-        - not (fail2ban_install_result.failed | default(false))
+      when: security_fail2ban_enabled | bool
       tags:
         - security
         - fail2ban
@@ -335,8 +302,6 @@
       ansible.builtin.yum:
         name: audit
         state: present
-      register: audit_install_result
-      ignore_errors: true
       when: security_audit_enabled | default(true) | bool
       tags:
         - security
@@ -347,10 +312,7 @@
         name: auditd
         state: started
         enabled: true
-      when:
-        - security_audit_enabled | default(true) | bool
-        - audit_install_result is defined
-        - not (audit_install_result.failed | default(false))
+      when: security_audit_enabled | default(true) | bool
       tags:
         - security
         - audit
@@ -368,10 +330,7 @@
         - "-w /etc/group -p wa -k group_changes"
         - "-w /etc/shadow -p wa -k shadow_changes"
         - "-w /etc/sudoers -p wa -k sudoers_changes"
-      when:
-        - security_audit_enabled | default(true) | bool
-        - audit_install_result is defined
-        - not (audit_install_result.failed | default(false))
+      when: security_audit_enabled | default(true) | bool
       tags:
         - security
         - audit
