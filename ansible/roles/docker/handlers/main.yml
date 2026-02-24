@@ -1,5 +1,9 @@
 ---
+# =============================================================================
 # Docker Role Handlers
+# Purpose: Respond to configuration changes requiring service restarts
+# =============================================================================
+
 
 - name: Restart Docker
   ansible.builtin.systemd:
