@@ -9,10 +9,14 @@
     name: kubelet
     state: restarted
     daemon_reload: true
+  failed_when: false
   tags: kubernetes, never
 
 - name: Restart containerd
   ansible.builtin.systemd:
     name: containerd
     state: restarted
+  failed_when: false
   tags: kubernetes, never
+
+- name: Reload systemd Daemon
