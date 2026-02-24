@@ -11,7 +11,6 @@
     dest: /etc/docker/daemon.json
     owner: root
     group: root
-    mode: 
-    name: docker
-    state: restarted
-    daemon_reload: true
+    mode: '0644'
+  notify: Restart Docker
+  tags: docker, security
