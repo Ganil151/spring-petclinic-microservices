@@ -1,24 +1,49 @@
 ---
-# Kubernetes Setup Defaults
+# =============================================================================
+# Kubernetes Setup Role - Defaults
+# Purpose: Default variables for EKS cluster configuration & K8s resource deployment
+# Alignment: Must match Terragrunt EKS module outputs
+# =============================================================================
 
-# Kubernetes version
-kubernetes_version: "1.29"
+# --- AWS & Cluster Context (Critical for Terragrunt Integration) ---
+aws_region: "us-east-1"
+eks_cluster_name: "petclinic-eks"          # ← MUST match Terragrunt output
+eks_cluster_endpoint: ""                   # ← Typically passed via extra_vars from Terragrunt
+eks_cluster_ca_certificate: ""             # ← Typically passed via extra_vars from Terragrunt
 
-# Container runtime
-container_runtime: containerd
+# --- Kubernetes Version Control ---
+kubernetes_version: "1.28"                 # ← Pin minor version; avoid 'latest' in prod
+control_plane_upgrade: false               # ← Safety flag for major version jumps
 
-# Network plugin
-kubernetes_cni_plugin: calico
-kubernetes_cni_version: "3.26"
+# --- Namespace & Networking ---
+default_namespace: "petclinic"
+service_type: "ClusterIP"                  # ← Internal only; use ALB Ingress for external
+vpc_cni_configure_rps: true                # ← Tune Network Performance
 
-# Cluster configuration
-kubernetes_cluster_name: petclinic-cluster
-kubernetes_pod_network_cidr: "10.244.0.0/16"
-kubernetes_service_cidr: "10.96.0.0/12"
+# --- IAM Roles for Service Accounts (IRSA) ---
+oidc_provider_enabled: true                # ← Required for AWS SDK access from pods
+oidc_provider_arn: ""                      # ← Terragrunt output
 
-# API server configuration
-kubernetes_api_port: 6443
+# --- Helm Charts (Spring Petclinic Dependencies) ---
+helm_charts:
+  - name: aws-load-balancer-controller
+    namespace: kube-system
+    version: "1.6.0"
+    repo: https://aws.github.io/eks-charts
+  - name: external-dns
+    namespace: kube-system
+    version: "1.12.0"
+    repo: https://kubernetes-sigs.github.io/external-dns/
+  - name: spring-petclinic
+    namespace: "{{ default_namespace }}"
+    version: "1.0.0"
+    repo: https://your-private-chart-museum.com
 
-# Kubeconfig path
-kubernetes_kubeconfig_dir: /etc/kubernetes
-kubernetes_kubeconfig_file: admin.conf
+# --- Resource Quotas (Governance) ---
+resource_quotas_enabled: true
+cpu_limit: "4"
+memory_limit: "8Gi"
+
+# --- Security Context ---
+pod_security_standards: "baseline"         # ← Enforce PSS
+network_policies_enabled: true
