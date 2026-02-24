@@ -8,6 +8,10 @@
 - name: Configure Docker daemon
   ansible.builtin.systemd:
     src: daemon.json.j2
+    dest: /etc/docker/daemon.json
+    owner: root
+    group: root
+    mode: 
     name: docker
     state: restarted
     daemon_reload: true
