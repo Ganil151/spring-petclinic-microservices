@@ -1,15 +1,30 @@
 ---
 # Docker Role Defaults
 # =============================================================================
+# Purpose: Default variables for Docker role
+# Location: ansible/roles/docker/defaults/main.yml
+# =============================================================================
 
+# Docker Package Version
 docker_version: "latest"
-docker_storage_driver: "overlay2"
+
+# Users to add to docker group (security: docker group = root equivalent)
 docker_users:
   - ec2-user
+
+# Docker Daemon Configuration
+# MUST match variable names in templates/daemon.json.j2
 docker_daemon_options:
-  storage-driver: overlay2
-  log-driver: json-file
-  log-opts:
-    max-size: "10m"
-    max-file: "3"
-  live-restore: true
+  storage_driver: "overlay2"
+  log_driver: "json-file"
+  log_max_size: "10m"
+  log_max_file: "3"
+  live_restore: true
+  userland_proxy: false
+  iptables: true
+  # data_root: "/mnt/docker-data"  # Uncomment for ephemeral storage
+
+# AWS Context (for CloudWatch logging)
+# Override in group_vars/all.yml or environment-specific files
+aws_region: "us-east-1"
+cloudwatch_log_group: "petclinic-docker-logs"
