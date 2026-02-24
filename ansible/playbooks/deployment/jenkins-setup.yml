@@ -8,4 +8,7 @@
   hosts: jenkins_masters
   become: true
   roles:
+    - terraform
+    - terragrunt
+    - infracost
     - jenkins

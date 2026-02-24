@@ -52,7 +52,7 @@
     - name: Install Trivy Scan
       ansible.builtin.include_role:
         name: trivy_scan
-      when: "'dev_all' in group_names"
+      when: "'jenkins_masters' in group_names"
       tags: [trivy, security]
     
     - name: Install Vault Integration
