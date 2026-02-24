@@ -205,6 +205,8 @@
   },
   "active": "e8a8bfd7c13c69fd",
   "lastOpenFiles": [
+    "ansible/roles/common/files/bashrc",
+    "ansible/roles/common/files",
     "ansible/collections/ansible_collections/kubernetes.core-6.3.0.info/GALAXY.yml",
     "ansible/collections/ansible_collections/kubernetes.core-6.3.0.info",
     "ansible/collections/ansible_collections/kubernetes/core/tox.ini",
@@ -215,8 +217,6 @@
     "ansible/collections/ansible_collections/kubernetes/core/bindep.txt",
     "ansible/collections/ansible_collections/kubernetes/core/README.md",
     "ansible/collections/ansible_collections/kubernetes/core/PSF-license.txt",
-    "ansible/collections/ansible_collections/kubernetes/core/Makefile",
-    "ansible/collections/ansible_collections/kubernetes/core/LICENSE",
     "ansible/collections/ansible_collections/kubernetes/core/CONTRIBUTING.md",
     "docs/INFRA_AUDIT.md",
     "terraform/live/dev/k8s-cluster/README_DISABLED.md",
