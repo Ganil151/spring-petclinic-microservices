@@ -13,4 +13,4 @@
     group: root
     mode: '0644'
   notify: Restart Docker
-  tags: docker, security
+  tags: docker, never
