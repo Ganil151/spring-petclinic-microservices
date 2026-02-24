@@ -54,7 +54,6 @@
         repo_gpgcheck: false
         module_hotfixes: true
       register: docker_repo_added
-
   rescue:
     - name: Fallback: Use direct RPM install if repo fails
       ansible.builtin.yum:
