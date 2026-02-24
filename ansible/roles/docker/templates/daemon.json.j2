@@ -1,21 +1,33 @@
-
-- name: Configure Docker daemon
-  ansible.builtin.template:
-    src: daemon.json.j2
-    dest: /etc/docker/daemon.json
-    owner: root
-    group: root
-    mode: '0644'
-  notify: Restart Docker
-  tags: docker, security
+{# =============================================================================
+   Docker Daemon Configuration - Spring Petclinic
+   Purpose: Hardened Docker daemon settings for AWS EC2 (Amazon Linux 2)
+   ============================================================================= #}
+{# -----------------------------------------------------------------------------
+   Variables expected from defaults/main.yml or group_vars:
+   - docker_daemon_options.storage_driver (default: overlay2)
+   - docker_daemon_options.log_driver (default: json-file or awslogs)
+   - docker_daemon_options.log_max_size (default: 10m)
+   - docker_daemon_options.log_max_file (default: 3)
+   - docker_daemon_options.live_restore (default: true)
+   - docker_daemon_options.userland_proxy (default: false)
+   - docker_daemon_options.data_root (optional)
+   - aws_region (default: us-east-1)
+   - cloudwatch_log_group (default: petclinic-docker-logs)
+   ----------------------------------------------------------------------------- #}
 {
   "storage-driver": "{{ docker_daemon_options.storage_driver | default('overlay2') }}",
   "log-driver": "{{ docker_daemon_options.log_driver | default('json-file') }}",
   "log-opts": {
     "max-size": "{{ docker_daemon_options.log_max_size | default('10m') }}",
     "max-file": "{{ docker_daemon_options.log_max_file | default('3') }}"
+{% if docker_daemon_options.log_driver | default('json-file') == 'awslogs' %},
+    "awslogs-group": "{{ cloudwatch_log_group | default('petclinic-docker-logs') }}",
+    "awslogs-region": "{{ aws_region | default('us-east-1') }}",
+    "awslogs-stream": "{{ inventory_hostname }}-docker"
+{% endif %}
   },
   "live-restore": {{ docker_daemon_options.live_restore | default(true) | lower }},
-  "userland-proxy": {{ docker_daemon_options.userland_proxy | default(false) | lower }}{% if docker_daemon_options.data_root is defined %},
+  "userland-proxy": {{ docker_daemon_options.userland_proxy | default(false) | lower }},
+  "iptables": {{ docker_daemon_options.iptables | default(true) | lower }}{% if docker_daemon_options.data_root is defined %},
   "data-root": "{{ docker_daemon_options.data_root }}"{% endif %}
 }
