@@ -19,6 +19,17 @@ dependency "vpc" {
   }
 }
 
+# Get current machine's public IP for SSH access
+locals {
+  # Fetch public IP of machine running Terraform
+  my_ip = chomp("${try(data.http.myip.response_body, "")}")
+}
+
+# Fetch public IP for SSH access (temporary for dev)
+data "http" "myip" {
+  url = "https://ifconfig.me/ip"
+}
+
 # Pass inputs to the Terraform module
 inputs = {
   vpc_id       = try(dependency.vpc.outputs.vpc_id, "vpc-mock")
@@ -27,5 +38,6 @@ inputs = {
   project_name = "spring-petclinic"
 
   # Public access (restricted in prod)
-  public_cidr_blocks = ["0.0.0.0/0"]
+  # For dev: Allow SSH from bastion's public IP and current machine
+  public_cidr_blocks = ["0.0.0.0/0"] # TODO: Restrict to specific IPs in production
 }
