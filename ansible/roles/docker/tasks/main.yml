@@ -48,12 +48,9 @@
     groups: docker
     append: true
   tags: docker
-  # ← ⚠️ SECURITY NOTE: docker group = root-equivalent access
-  #    Document this risk in your security compliance docs
 
 - name: Verify Docker installation
   ansible.builtin.command: docker --version
   register: docker_version_output
   changed_when: false
   tags: docker
-  # ← GOOD: Read-only check with proper changed_when declaration
