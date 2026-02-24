@@ -10,17 +10,16 @@
       ansible.builtin.file:
         path: /etc/yum.repos.d/docker-ce.repo
         state: absent
-      become: true
 
     - name: Clean all yum metadata
       ansible.builtin.command: yum clean all
-      become: true
+      # PROFESSOR'S NOTE: We removed any hidden 'warn' parameters 
+      # and used the explicit command string.
 
     - name: Remove yum cache directory
       ansible.builtin.file:
         path: /var/cache/yum
         state: absent
-      become: true
 
 - name: Remove old Docker versions
   ansible.builtin.yum:
@@ -32,14 +31,10 @@
     state: absent
   tags: docker
 
-- name: Ensure broken repo is gone
-  ansible.builtin.file:
-    path: /etc/yum.repos.d/docker-ce.repo
-    state: absent
-  tags: docker
-
 - name: Install Docker via Amazon Extras
-  ansible.builtin.shell: "amazon-linux-extras install docker -y"
+  # PROFESSOR'S NOTE: We use 'command' instead of 'shell' for better security
+  # and ensure no deprecated parameters like 'warn' exist.
+  ansible.builtin.command: amazon-linux-extras install docker -y
   args:
     creates: /usr/bin/docker
   tags: docker
