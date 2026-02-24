@@ -3,12 +3,24 @@
 # Docker Role — tasks/main.yml (Amazon Linux 2 Optimized)
 # =============================================================================
 
-- name: Clean up broken CentOS Docker repo
-  ansible.builtin.file:
-    path: /etc/yum.repos.d/docker-ce.repo
-    state: absent
-  tags: docker
+- name: Force cleanup of broken repos and YUM cache
+  become: true
+  block:
+    - name: Remove the broken Docker repository file
+      ansible.builtin.file:
+        path: /etc/yum.repos.d/docker-ce.repo
+        state: absent
 
+    - name: Clean all yum metadata
+      ansible.builtin.command: yum clean all
+      args:
+        warn: false
+
+    - name: Remove yum cache directory
+      ansible.builtin.file:
+        path: /var/cache/yum
+        state: absent
+  
 - name: Remove old Docker versions
   ansible.builtin.yum:
     name:
