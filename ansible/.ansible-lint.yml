@@ -6,7 +6,7 @@
 # =============================================================================
 
 # Default rules
-profile: production  # ✅ GOOD: Strictest profile for production code
+profile: production  
 
 # Parseability
 parseable: false
@@ -14,7 +14,7 @@ quiet: false
 verbosity: 0
 
 # Formatters
-format: rich  # ✅ GOOD: Human-readable output for developers
+format: rich  
 
 # Rules - Enabled List
 enable_list:
@@ -50,9 +50,9 @@ enable_list:
 
 # Rules - Skip List
 skip_list:
-  - yaml[line-length]  # ⚠️ REVIEW: Long lines in templates can hide issues
-  - name[missing]      # ⚠️ REVIEW: Task names aid documentation/debugging
-  - ignore-errors      # ⚠️ REVIEW: Ensure this is truly intentional
+  - yaml[line-length]  
+  - name[missing]     
+  - ignore-errors      
 
 # Mock modules (for custom modules)
 mock_modules:
@@ -91,13 +91,13 @@ rules:
   literal-compare:
     action: warning
   jinja:
-    action: error  # ✅ GOOD: Catches template syntax errors early
+    action: error  
   no-free-form:
-    action: error  # ✅ GOOD: Enforces explicit parameter usage
+    action: error  
   no-handler:
     action: error
   no-changed-when:
-    action: warning  # ⚠️ CONSIDER: error for idempotency guarantees
+    action: warning  
   no-jinja-when:
     action: error
   no-relative-paths:
