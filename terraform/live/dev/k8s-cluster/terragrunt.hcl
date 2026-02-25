@@ -38,6 +38,17 @@ dependency "key_pair" {
   }
 }
 
+# ← ADD: RDS dependency if database endpoint needed for bootstrap
+dependency "rds" {
+  config_path = "../rds"
+  mock_outputs = {
+    db_endpoint = "mock-db.123456789012.us-east-1.rds.amazonaws.com"
+    db_port     = 3306
+  }
+  # Only required if worker bootstrap needs DB connection
+  # skip_outputs = true  # Uncomment if not needed at provision time
+}
+
 
 
 # Pass inputs to the Terraform module
