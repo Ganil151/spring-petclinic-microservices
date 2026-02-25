@@ -1,15 +1,53 @@
 ---
 # =============================================================================
 # Bastion Host Setup Playbook
-# Sets up Terraform, Terragrunt and administrative tools
+# Purpose: Configure secure SSH jump host for VPC access
+# Target: bastion_hosts (from ansible/inventory/hosts)
 # =============================================================================
 
 - name: Configure Bastion Host
   hosts: bastion_hosts
   become: true
+  gather_facts: true
+  
+  vars:
+    bastion_users:
+      - name: admin
+        groups: sudo
+        shell: /bin/bash
+    
   roles:
-    - terraform
-    - terragrunt
-    - kubectl
-    - helm
-    - infracost
+    - role: common
+      tags: common
+    - role: security_tools
+      tags: security
+    - role: cloudwatch_agent
+      tags: monitoring
+  
+  tasks:
+    - name: Configure SSH hardening
+      ansible.builtin.template:
+        src: sshd_config.j2
+        dest: /etc/ssh/sshd_config
+        mode: '0600'
+      notify: Restart SSH
+      tags: ssh, security
+    
+    - name: Configure fail2ban
+      ansible.builtin.template:
+        src: fail2ban_jail_local.j2
+        dest: /etc/fail2ban/jail.local
+        mode: '0644'
+      notify: Restart fail2ban
+      tags: fail2ban, security
+  
+  handlers:
+    - name: Restart SSH
+      ansible.builtin.systemd:
+        name: sshd
+        state: restarted
+    
+    - name: Restart fail2ban
+      ansible.builtin.systemd:
+        name: fail2ban
+        state: restarted
