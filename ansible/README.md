@@ -178,14 +178,19 @@ ansible-playbook -i inventory/hosts playbooks/deployment/security-hardening.yml 
 
 ### site.yml - Main Deployment
 
-The main entry point for all deployments. Orchestrates:
-- Security hardening
-- Infrastructure provisioning
-- Jenkins deployment
-- SonarQube deployment
-- Kubernetes worker setup
-- GitOps operators
-- Security tools
+1. Validate prerequisites (tools, credentials, versions)
+2. Provision infrastructure via Terragrunt hooks
+   └─ VPC → RDS → EKS → ALB
+3. Configure bastion host (SSH hardening, session logging)
+4. Deploy Jenkins master (CI/CD pipeline server)
+5. Deploy SonarQube (code quality gate)
+6. Configure Kubernetes workers (Docker, kubelet, CNI)
+7. Install GitOps operators (ArgoCD/FluxCD)
+8. Apply security hardening (CIS benchmarks)
+9. Deploy monitoring stack (Prometheus, Grafana, CloudWatch)
+10. Run post-deployment validation & smoke testss
+
+## Key Tags:
 
 ### deployment/security-hardening.yml
 
