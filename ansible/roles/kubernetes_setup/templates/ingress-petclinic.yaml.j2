@@ -1,0 +1,283 @@
+{# =============================================================================
+   Spring Petclinic Ingress Template for AWS ALB
+   Location: ansible/roles/kubernetes_setup/templates/ingress-petclinic.yaml.j2
+   Purpose: Configure external access to Spring Petclinic microservices via ALB Ingress
+   Alignment: Must match defaults/main.yml variables and AWS Load Balancer Controller
+   ============================================================================= #}
+{# -----------------------------------------------------------------------------
+   Expected Variables (from defaults/main.yml or group_vars/):
+   - app_name: Application name (default: spring-petclinic)
+   - default_namespace: Kubernetes namespace (default: petclinic)
+   - app_env: Environment (dev/staging/prod)
+   - ingress_host: Ingress hostname (e.g., petclinic-dev.example.com)
+   - ssl_cert_arn: AWS ACM certificate ARN for HTTPS
+   - aws_region: AWS region
+   - eks_cluster_name: EKS cluster name
+   - ingress_class: Ingress class (default: alb)
+   - health_check_path: Health check endpoint
+   - management_port: Spring Boot management port
+   - tls_enabled: Enable TLS termination
+   - waf_acl_arn: AWS WAF Web ACL ARN (optional)
+   - ingress_group: Ingress group for multi-ingress routing
+   - stickiness_enabled: Enable session stickiness
+   - rate_limiting_enabled: Enable rate limiting
+   - cors_origins: Allowed CORS origins
+   - additional_annotations: Custom ALB annotations
+   ----------------------------------------------------------------------------- #}
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ app_name | default('spring-petclinic') }}-ingress
+  namespace: {{ default_namespace | default('petclinic') }}
+  labels:
+    app.kubernetes.io/name: {{ app_name | default('spring-petclinic') }}
+    app.kubernetes.io/instance: {{ app_name | default('spring-petclinic') }}-{{ app_env | default('dev') }}
+    app.kubernetes.io/version: "{{ app_version | default('1.0.0') }}"
+    app.kubernetes.io/component: ingress
+    app.kubernetes.io/managed-by: ansible
+    app.kubernetes.io/environment: {{ app_env | default('dev') }}
+    app.kubernetes.io/part-of: spring-petclinic
+    aws.region: {{ aws_region | default('us-east-1') }}
+    eks.cluster: {{ eks_cluster_name | default('petclinic-eks') }}
+  annotations:
+    # =============================================================================
+    # AWS Load Balancer Controller - Core Configuration
+    # =============================================================================
+    kubernetes.io/ingress.class: "{{ ingress_class | default('alb') }}"
+    alb.ingress.kubernetes.io/scheme: "{{ lb_scheme | default('internet-facing') }}"
+    alb.ingress.kubernetes.io/target-type: "{{ target_type | default('ip') }}"
+    alb.ingress.kubernetes.io/ip-address-type: "{{ ip_address_type | default('ipv4') }}"
+    
+    # =============================================================================
+    # Health Check Configuration (Critical for Spring Boot Actuator)
+    # =============================================================================
+    alb.ingress.kubernetes.io/healthcheck-protocol: "HTTP"
+    alb.ingress.kubernetes.io/healthcheck-port: "{{ management_port | default('8081') }}"
+    alb.ingress.kubernetes.io/healthcheck-path: "{{ health_check_path | default('/actuator/health/liveness') }}"
+    alb.ingress.kubernetes.io/healthcheck-interval-seconds: "{{ healthcheck_interval | default('15') }}"
+    alb.ingress.kubernetes.io/healthcheck-timeout-seconds: "{{ healthcheck_timeout | default('5') }}"
+    alb.ingress.kubernetes.io/success-codes: "{{ healthcheck_success_codes | default('200') }}"
+    alb.ingress.kubernetes.io/healthy-threshold-count: "{{ healthy_threshold | default('2') }}"
+    alb.ingress.kubernetes.io/unhealthy-threshold-count: "{{ unhealthy_threshold | default('3') }}"
+    
+    # =============================================================================
+    # TLS/SSL Configuration
+    # =============================================================================
+{% if tls_enabled | default(true) %}
+{% if ssl_cert_arn is defined and ssl_cert_arn != '' %}
+    alb.ingress.kubernetes.io/certificate-arn: "{{ ssl_cert_arn }}"
+    alb.ingress.kubernetes.io/ssl-redirect: "443"
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]'
+{% else %}
+    # No certificate ARN provided - HTTP only (dev environments)
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}]'
+{% endif %}
+{% else %}
+    # TLS disabled - HTTP only
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}]'
+{% endif %}
+
+    # =============================================================================
+    # SSL Policy (TLS 1.2+ for compliance)
+    # =============================================================================
+{% if tls_enabled | default(true) %}
+    alb.ingress.kubernetes.io/ssl-policy: "ELBSecurityPolicy-TLS13-1-2-2021-06"
+{% endif %}
+
+    # =============================================================================
+    # Ingress Group (for multi-ingress routing)
+    # =============================================================================
+{% if ingress_group is defined and ingress_group != '' %}
+    alb.ingress.kubernetes.io/group.name: "{{ ingress_group }}"
+{% endif %}
+{% if ingress_order is defined %}
+    alb.ingress.kubernetes.io/group.order: "{{ ingress_order }}"
+{% endif %}
+
+    # =============================================================================
+    # Security - AWS WAF Integration
+    # =============================================================================
+{% if waf_acl_arn is defined and waf_acl_arn != '' %}
+    alb.ingress.kubernetes.io/wafv2-acl-arn: "{{ waf_acl_arn }}"
+{% endif %}
+{% if shield_advanced_protection is defined %}
+    alb.ingress.kubernetes.io/shield-advanced-protection: "{{ shield_advanced_protection | lower }}"
+{% endif %}
+
+    # =============================================================================
+    # Security Groups (Custom SG for ALB)
+    # =============================================================================
+{% if ingress_security_groups is defined and ingress_security_groups | length > 0 %}
+    alb.ingress.kubernetes.io/security-groups: "{{ ingress_security_groups | join(',') }}"
+{% endif %}
+
+    # =============================================================================
+    # Tags for Cost Allocation & Resource Tracking
+    # =============================================================================
+    alb.ingress.kubernetes.io/tags: "Environment={{ app_env | default('dev') }},Project=spring-petclinic,ManagedBy=ansible,Cluster={{ eks_cluster_name | default('petclinic-eks') }}"
+
+    # =============================================================================
+    # Session Stickiness (for stateful workloads)
+    # =============================================================================
+{% if stickiness_enabled | default(false) %}
+    alb.ingress.kubernetes.io/stickiness-enabled: "true"
+    alb.ingress.kubernetes.io/stickiness-ttl: "{{ stickiness_ttl | default('86400') }}"
+    alb.ingress.kubernetes.io/stickiness-type: "lb_cookie"
+{% endif %}
+
+    # =============================================================================
+    # Connection Draining & Timeout
+    # =============================================================================
+{% if lb_idle_timeout is defined %}
+    alb.ingress.kubernetes.io/connection-idle-timeout: "{{ lb_idle_timeout }}"
+{% endif %}
+
+    # =============================================================================
+    # Deletion Protection (Production Safety)
+    # =============================================================================
+{% if app_env | default('dev') == 'prod' %}
+    alb.ingress.kubernetes.io/deletion-protection: "true"
+{% elif lb_deletion_protection is defined %}
+    alb.ingress.kubernetes.io/deletion-protection: "{{ lb_deletion_protection | lower }}"
+{% endif %}
+
+    # =============================================================================
+    # CORS Configuration (via annotation or backend config)
+    # =============================================================================
+{% if cors_origins is defined and cors_origins | length > 0 %}
+    # Note: CORS is typically handled at application level or via WAF
+    # This annotation is for reference; actual CORS requires Lambda@Edge or app config
+    alb.ingress.kubernetes.io/cors-origins: "{{ cors_origins | join(',') }}"
+{% endif %}
+
+    # =============================================================================
+    # Rate Limiting (via WAF or annotation)
+    # =============================================================================
+{% if rate_limiting_enabled | default(false) %}
+    # Note: Rate limiting requires AWS WAF rules
+    # Annotation serves as documentation; actual implementation via waf_acl_arn
+{% endif %}
+
+    # =============================================================================
+    # Custom Annotations (Override any of the above)
+    # =============================================================================
+{% if additional_ingress_annotations is defined and additional_ingress_annotations | length > 0 %}
+{% for key, value in additional_ingress_annotations.items() %}
+    {{ key }}: "{{ value }}"
+{% endfor %}
+{% endif %}
+
+    # =============================================================================
+    # Observability & Monitoring
+    # =============================================================================
+    # Prometheus scrape annotation for ALB metrics (if using prometheus-operator)
+    prometheus.io/scrape: "{{ alb_metrics_enabled | default(false) | lower }}"
+{% if alb_metrics_enabled | default(false) %}
+    prometheus.io/port: "{{ alb_metrics_port | default('8080') }}"
+    prometheus.io/path: "{{ alb_metrics_path | default('/metrics') }}"
+{% endif %}
+
+spec:
+{% if ingress_class_name is defined %}
+  ingressClassName: {{ ingress_class_name }}
+{% else %}
+  ingressClassName: {{ ingress_class | default('alb') }}
+{% endif %}
+
+{% if tls_enabled | default(true) and ssl_cert_arn is defined and ssl_cert_arn != '' %}
+  tls:
+    - hosts:
+        - {{ ingress_host | default('petclinic.example.com') }}
+{% if ingress_additional_hosts is defined and ingress_additional_hosts | length > 0 %}
+{% for host in ingress_additional_hosts %}
+        - {{ host }}
+{% endfor %}
+{% endif %}
+      secretName: {{ tls_secret_name | default(app_name | default('spring-petclinic')) }}-tls
+{% endif %}
+
+  rules:
+    # =============================================================================
+    # Primary Host Rule
+    # =============================================================================
+    - host: {{ ingress_host | default('petclinic.example.com') }}
+      http:
+        paths:
+          # ---------------------------------------------------------------------
+          # API Gateway - Main Entry Point for All Microservices
+          # ---------------------------------------------------------------------
+          - path: /
+            pathType: {{ api_gateway_path_type | default('Prefix') }}
+            backend:
+              service:
+                name: {{ api_gateway_service | default('api-gateway') }}
+                port:
+                  number: {{ api_gateway_port | default(8080) }}
+
+          # ---------------------------------------------------------------------
+          # Actuator Endpoints - Health Checks & Metrics (Restricted Access)
+          # ---------------------------------------------------------------------
+{% if expose_actuator_endpoints | default(false) %}
+          - path: /actuator
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ api_gateway_service | default('api-gateway') }}
+                port:
+                  number: {{ management_port | default(8081) }}
+{% endif %}
+
+          # ---------------------------------------------------------------------
+          # Static Assets - Direct to API Gateway (served from classpath)
+          # ---------------------------------------------------------------------
+          - path: /css
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ api_gateway_service | default('api-gateway') }}
+                port:
+                  number: {{ api_gateway_port | default(8080) }}
+
+          - path: /fonts
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ api_gateway_service | default('api-gateway') }}
+                port:
+                  number: {{ api_gateway_port | default(8080) }}
+
+          - path: /images
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ api_gateway_service | default('api-gateway') }}
+                port:
+                  number: {{ api_gateway_port | default(8080) }}
+
+          - path: /scripts
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ api_gateway_service | default('api-gateway') }}
+                port:
+                  number: {{ api_gateway_port | default(8080) }}
+
+{% if additional_ingress_paths is defined and additional_ingress_paths | length > 0 %}
+          # ---------------------------------------------------------------------
+          # Additional Custom Paths
+          # ---------------------------------------------------------------------
+{% for path_config in additional_ingress_paths %}
+          - path: {{ path_config.path }}
+            pathType: {{ path_config.pathType | default('Prefix') }}
+            backend:
+              service:
+                name: {{ path_config.serviceName }}
+                port:
+                  number: {{ path_config.servicePort }}
+{% endfor %}
+{% endif %}
+
+{% if ingress_additional_rules is defined and ingress_additional_rules | length > 0 %}
+    # =============================================================================
+    # Additional Host Rules (e.g., www
