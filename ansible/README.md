@@ -6,109 +6,43 @@ This directory contains the complete Ansible configuration for deploying and man
 
 ```
 ansible/
-├── ansible.cfg # Ansible runtime configuration (production profile)
-├── .ansible-lint.yml # Linting rules for code quality enforcement
-├── requirements.yml # Ansible Galaxy collection dependencies
-├── collections/
-│ └── ansible_collections/
-│ └── kubernetes/core/ # kubernetes.core collection for K8s module support
+├── ansible.cfg                 # Ansible configuration
+├── requirements.yml            # Collection dependencies
 ├── inventory/
-│ ├── hosts # Static inventory (fallback)
-│ ├── aws/ec2.yml # AWS EC2 dynamic inventory plugin config
-│ └── plugins/aws_ec2.yml # Plugin configuration for auto-discovery
+│   ├── hosts                  # Auto-generated inventory (from Terraform)
+│   └── plugins/
+│       └── aws_ec2.yml        # AWS dynamic inventory plugin
 ├── group_vars/
-│ ├── all.yml # Global variables (project_name, aws_region, etc.)
-│ ├── bastion_hosts.yml # Bastion host security & session config
-│ ├── cicd.yml # CI/CD pipeline variables
-│ ├── database.yml # RDS connection parameters
-│ ├── dev.yml # Development environment overrides
-│ ├── jenkins_masters.yml # Jenkins master configuration
-│ ├── k8s_cluster.yml # EKS cluster connection details
-│ ├── k8s_workers.yml # Worker node runtime config
-│ ├── monitoring.yml # Prometheus/Grafana/CloudWatch settings
-│ ├── production.yml # Production-hardened overrides
-│ ├── sonarqube_servers.yml # SonarQube server configuration
-│ └── staging.yml # Staging environment overrides
-├── host_vars/
-│ ├── jenkins-master.yml # Host-specific Jenkins config
-│ ├── k8s-control.yml # Control plane node settings
-│ ├── k8s-worker-01.yml # Worker node overrides
-│ ├── sonarqube.yml # SonarQube host config
-│ └── worker-node.yml # Generic worker template
+│   ├── all.yml               # Global variables
+│   ├── jenkins_masters.yml   # Jenkins-specific variables
+│   ├── sonarqube_servers.yml # SonarQube-specific variables
+│   ├── k8s_workers.yml       # Kubernetes worker variables
+│   └── bastion_hosts.yml     # Bastion host variables
+├── host_vars/                 # Host-specific variables
 ├── playbooks/
-│ ├── site.yml # Main orchestration playbook (entry point)
-│ ├── deployment/
-│ │ ├── bastion-setup.yml # Bastion host hardening
-│ │ ├── jenkins-setup.yml # Jenkins CI/CD server deployment
-│ │ ├── monitoring-stack.yml # Prometheus + Grafana + CloudWatch agent
-│ │ └── security-hardening.yml # CIS benchmark compliance
-│ ├── provisioning/
-│ │ ├── prerequisites.yml # Pre-flight tool/version checks
-│ │ ├── vpc-network.yml # VPC/subnet orchestration via Terragrunt
-│ │ ├── rds-provision.yml # RDS MySQL provisioning
-│ │ └── k8s-cluster.yml # EKS cluster provisioning
-│ └── security/
-│ ├── gitops-operator.yml # ArgoCD/FluxCD installation
-│ ├── trivy-scan.yml # Container vulnerability scanning
-│ └── vault-integration.yml # HashiCorp Vault secret injection
+│   ├── site.yml              # Main deployment playbook
+│   ├── deployment/
+│   │   └── security-hardening.yml  # Security hardening playbook
+│   ├── provisioning/         # Infrastructure provisioning
+│   └── security/             # Security-related playbooks
 ├── roles/
-│ ├── awscli/ # AWS CLI v2 installation & config
-│ ├── cloudwatch_agent/ # CloudWatch Logs/Metrics agent setup
-│ ├── common/ # Base OS configuration (users, MOTD, bashrc)
-│ ├── docker/ # Docker Engine installation & daemon.json
-│ ├── git/ # Git installation & config
-│ ├── gitops_operator/ # ArgoCD/FluxCD deployment
-│ ├── helm/ # Helm 3 installation & repo management
-│ ├── infracost/ # Infrastructure cost estimation
-│ ├── java/ # Amazon Corretto 21 installation
-│ ├── jenkins/ # Jenkins master deployment & JCasC
-│ ├── kubectl/ # kubectl installation & kubeconfig setup
-│ ├── kubernetes_setup/ # EKS worker node K8s configuration
-│ ├── maven/ # Maven installation & settings.xml
-│ ├── security_tools/ # fail2ban, auditd, CIS hardening
-│ ├── sonarqube/ # SonarQube server deployment
-│ ├── terraform/ # Terraform CLI installation
-│ ├── terragrunt/ # Terragrunt CLI installation
-│ ├── trivy_scan/ # Trivy container scanner setup
-│ └── vault_integration/ # Vault agent & secret injection
+│   ├── awscli/               # AWS CLI installation
+│   ├── docker/               # Docker installation & configuration
+│   ├── git/                  # Git installation
+│   ├── gitops_operator/      # ArgoCD/Flux installation
+│   ├── helm/                 # Helm installation
+│   ├── java/                 # Java installation
+│   ├── jenkins/              # Jenkins deployment
+│   ├── kubectl/              # kubectl installation
+│   ├── kubernetes_setup/     # Kubernetes cluster setup
+│   ├── security_tools/       # Security hardening tools
+│   ├── trivy_scan/           # Trivy vulnerability scanner
+│   └── vault_integration/    # HashiCorp Vault integration
 ├── templates/
-│ ├── fail2ban_jail_local.j2 # Fail2ban jail configuration
-│ └── motd.j2 # Custom message-of-the-day
-├── scripts/
-│ ├── bootstrap.sh # Initial environment setup
-│ ├── vault-unseal.sh # Vault auto-unseal helper
-│ ├── ansible/
-│ │ ├── inventory-sync.sh # Sync Terraform outputs to Ansible inventory
-│ │ └── run-playbook.sh # Wrapper for playbook execution
-│ ├── deployment/
-│ │ ├── deploy-app.sh # Application deployment helper
-│ │ └── rollback-app.sh # Rollback helper script
-│ ├── security/
-│ │ ├── compliance-check.sh # CIS benchmark validation
-│ │ ├── scan-images.sh # Container image scanning
-│ │ └── validate-secrets.sh # Secret rotation validation
-│ └── terraform/
-│ ├── init-all.sh # Initialize all Terragrunt modules
-│ ├── plan-all.sh # Plan all environments
-│ ├── apply-all.sh # Apply all environments
-│ ├── backend_setup.sh # S3 backend initialization
-│ └── .terraform_bucket_name # Backend bucket name reference
-├── tests/
-│ └── integration/ # Molecule/pytest integration tests
-├── vault/
-│ ├── config/
-│ │ └── vault-connection.yml # Vault connection parameters (encrypted)
-│ ├── policies/ # Vault policy definitions
-│ └── secrets/
-│ ├── db-creds.yml # Database credentials (Ansible Vault)
-│ └── prod-vault.yml # Production secrets (Ansible Vault)
-├── .vault_pass # Vault password file reference (gitignored)
-├── plugins/
-│ ├── filter/ # Custom Jinja2 filters
-│ └── lookup/ # Custom lookup plugins
-├── meta/
-│ └── runtime.yml # Collection runtime metadata
-└── README.md # This file
+│   └── fail2ban_jail_local.j2  # Fail2ban configuration template
+├── tests/                     # Ansible test files
+├── scripts/                   # Helper scripts
+└── vault/                     # Encrypted secrets (Ansible Vault)
 ```
 
 ## 🚀 Quick Start
