@@ -1,8 +1,9 @@
 ---
 # =============================================================================
 # Spring Petclinic Microservices - Main Site Playbook
-# =============================================================================
-# Orchestrates the entire infrastructure configuration.
+# Location: ansible/playbooks/site.yml
+# Purpose: Orchestrates the entire infrastructure configuration via Ansible
+# Architecture: Terraform/Terragrunt provisions infra → Ansible configures instances
 # =============================================================================
 
 - name: 01. Pre-flight Checks
@@ -21,6 +22,7 @@
       ansible.builtin.assert:
         that: ansible_os_family == "RedHat"
         fail_msg: "Only RedHat family (Amazon Linux 2) is supported."
+        success_msg: "OS validation passed: {{ ansible_distribution }} {{ ansible_distribution_version }}"
 
 - name: 02. Base Infrastructure (Common & Security)
   import_playbook: provisioning/prerequisites.yml
@@ -38,7 +40,8 @@
   hosts: sonarqube_servers
   become: true
   roles:
-    - sonarqube
+    - role: sonarqube
+      tags: [sonarqube, quality]
   tags: [sonarqube, quality]
 
 - name: 06. Kubernetes Cluster Configuration
@@ -67,4 +70,11 @@
   tasks:
     - name: Display deployment message
       ansible.builtin.debug:
-        msg: "Full infrastructure configuration for {{ app_env | upper }} complete!"
+        msg: 
+          - "=============================================="
+          - "Full infrastructure configuration for {{ app_env | upper }} complete!"
+          - "=============================================="
+          - "Environment: {{ app_env | default('dev') }}"
+          - "Region: {{ aws_region | default('us-east-1') }}"
+          - "Project: {{ project_name | default('spring-petclinic') }}"
+          - "=============================================="
