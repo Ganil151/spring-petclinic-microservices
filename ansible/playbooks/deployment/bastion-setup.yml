@@ -8,8 +8,6 @@
   hosts: bastion_hosts
   become: true
   roles:
-    - terraform
-    - terragrunt
     - kubectl
     - helm
     - infracost
