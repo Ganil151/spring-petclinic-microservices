@@ -1,431 +1,471 @@
 ---
 # =============================================================================
-# Bastion Host Setup Playbook
-# Location: ansible/playbooks/deployment/bastion-setup.yml
-# Purpose: Configure secure SSH jump host for VPC access
-# Target: bastion_hosts (from ansible/inventory/hosts)
-# Security: CIS Amazon Linux 2 Benchmark aligned
+# Security Hardening Playbook for Spring Petclinic Microservices
+# =============================================================================
+# This playbook applies security hardening to all EC2 instances in the
+# Spring Petclinic infrastructure.
+#
+# Target Hosts: All instances (bastion, jenkins, sonarqube, workers)
+# Ansible Roles: security_tools
+#
+# Usage:
+#   ansible-playbook -i inventory/hosts playbooks/deployment/security-hardening.yml
+#
+# Tags:
+#   - security      : All security tasks
+#   - ssh           : SSH hardening only
+#   - firewall      : Firewall configuration only
+#   - audit         : Audit logging only
+#   - fail2ban      : Fail2ban configuration only
+#   - users         : User management only
 # =============================================================================
 
-- name: Configure Bastion Host
-  hosts: bastion_hosts
+- name: Security Hardening for Spring Petclinic Infrastructure
+  hosts: all
   become: true
   gather_facts: true
-  
+
   vars:
-    # Bastion Configuration
-    bastion_users:
-      - name: "{{ ansible_user | default('ec2-user') }}"
-        groups: sudo
-        shell: /bin/bash
-        ssh_keys: []  # Populated from Terraform outputs
-    
-    # SSH Hardening Settings
-    ssh_config:
-      permit_root_login: "no"
-      password_authentication: "no"
-      pubkey_authentication: "yes"
-      challenge_response_authentication: "no"
-      use_pam: "yes"
-      x11_forwarding: "no"
-      print_motd: "no"
-      accept_env: "LANG LC_*"
-      subsystem: "sftp /usr/libexec/openssh/sftp-server"
-      max_auth_tries: 3
-      max_sessions: 10
-      client_alive_interval: 300
-      client_alive_count_max: 2
-      login_grace_time: 60
-      port: 22
-    
+    # Security Configuration
+    security_ssh_port: 22
+    security_ssh_permit_root_login: "no"
+    security_ssh_password_authentication: "no"
+    security_ssh_pubkey_authentication: "yes"
+    security_ssh_max_auth_tries: 3
+    security_ssh_client_alive_interval: 300
+    security_ssh_client_alive_count_max: 2
+    security_ssh_login_grace_time: 60
+    security_ssh_x11_forwarding: "no"
+    security_ssh_allow_tcp_forwarding: "no"
+    security_ssh_permit_empty_passwords: "no"
+
     # Fail2ban Configuration
-    fail2ban_config:
-      enabled: true
-      bantime: 3600  # 1 hour
-      findtime: 600  # 10 minutes
-      maxretry: 5
-      ignore_ip:
-        - 127.0.0.1/8
-        - "{{ ansible_default_ipv4.address | default('') }}/32"
-    
-    # Session Logging
-    session_logging:
-      enabled: true
-      log_dir: /var/log/bastion/sessions
-      retention_days: 90
-    
-    # CloudWatch Integration
-    cloudwatch_log_group: "/spring-petclinic/{{ environment | default('dev') }}/bastion"
-    cloudwatch_log_retention: 90
-    
-  tags: [bastion, tools, security]
-  
+    security_fail2ban_enabled: true
+    security_fail2ban_bantime: 3600
+    security_fail2ban_findtime: 600
+    security_fail2ban_maxretry: 3
+
+    # Firewall Configuration
+    security_firewall_enabled: true
+    security_firewall_allowed_tcp_ports:
+      - 22 # SSH
+      - 80 # HTTP
+      - 443 # HTTPS
+
+    # Audit Configuration
+    security_audit_enabled: true
+    security_audit_log_retention_days: 90
+
+    # User Configuration
+    security_sudo_wheel_group: true
+    security_password_minlen: 12
+    security_password_retry: 3
+
   pre_tasks:
-    - name: Validate bastion host connectivity
-      ansible.builtin.ping:
-      tags: [bastion, prereq]
-    
-    - name: Gather system facts
-      ansible.builtin.setup:
-        gather_subset:
-          - hardware
-          - network
-          - virtual
-      tags: [bastion, prereq]
-    
-    - name: Validate OS family
-      ansible.builtin.assert:
-        that:
-          - ansible_os_family == "RedHat"
-          - ansible_distribution in ["Amazon", "CentOS", "Rocky"]
-        fail_msg: "Bastion host must run Amazon Linux 2, CentOS, or Rocky Linux"
-        success_msg: "OS validation passed: {{ ansible_distribution }} {{ ansible_distribution_version }}"
-      tags: [bastion, prereq]
-    
-    - name: Check for existing SSH configuration
-      ansible.builtin.stat:
-        path: /etc/ssh/sshd_config
-      register: sshd_config_stat
-      tags: [bastion, ssh]
-    
-    - name: Backup existing SSH configuration
-      ansible.builtin.copy:
-        src: /etc/ssh/sshd_config
-        dest: "/etc/ssh/sshd_config.backup.{{ ansible_date_time.date }}"
-        mode: '0600'
-        remote_src: true
-      when: sshd_config_stat.stat.exists
-      tags: [bastion, ssh, backup]
-  
+    - name: Display security hardening start
+      ansible.builtin.debug:
+        msg: |
+          ╔══════════════════════════════════════════════════════════════╗
+          ║     Spring Petclinic - Security Hardening                    ║
+          ║     Host: {{ inventory_hostname }}                            ║
+          ║     Environment: {{ app_env | default('dev') }}          ║
+          ╚══════════════════════════════════════════════════════════════╝
+      tags: always
+
+    - name: Gather package facts
+      ansible.builtin.package_facts:
+        manager: auto
+      tags: always
+
   roles:
-    - role: common
-      tags: [common, base]
-    
     - role: security_tools
-      tags: [security, hardening]
-    
-    - role: cloudwatch_agent
-      tags: [monitoring, cloudwatch]
-    
-    - role: awscli
-      tags: [aws, cli]
-  
+      tags:
+        - security
+        - security_tools
+
   tasks:
     # =============================================================================
     # SSH Hardening
     # =============================================================================
-    
-    - name: Configure SSH daemon hardening
-      ansible.builtin.template:
-        src: sshd_config.j2
-        dest: /etc/ssh/sshd_config
-        mode: '0600'
-        owner: root
-        group: root
-        validate: /usr/sbin/sshd -t -f %s
+    - name: SSH Hardening Configuration
+      ansible.builtin.lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: "^#?{{ item.key }} "
+        line: "{{ item.key }} {{ item.value }}"
+        state: present
+        validate: "sshd -t -f %s"
+      loop:
+        - {
+            key: "PermitRootLogin",
+            value: "{{ security_ssh_permit_root_login }}",
+          }
+        - {
+            key: "PasswordAuthentication",
+            value: "{{ security_ssh_password_authentication }}",
+          }
+        - {
+            key: "PubkeyAuthentication",
+            value: "{{ security_ssh_pubkey_authentication }}",
+          }
+        - { key: "MaxAuthTries", value: "{{ security_ssh_max_auth_tries }}" }
+        - {
+            key: "ClientAliveInterval",
+            value: "{{ security_ssh_client_alive_interval }}",
+          }
+        - {
+            key: "ClientAliveCountMax",
+            value: "{{ security_ssh_client_alive_count_max }}",
+          }
+        - {
+            key: "LoginGraceTime",
+            value: "{{ security_ssh_login_grace_time }}",
+          }
+        - { key: "X11Forwarding", value: "{{ security_ssh_x11_forwarding }}" }
+        - {
+            key: "AllowTcpForwarding",
+            value: "{{ security_ssh_allow_tcp_forwarding }}",
+          }
+        - {
+            key: "PermitEmptyPasswords",
+            value: "{{ security_ssh_permit_empty_passwords }}",
+          }
+        - { key: "HostbasedAuthentication", value: "no" }
+        - { key: "PermitUserEnvironment", value: "no" }
+        - { key: "UsePAM", value: "yes" }
+        - { key: "PrintMotd", value: "no" }
+        - { key: "PrintLastLog", value: "yes" }
+        - { key: "TCPKeepAlive", value: "yes" }
+        - { key: "Compression", value: "delayed" }
+        - { key: "StrictModes", value: "yes" }
+        - { key: "IgnoreRhosts", value: "yes" }
       notify: Restart SSH
-      tags: [bastion, ssh, hardening]
-    
-    - name: Configure SSH banner
+      tags:
+        - security
+        - ssh
+
+    - name: Create SSH banner
       ansible.builtin.copy:
-        content: |
-          ***************************************************************************
-          *                            AUTHORIZED ACCESS ONLY                        *
-          ***************************************************************************
-          * This system is for authorized users only. All activity is monitored     *
-          * and recorded. Unauthorized access is prohibited and may result in       *
-          * disciplinary action and/or civil and criminal penalties.                *
-          *                                                                         *
-          * By accessing this system, you consent to monitoring and recording.      *
-          *                                                                         *
-          * System: {{ project_name | default('spring-petclinic') }} Bastion Host  *
-          * Environment: {{ environment | default('dev') }}                         *
-          ***************************************************************************
         dest: /etc/ssh/banner
-        mode: '0644'
+        content: |
+          ╔══════════════════════════════════════════════════════════════╗
+          ║                    AUTHORIZED ACCESS ONLY                    ║
+          ╠══════════════════════════════════════════════════════════════╣
+          ║  This system is for authorized users only. All activity      ║
+          ║  may be monitored and recorded. Unauthorized access is       ║
+          ║  prohibited and may result in disciplinary action or         ║
+          ║  legal proceedings.                                          ║
+          ║                                                              ║
+          ║  Project: Spring Petclinic Microservices                     ║
+          ║  Environment: {{ app_env | default('dev') }}            ║
+          ╚══════════════════════════════════════════════════════════════╝
         owner: root
         group: root
+        mode: "0644"
+      tags:
+        - security
+        - ssh
+
+    - name: Configure SSH banner
+      ansible.builtin.lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: "^#?Banner "
+        line: "Banner /etc/ssh/banner"
+        state: present
+        validate: "sshd -t -f %s"
       notify: Restart SSH
-      tags: [bastion, ssh, security]
-    
-    - name: Configure SSH MOTD
-      ansible.builtin.template:
-        src: motd.j2
-        dest: /etc/motd
-        mode: '0644'
-        owner: root
-        group: root
-      tags: [bastion, ssh, motd]
-    
+      tags:
+        - security
+        - ssh
+
+    # =============================================================================
+    # Firewall Configuration (firewalld for Amazon Linux 2)
+    # =============================================================================
+    - name: Install firewalld
+      ansible.builtin.yum:
+        name: firewalld
+        state: present
+      when: security_firewall_enabled | bool
+      tags:
+        - security
+        - firewall
+
+    - name: Enable and start firewalld
+      ansible.builtin.systemd:
+        name: firewalld
+        state: started
+        enabled: true
+      when: security_firewall_enabled | bool
+      tags:
+        - security
+        - firewall
+
+    - name: Configure firewall - Allow SSH
+      ansible.posix.firewalld:
+        service: ssh
+        permanent: true
+        state: enabled
+        immediate: true
+      when: security_firewall_enabled | bool
+      tags:
+        - security
+        - firewall
+
+    - name: Configure firewall - Allow HTTP
+      ansible.posix.firewalld:
+        service: http
+        permanent: true
+        state: enabled
+        immediate: true
+      when: security_firewall_enabled | bool
+      tags:
+        - security
+        - firewall
+
+    - name: Configure firewall - Allow HTTPS
+      ansible.posix.firewalld:
+        service: https
+        permanent: true
+        state: enabled
+        immediate: true
+      when: security_firewall_enabled | bool
+      tags:
+        - security
+        - firewall
+
+    - name: Configure firewall - Allow Jenkins port
+      ansible.posix.firewalld:
+        port: 8080/tcp
+        permanent: true
+        state: enabled
+        immediate: true
+      when:
+        - security_firewall_enabled | bool
+        - "'jenkins_masters' in group_names"
+      tags:
+        - security
+        - firewall
+
+    - name: Configure firewall - Allow SonarQube port
+      ansible.posix.firewalld:
+        port: 9000/tcp
+        permanent: true
+        state: enabled
+        immediate: true
+      when:
+        - security_firewall_enabled | bool
+        - "'sonarqube_servers' in group_names"
+      tags:
+        - security
+        - firewall
+
     # =============================================================================
     # Fail2ban Configuration
     # =============================================================================
-    
+    # Note: fail2ban requires the EPEL repository on Amazon Linux 2
+    - name: Enable EPEL Repository (Amazon Linux 2)
+      ansible.builtin.shell: amazon-linux-extras install epel -y
+      when:
+        - security_fail2ban_enabled | bool
+        - ansible_distribution == "Amazon"
+      register: epel_install_result
+      changed_when: "'epel' in epel_install_result.stdout"
+      tags:
+        - security
+        - fail2ban
+
     - name: Install fail2ban
       ansible.builtin.yum:
         name:
           - fail2ban
           - fail2ban-systemd
         state: present
-        update_cache: true
-      when: fail2ban_config.enabled | bool
-      tags: [bastion, fail2ban, security]
-    
-    - name: Configure fail2ban jail.local
+      when: security_fail2ban_enabled | bool
+      tags:
+        - security
+        - fail2ban
+
+    - name: Create fail2ban jail.local configuration
       ansible.builtin.template:
-        src: fail2ban_jail_local.j2
+        src: ../../../templates/fail2ban_jail_local.j2
         dest: /etc/fail2ban/jail.local
-        mode: '0644'
         owner: root
         group: root
+        mode: "0644"
       notify: Restart fail2ban
-      when: fail2ban_config.enabled | bool
-      tags: [bastion, fail2ban, security]
-    
+      when: security_fail2ban_enabled | bool
+      tags:
+        - security
+        - fail2ban
+
     - name: Enable and start fail2ban
       ansible.builtin.systemd:
         name: fail2ban
         state: started
         enabled: true
-      when: fail2ban_config.enabled | bool
-      tags: [bastion, fail2ban, security]
-    
+      when: security_fail2ban_enabled | bool
+      tags:
+        - security
+        - fail2ban
+
     # =============================================================================
-    # Session Logging (ASCiinema-style)
+    # Audit Configuration
     # =============================================================================
-    
-    - name: Create bastion session log directory
-      ansible.builtin.file:
-        path: "{{ session_logging.log_dir }}"
-        state: directory
-        mode: '0750'
-        owner: root
-        group: adm
-      when: session_logging.enabled | bool
-      tags: [bastion, logging, security]
-    
-    - name: Configure bash profile for session logging
-      ansible.builtin.blockinfile:
-        path: /etc/profile.d/bastion-logging.sh
-        block: |
-          # Bastion Session Logging
-          # All commands are logged for audit purposes
-          
-          if [ -n "$SSH_CONNECTION" ]; then
-              export PROMPT_COMMAND='RETRN_VAL=$?;
-              echo -e "$(date +'%Y-%m-%d %H:%M:%S') [${SSH_CONNECTION%% *}]:$(whoami):$(pwd):$(history 1 | sed "s/^[ ]*[0-9]\+[ ]*//" )\n$(cat /dev/stdin)" >> {{ session_logging.log_dir }}/$(date +'%Y-%m-%d')-$(whoami)-session.log;
-              exit $RETRN_VAL'
-          fi
-        mode: '0644'
-        owner: root
-        group: root
-      when: session_logging.enabled | bool
-      tags: [bastion, logging, security]
-    
-    # =============================================================================
-    # User Management
-    # =============================================================================
-    
-    - name: Create bastion users
-      ansible.builtin.user:
-        name: "{{ item.name }}"
-        groups: "{{ item.groups | join(',') }}"
-        shell: "{{ item.shell | default('/bin/bash') }}"
-        create_home: true
-        state: present
-      loop: "{{ bastion_users }}"
-      tags: [bastion, users, security]
-    
-    - name: Configure sudo access for bastion users
-      ansible.builtin.copy:
-        content: |
-          # Bastion user sudo configuration
-          # Password required for sudo commands
-          %sudo ALL=(ALL) ALL
-          
-          # Log all sudo commands
-          Defaults logfile="/var/log/sudo.log"
-          Defaults log_input, log_output
-          Defaults iolog_dir="/var/log/sudo-io"
-        dest: /etc/sudoers.d/bastion-users
-        mode: '0440'
-        owner: root
-        group: root
-        validate: /usr/sbin/visudo -cf %s
-      tags: [bastion, users, sudo]
-    
-    # =============================================================================
-    # Firewall Configuration (firewalld)
-    # =============================================================================
-    
-    - name: Install firewalld
+    - name: Install auditd
       ansible.builtin.yum:
-        name: firewalld
+        name: audit
         state: present
-      tags: [bastion, firewall, security]
-    
-    - name: Enable and start firewalld
-      ansible.builtin.systemd:
-        name: firewalld
-        state: started
-        enabled: true
-      tags: [bastion, firewall, security]
-    
-    - name: Configure firewalld to allow SSH only
-      ansible.posix.firewalld:
-        service: ssh
-        permanent: true
-        state: enabled
-        immediate: true
-      tags: [bastion, firewall, security]
-    
-    - name: Block all other incoming traffic
-      ansible.posix.firewalld:
-        port: "{{ item }}/tcp"
-        permanent: true
-        state: disabled
-        immediate: true
-      loop:
-        - 22  # Will be re-enabled by SSH service rule
-      when: false  # Placeholder for additional port restrictions
-      tags: [bastion, firewall, security]
-    
-    # =============================================================================
-    # CloudWatch Logs Configuration
-    # =============================================================================
-    
-    - name: Configure CloudWatch agent for bastion logs
-      ansible.builtin.template:
-        src: amazon-cloudwatch-agent.json.j2
-        dest: /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json
-        mode: '0644'
-        owner: root
-        group: root
-      vars:
-        cloudwatch_config:
-          logs:
-            log_group_name: "{{ cloudwatch_log_group }}"
-            log_stream_name: "{{ inventory_hostname }}"
-            file_paths:
-              - /var/log/secure
-              - /var/log/audit/audit.log
-              - /var/log/sudo.log
-              - "{{ session_logging.log_dir }}/*.log"
-            retention_days: "{{ cloudwatch_log_retention }}"
-      notify: Restart CloudWatch Agent
-      tags: [bastion, cloudwatch, monitoring]
-    
-    # =============================================================================
-    # Security Audit Configuration
-    # =============================================================================
-    
-    - name: Configure auditd for bastion host
-      ansible.builtin.copy:
-        content: |
-          # Audit rules for bastion host
-          # Monitor all authentication events
-          -w /var/log/secure -p wa -k auth_log
-          -w /var/log/audit/ -p wa -k audit_log
-          -w /etc/ssh/sshd_config -p wa -k sshd_config
-          -w /etc/sudoers -p wa -k sudoers
-          -w /etc/sudoers.d/ -p wa -k sudoers
-          
-          # Monitor user commands
-          -a exit,always -F arch=b64 -S execve -k user_commands
-          
-          # Monitor file access in sensitive directories
-          -w /root/ -p wa -k root_access
-          -w /home/ -p wa -k home_access
-        dest: /etc/audit/rules.d/99-bastion.rules
-        mode: '0600'
-        owner: root
-        group: root
-      notify: Restart auditd
-      tags: [bastion, auditd, security]
-    
+      when: security_audit_enabled | default(true) | bool
+      tags:
+        - security
+        - audit
+
     - name: Enable and start auditd
       ansible.builtin.systemd:
         name: auditd
         state: started
         enabled: true
-      tags: [bastion, auditd, security]
-    
+      when: security_audit_enabled | default(true) | bool
+      tags:
+        - security
+        - audit
+
+    - name: Configure audit rules
+      ansible.builtin.lineinfile:
+        path: /etc/audit/rules.d/audit.rules
+        line: "{{ item }}"
+        create: true
+        mode: "0600"
+      loop:
+        - "-w /etc/ssh/sshd_config -p wa -k sshd_config"
+        - "-w /var/log/secure -p wa -k secure_log"
+        - "-w /etc/passwd -p wa -k passwd_changes"
+        - "-w /etc/group -p wa -k group_changes"
+        - "-w /etc/shadow -p wa -k shadow_changes"
+        - "-w /etc/sudoers -p wa -k sudoers_changes"
+      when: security_audit_enabled | default(true) | bool
+      tags:
+        - security
+        - audit
+
     # =============================================================================
-    # Post-Configuration Validation
+    # User Security
     # =============================================================================
-    
-    - name: Verify SSH service is running
-      ansible.builtin.systemd:
-        name: sshd
-        state: started
-      tags: [bastion, ssh, verify]
-    
-    - name: Verify SSH port is listening
-      ansible.builtin.wait_for:
-        port: "{{ ssh_config.port }}"
-        timeout: 30
-      tags: [bastion, ssh, verify]
-    
-    - name: Test SSH configuration syntax
-      ansible.builtin.command: sshd -t
-      changed_when: false
-      failed_when: false
-      tags: [bastion, ssh, verify]
-    
-    - name: Display bastion host summary
+    - name: Ensure sudo group has wheel privileges
+      ansible.builtin.lineinfile:
+        path: /etc/sudoers
+        regexp: "^%wheel"
+        line: "%wheel ALL=(ALL) ALL"
+        validate: "visudo -cf %s"
+      when: security_sudo_wheel_group | bool
+      tags:
+        - security
+        - users
+
+    - name: Set password quality requirements
+      ansible.builtin.lineinfile:
+        path: /etc/security/pwquality.conf
+        regexp: "^#?{{ item.key }} ="
+        line: "{{ item.key }} = {{ item.value }}"
+      loop:
+        - { key: "minlen", value: "{{ security_password_minlen }}" }
+        - { key: "dcredit", value: "-1" }
+        - { key: "ucredit", value: "-1" }
+        - { key: "ocredit", value: "-1" }
+        - { key: "lcredit", value: "-1" }
+      tags:
+        - security
+        - users
+
+    # =============================================================================
+    # System Hardening
+    # =============================================================================
+    - name: Disable unused filesystems
+      ansible.builtin.lineinfile:
+        path: /etc/modprobe.d/{{ item }}.conf
+        line: "install {{ item }} /bin/true"
+        create: true
+        mode: "0644"
+      loop:
+        - cramfs
+        - freevxfs
+        - jffs2
+        - hfs
+        - hfsplus
+        - squashfs
+        - udf
+        - vfat
+      tags:
+        - security
+        - hardening
+
+    - name: Set kernel parameters for security
+      ansible.posix.sysctl:
+        name: "{{ item.name }}"
+        value: "{{ item.value }}"
+        sysctl_set: true
+        state: present
+        reload: true
+      loop:
+        - { name: "net.ipv4.tcp_syncookies", value: "1" }
+        - { name: "net.ipv4.conf.all.accept_redirects", value: "0" }
+        - { name: "net.ipv4.conf.default.accept_redirects", value: "0" }
+        - { name: "net.ipv4.conf.all.send_redirects", value: "0" }
+        - { name: "net.ipv4.conf.default.send_redirects", value: "0" }
+        - { name: "net.ipv4.conf.all.accept_source_route", value: "0" }
+        - { name: "net.ipv4.conf.default.accept_source_route", value: "0" }
+        - { name: "net.ipv4.icmp_echo_ignore_broadcasts", value: "1" }
+        - { name: "net.ipv4.conf.all.log_martians", value: "1" }
+        - { name: "net.ipv4.conf.default.log_martians", value: "1" }
+        - { name: "kernel.randomize_va_space", value: "2" }
+      tags:
+        - security
+        - hardening
+
+    # =============================================================================
+    # Security Summary
+    # =============================================================================
+    - name: Display security hardening summary
       ansible.builtin.debug:
-        msg:
-          - "=============================================="
-          - "Bastion Host Configuration Complete"
-          - "=============================================="
-          - "Hostname: {{ inventory_hostname }}"
-          - "IP Address: {{ ansible_default_ipv4.address | default('N/A') }}"
-          - "Environment: {{ environment | default('dev') }}"
-          - "SSH Port: {{ ssh_config.port }}"
-          - "Fail2ban: {{ 'Enabled' if fail2ban_config.enabled else 'Disabled' }}"
-          - "Session Logging: {{ 'Enabled' if session_logging.enabled else 'Disabled' }}"
-          - "CloudWatch Logs: {{ cloudwatch_log_group }}"
-          - "=============================================="
-      tags: [bastion, summary]
-  
+        msg: |
+          ╔══════════════════════════════════════════════════════════════╗
+          ║          Security Hardening Complete                         ║
+          ╠══════════════════════════════════════════════════════════════╣
+          ║  Host: {{ inventory_hostname }}                               ║
+          ║                                                              ║
+          ║  Applied Configurations:                                     ║
+          ║    ✓ SSH Hardening                                           ║
+          ║    ✓ Firewall (firewalld)                                    ║
+          ║    ✓ Fail2ban                                                ║
+          ║    ✓ Audit Logging                                           ║
+          ║    ✓ User Security                                           ║
+          ║    ✓ Kernel Hardening                                        ║
+          ║                                                              ║
+          ║  Next Steps:                                                 ║
+          ║    1. Verify SSH access before closing current session       ║
+          ║    2. Test firewall rules                                    ║
+          ║    3. Check fail2ban status: sudo fail2ban-client status     ║
+          ║    4. Review audit logs: sudo ausearch -m all -ts recent     ║
+          ╚══════════════════════════════════════════════════════════════╝
+      tags: always
+
   handlers:
     - name: Restart SSH
       ansible.builtin.systemd:
         name: sshd
         state: restarted
-      tags: [bastion, ssh]
-    
+      tags:
+        - ssh
+
     - name: Restart fail2ban
       ansible.builtin.systemd:
         name: fail2ban
         state: restarted
-      tags: [bastion, fail2ban]
-    
-    - name: Restart CloudWatch Agent
-      ansible.builtin.systemd:
-        name: amazon-cloudwatch-agent
-        state: restarted
-      tags: [bastion, cloudwatch]
-    
+      tags:
+        - fail2ban
+
     - name: Restart auditd
       ansible.builtin.systemd:
         name: auditd
         state: restarted
-      tags: [bastion, auditd]
-  
-  post_tasks:
-    - name: Record bastion configuration timestamp
-      ansible.builtin.set_fact:
-        bastion_configured_at: "{{ ansible_date_time.iso8601 }}"
-        bastion_config_status: "success"
-      tags: [bastion, audit]
-    
-    - name: Validate security baseline
-      ansible.builtin.assert:
-        that:
-          - ssh_config.permit_root_login == "no"
-          - ssh_config.password_authentication == "no"
-          - fail2ban_config.enabled | bool
-        fail_msg: "Security baseline validation failed"
-        success_msg: "Security baseline validated successfully"
-      tags: [bastion, security, validate]
+      tags:
+        - audit
