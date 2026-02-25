@@ -1,0 +1,439 @@
+{# =============================================================================
+   Spring Petclinic Microservices Deployment Template
+   Location: ansible/roles/kubernetes_setup/templates/deployment-petclinic.yaml.j2
+   Purpose: Deploy Spring Petclinic microservices to EKS cluster
+   Alignment: Must match defaults/main.yml variables and Terragrunt EKS outputs
+   ============================================================================= #}
+{# -----------------------------------------------------------------------------
+   Expected Variables (from defaults/main.yml or group_vars/):
+   - app_name: Service name (e.g., api-gateway, customers-service)
+   - app_image: Container image with tag
+   - app_port: Container port
+   - replica_count: Number of pod replicas
+   - default_namespace: Kubernetes namespace
+   - aws_region: AWS region for EKS
+   - eks_cluster_name: EKS cluster name
+   - resource_requests_cpu: CPU request
+   - resource_requests_memory: Memory request
+   - resource_limits_cpu: CPU limit
+   - resource_limits_memory: Memory limit
+   - liveness_probe_path: Health check endpoint
+   - readiness_probe_path: Ready check endpoint
+   - service_account_name: ServiceAccount for IRSA
+   - configmap_name: ConfigMap reference
+   - secret_name: Secret reference
+   - env_vars: Additional environment variables
+   - pod_security_standards: PSS enforcement level
+   ----------------------------------------------------------------------------- #}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ app_name | default('spring-petclinic') }}
+  namespace: {{ default_namespace | default('petclinic') }}
+  labels:
+    app.kubernetes.io/name: {{ app_name | default('spring-petclinic') }}
+    app.kubernetes.io/instance: {{ app_name | default('spring-petclinic') }}-{{ app_env | default('dev') }}
+    app.kubernetes.io/version: "{{ app_version | default('1.0.0') }}"
+    app.kubernetes.io/component: microservice
+    app.kubernetes.io/managed-by: ansible
+    app.kubernetes.io/environment: {{ app_env | default('dev') }}
+    app.kubernetes.io/part-of: spring-petclinic
+    aws.region: {{ aws_region | default('us-east-1') }}
+    eks.cluster: {{ eks_cluster_name | default('petclinic-eks') }}
+  annotations:
+    description: "Spring Petclinic {{ app_name | default('microservice') }} deployment"
+    owner: "platform-team@spring-petclinic.com"
+    deployment.timestamp: "{{ ansible_date_time.iso8601 | default('unknown') }}"
+spec:
+  replicas: {{ replica_count | default(2) }}
+  strategy:
+    type: {{ deployment_strategy | default('RollingUpdate') }}
+    rollingUpdate:
+      maxSurge: {{ max_surge | default('25%') }}
+      maxUnavailable: {{ max_unavailable | default('25%') }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ app_name | default('spring-petclinic') }}
+      app.kubernetes.io/instance: {{ app_name | default('spring-petclinic') }}-{{ app_env | default('dev') }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ app_name | default('spring-petclinic') }}
+        app.kubernetes.io/instance: {{ app_name | default('spring-petclinic') }}-{{ app_env | default('dev') }}
+        app.kubernetes.io/version: "{{ app_version | default('1.0.0') }}"
+        app.kubernetes.io/environment: {{ app_env | default('dev') }}
+        app.kubernetes.io/part-of: spring-petclinic
+        sidecar.istio.io/inject: "{{ istio_enabled | default(false) | lower }}"
+      annotations:
+        prometheus.io/scrape: "{{ prometheus_metrics_enabled | default(true) | lower }}"
+        prometheus.io/port: "{{ prometheus_port | default('8080') }}"
+        prometheus.io/path: "{{ prometheus_path | default('/actuator/prometheus') }}"
+        seccomp.security.alpha.kubernetes.io/pod: "{{ seccomp_profile | default('RuntimeDefault') }}"
+{% if pod_security_standards is defined %}
+        pod-security.kubernetes.io/enforce: "{{ pod_security_standards }}"
+        pod-security.kubernetes.io/audit: "{{ pod_security_standards }}"
+        pod-security.kubernetes.io/warn: "{{ pod_security_standards }}"
+{% endif %}
+    spec:
+      serviceAccountName: {{ service_account_name | default('petclinic-sa') }}
+      automountServiceAccountToken: {{ automount_service_account_token | default(true) | lower }}
+{% if priority_class_name is defined %}
+      priorityClassName: {{ priority_class_name }}
+{% endif %}
+      securityContext:
+        runAsNonRoot: {{ run_as_non_root | default(true) | lower }}
+        runAsUser: {{ run_as_user | default(1000) }}
+        runAsGroup: {{ run_as_group | default(1000) }}
+        fsGroup: {{ fs_group | default(1000) }}
+        seccompProfile:
+          type: {{ seccomp_profile | default('RuntimeDefault') }}
+      terminationGracePeriodSeconds: {{ termination_grace_period | default(30) }}
+      dnsPolicy: {{ dns_policy | default('ClusterFirst') }}
+      restartPolicy: Always
+      containers:
+        - name: {{ app_name | default('spring-petclinic') }}
+          image: {{ app_image | default('springcommunity/spring-petclinic:latest') }}
+          imagePullPolicy: {{ image_pull_policy | default('IfNotPresent') }}
+          ports:
+            - name: http
+              containerPort: {{ app_port | default(8080) }}
+              protocol: TCP
+            - name: management
+              containerPort: {{ management_port | default(8081) }}
+              protocol: TCP
+          env:
+            # Spring Boot Configuration
+            - name: SPRING_PROFILES_ACTIVE
+              value: "{{ spring_profiles_active | default('kubernetes') }}"
+            - name: SPRING_APPLICATION_NAME
+              value: "{{ app_name | default('spring-petclinic') }}"
+            # Kubernetes Environment
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            # AWS Configuration (for IRSA-enabled pods)
+            - name: AWS_REGION
+              value: "{{ aws_region | default('us-east-1') }}"
+{% if aws_account_id is defined %}
+            - name: AWS_ACCOUNT_ID
+              value: "{{ aws_account_id }}"
+{% endif %}
+{% if oidc_provider_arn is defined and oidc_provider_arn != '' %}
+            - name: AWS_WEB_IDENTITY_TOKEN_FILE
+              value: "/var/run/secrets/eks.amazonaws.com/serviceaccount/token"
+{% endif %}
+            # Database Configuration
+{% if db_host is defined %}
+            - name: SPRING_DATASOURCE_URL
+              value: "jdbc:mysql://{{ db_host }}:3306/petclinic?useSSL=true&serverTimezone=UTC"
+{% endif %}
+{% if db_username_secret_key is defined %}
+            - name: SPRING_DATASOURCE_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: {{ secret_name | default('petclinic-db-creds') }}
+                  key: {{ db_username_secret_key | default('username') }}
+{% endif %}
+{% if db_password_secret_key is defined %}
+            - name: SPRING_DATASOURCE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ secret_name | default('petclinic-db-creds') }}
+                  key: {{ db_password_secret_key | default('password') }}
+{% endif %}
+            # Service Discovery
+{% if discovery_server_url is defined %}
+            - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
+              value: "{{ discovery_server_url }}"
+{% endif %}
+{% if config_server_url is defined %}
+            - name: SPRING_CLOUD_CONFIG_URI
+              value: "{{ config_server_url }}"
+{% endif %}
+            # Custom Environment Variables
+{% if env_vars is defined and env_vars | length > 0 %}
+{% for env_var in env_vars %}
+            - name: {{ env_var.name }}
+{% if env_var.value is defined %}
+              value: "{{ env_var.value }}"
+{% elif env_var.valueFrom is defined %}
+              valueFrom:
+{{ env_var.valueFrom | to_nice_yaml(indent=2, width=132) | indent(16, true) }}
+{% endif %}
+{% endfor %}
+{% endif %}
+          envFrom:
+{% if configmap_name is defined %}
+            - configMapRef:
+                name: {{ configmap_name }}
+{% endif %}
+{% if secret_name is defined %}
+            - secretRef:
+                name: {{ secret_name }}
+                optional: true
+{% endif %}
+          resources:
+            requests:
+              cpu: {{ resource_requests_cpu | default('250m') }}
+              memory: {{ resource_requests_memory | default('512Mi') }}
+              {{ 'ephemeral-storage: ' + resource_requests_ephemeral | default('1Gi') if resource_requests_ephemeral is defined else '' }}
+            limits:
+              cpu: {{ resource_limits_cpu | default('500m') }}
+              memory: {{ resource_limits_memory | default('1Gi') }}
+              {{ 'ephemeral-storage: ' + resource_limits_ephemeral | default('2Gi') if resource_limits_ephemeral is defined else '' }}
+          livenessProbe:
+            httpGet:
+              path: {{ liveness_probe_path | default('/actuator/health/liveness') }}
+              port: {{ management_port | default(8081) }}
+              scheme: HTTP
+            initialDelaySeconds: {{ liveness_probe_initial_delay | default(60) }}
+            periodSeconds: {{ liveness_probe_period | default(10) }}
+            timeoutSeconds: {{ liveness_probe_timeout | default(5) }}
+            failureThreshold: {{ liveness_probe_failure_threshold | default(3) }}
+            successThreshold: {{ liveness_probe_success_threshold | default(1) }}
+          readinessProbe:
+            httpGet:
+              path: {{ readiness_probe_path | default('/actuator/health/readiness') }}
+              port: {{ management_port | default(8081) }}
+              scheme: HTTP
+            initialDelaySeconds: {{ readiness_probe_initial_delay | default(30) }}
+            periodSeconds: {{ readiness_probe_period | default(5) }}
+            timeoutSeconds: {{ readiness_probe_timeout | default(3) }}
+            failureThreshold: {{ readiness_probe_failure_threshold | default(3) }}
+            successThreshold: {{ readiness_probe_success_threshold | default(1) }}
+          startupProbe:
+            httpGet:
+              path: {{ startup_probe_path | default('/actuator/health') }}
+              port: {{ management_port | default(8081) }}
+              scheme: HTTP
+            initialDelaySeconds: {{ startup_probe_initial_delay | default(0) }}
+            periodSeconds: {{ startup_probe_period | default(10) }}
+            timeoutSeconds: {{ startup_probe_timeout | default(5) }}
+            failureThreshold: {{ startup_probe_failure_threshold | default(30) }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: {{ read_only_root_filesystem | default(false) | lower }}
+            capabilities:
+              drop:
+                - ALL
+{% if capabilities_add is defined and capabilities_add | length > 0 %}
+              add:
+{% for cap in capabilities_add %}
+                - {{ cap }}
+{% endfor %}
+{% endif %}
+          volumeMounts:
+            - name: tmp-volume
+              mountPath: /tmp
+            - name: workspace-volume
+              mountPath: /workspace
+{% if oidc_provider_arn is defined and oidc_provider_arn != '' %}
+            - name: aws-iam-token
+              mountPath: /var/run/secrets/eks.amazonaws.com/serviceaccount
+              readOnly: true
+{% endif %}
+{% if additional_volume_mounts is defined and additional_volume_mounts | length > 0 %}
+{% for mount in additional_volume_mounts %}
+            - name: {{ mount.name }}
+              mountPath: {{ mount.mountPath }}
+{% if mount.subPath is defined %}
+              subPath: {{ mount.subPath }}
+{% endif %}
+{% if mount.readOnly is defined %}
+              readOnly: {{ mount.readOnly | lower }}
+{% endif %}
+{% endfor %}
+{% endif %}
+{% if additional_containers is defined and additional_containers | length > 0 %}
+{% for container in additional_containers %}
+        - name: {{ container.name }}
+          image: {{ container.image }}
+          imagePullPolicy: {{ container.imagePullPolicy | default('IfNotPresent') }}
+          ports:
+{% for port in container.ports | default([]) %}
+            - name: {{ port.name }}
+              containerPort: {{ port.containerPort }}
+              protocol: {{ port.protocol | default('TCP') }}
+{% endfor %}
+          resources:
+            requests:
+              cpu: {{ container.resources.requests.cpu | default('100m') }}
+              memory: {{ container.resources.requests.memory | default('128Mi') }}
+            limits:
+              cpu: {{ container.resources.limits.cpu | default('200m') }}
+              memory: {{ container.resources.limits.memory | default('256Mi') }}
+{% endfor %}
+{% endif %}
+      volumes:
+        - name: tmp-volume
+          emptyDir:
+            sizeLimit: {{ tmp_volume_size | default('1Gi') }}
+        - name: workspace-volume
+          emptyDir:
+            sizeLimit: {{ workspace_volume_size | default('512Mi') }}
+{% if oidc_provider_arn is defined and oidc_provider_arn != '' %}
+        - name: aws-iam-token
+          projected:
+            sources:
+              - serviceAccountToken:
+                  audience: sts.amazonaws.com
+                  expirationSeconds: 86400
+                  path: token
+{% endif %}
+{% if additional_volumes is defined and additional_volumes | length > 0 %}
+{% for volume in additional_volumes %}
+        - name: {{ volume.name }}
+{% if volume.emptyDir is defined %}
+          emptyDir:
+{% if volume.emptyDir.medium is defined %}
+            medium: {{ volume.emptyDir.medium }}
+{% endif %}
+{% if volume.emptyDir.sizeLimit is defined %}
+            sizeLimit: {{ volume.emptyDir.sizeLimit }}
+{% endif %}
+{% elif volume.configMap is defined %}
+          configMap:
+            name: {{ volume.configMap.name }}
+{% if volume.configMap.defaultMode is defined %}
+            defaultMode: {{ volume.configMap.defaultMode }}
+{% endif %}
+{% elif volume.secret is defined %}
+          secret:
+            secretName: {{ volume.secret.secretName }}
+{% if volume.secret.defaultMode is defined %}
+            defaultMode: {{ volume.secret.defaultMode }}
+{% endif %}
+{% elif volume.persistentVolumeClaim is defined %}
+          persistentVolumeClaim:
+            claimName: {{ volume.persistentVolumeClaim.claimName }}
+{% endif %}
+{% endfor %}
+{% endif %}
+{% if node_selector is defined and node_selector | length > 0 %}
+      nodeSelector:
+{% for key, value in node_selector.items() %}
+        {{ key }}: "{{ value }}"
+{% endfor %}
+{% endif %}
+{% if tolerations is defined and tolerations | length > 0 %}
+      tolerations:
+{% for toleration in tolerations %}
+        - key: "{{ toleration.key }}"
+          operator: "{{ toleration.operator | default('Equal') }}"
+{% if toleration.value is defined %}
+          value: "{{ toleration.value }}"
+{% endif %}
+          effect: "{{ toleration.effect }}"
+{% if toleration.tolerationSeconds is defined %}
+          tolerationSeconds: {{ toleration.tolerationSeconds }}
+{% endif %}
+{% endfor %}
+{% endif %}
+{% if affinity is defined %}
+      affinity:
+{{ affinity | to_nice_yaml(indent=2, width=132) | indent(8, true) }}
+{% endif %}
+{% if topologySpreadConstraints is defined and topologySpreadConstraints | length > 0 %}
+      topologySpreadConstraints:
+{% for constraint in topologySpreadConstraints %}
+        - maxSkew: {{ constraint.maxSkew | default(1) }}
+          topologyKey: {{ constraint.topologyKey | default('topology.kubernetes.io/zone') }}
+          whenUnsatisfiable: {{ constraint.whenUnsatisfiable | default('ScheduleAnyway') }}
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: {{ app_name | default('spring-petclinic') }}
+{% endfor %}
+{% endif %}
+---
+{# =============================================================================
+   HorizontalPodAutoscaler (Optional - enabled via variable)
+   ============================================================================= #}
+{% if hpa_enabled | default(false) %}
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ app_name | default('spring-petclinic') }}-hpa
+  namespace: {{ default_namespace | default('petclinic') }}
+  labels:
+    app.kubernetes.io/name: {{ app_name | default('spring-petclinic') }}
+    app.kubernetes.io/managed-by: ansible
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ app_name | default('spring-petclinic') }}
+  minReplicas: {{ hpa_min_replicas | default(2) }}
+  maxReplicas: {{ hpa_max_replicas | default(10) }}
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: {{ hpa_cpu_target | default(70) }}
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: {{ hpa_memory_target | default(80) }}
+{% if hpa_custom_metrics is defined and hpa_custom_metrics | length > 0 %}
+{% for metric in hpa_custom_metrics %}
+    - type: {{ metric.type }}
+{{ metric.spec | to_nice_yaml(indent=2, width=132) | indent(6, true) }}
+{% endfor %}
+{% endif %}
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: {{ hpa_scale_down_stabilization | default(300) }}
+      policies:
+        - type: Percent
+          value: {{ hpa_scale_down_percent | default(10) }}
+          periodSeconds: {{ hpa_scale_down_period | default(60) }}
+    scaleUp:
+      stabilizationWindowSeconds: {{ hpa_scale_up_stabilization | default(0) }}
+      policies:
+        - type: Percent
+          value: {{ hpa_scale_up_percent | default(100) }}
+          periodSeconds: {{ hpa_scale_up_period | default(15) }}
+{% endif %}
+---
+{# =============================================================================
+   PodDisruptionBudget (Optional - enabled via variable)
+   ============================================================================= #}
+{% if pdb_enabled | default(true) %}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ app_name | default('spring-petclinic') }}-pdb
+  namespace: {{ default_namespace | default('petclinic') }}
+  labels:
+    app.kubernetes.io/name: {{ app_name | default('spring-petclinic') }}
+    app.kubernetes.io/managed-by: ansible
+spec:
+{% if pdb_min_available is defined %}
+  minAvailable: {{ pdb_min_available }}
+{% elif pdb_max_unavailable is defined %}
+  maxUnavailable: {{ pdb_max_unavailable | default(1) }}
+{% else %}
+  minAvailable: 1
+{% endif %}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ app_name | default('spring-petclinic') }}
+      app.kubernetes.io/instance: {{ app_name | default('spring-petclinic') }}-{{ app_env | default('dev') }}
+{% endif %}
