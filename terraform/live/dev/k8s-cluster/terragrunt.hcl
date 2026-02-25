@@ -18,6 +18,7 @@ dependency "security" {
   mock_outputs = {
     app_sg_id  = "sg-10000002"
   }
+  skip_o
 }
 
 # Pull data from the VPC module
