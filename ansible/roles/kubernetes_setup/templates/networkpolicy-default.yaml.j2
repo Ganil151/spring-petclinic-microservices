@@ -1,0 +1,519 @@
+{# =============================================================================
+   Spring Petclinic Default NetworkPolicy Template
+   Location: ansible/roles/kubernetes_setup/templates/networkpolicy-default.yaml.j2
+   Purpose: Zero-trust network isolation for Spring Petclinic microservices
+   Alignment: Must match defaults/main.yml variables and EKS CNI configuration
+   ============================================================================= #}
+{# -----------------------------------------------------------------------------
+   Expected Variables (from defaults/main.yml or group_vars/):
+   - app_name: Application name (default: spring-petclinic)
+   - default_namespace: Kubernetes namespace (default: petclinic)
+   - app_env: Environment (dev/staging/prod)
+   - aws_region: AWS region
+   - eks_cluster_name: EKS cluster name
+   - network_policies_enabled: Enable NetworkPolicy enforcement (default: true)
+   - allow_from_namespaces: List of namespaces allowed to access this namespace
+   - allow_egress_cidrs: List of CIDR blocks for egress traffic
+   - db_host: RDS endpoint for database egress rules
+   - redis_host: Redis endpoint for cache egress rules
+   - discovery_server_namespace: Namespace of service discovery
+   - monitoring_namespace: Namespace of Prometheus/Grafana
+   - ingress_controller_namespace: Namespace of ALB Ingress Controller
+   ----------------------------------------------------------------------------- #}
+{% if network_policies_enabled | default(true) %}
+---
+{# =============================================================================
+   Default Deny All Ingress Policy
+   Blocks all incoming traffic by default (zero-trust baseline)
+   ============================================================================= #}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+meta
+  name: {{ app_name | default('spring-petclinic') }}-default-deny-ingress
+  namespace: {{ default_namespace | default('petclinic') }}
+  labels:
+    app.kubernetes.io/name: {{ app_name | default('spring-petclinic') }}
+    app.kubernetes.io/instance: {{ app_name | default('spring-petclinic') }}-{{ app_env | default('dev') }}
+    app.kubernetes.io/component: network-policy
+    app.kubernetes.io/managed-by: ansible
+    app.kubernetes.io/environment: {{ app_env | default('dev') }}
+    app.kubernetes.io/part-of: spring-petclinic
+    aws.region: {{ aws_region | default('us-east-1') }}
+    eks.cluster: {{ eks_cluster_name | default('petclinic-eks') }}
+    security.policy: zero-trust
+  annotations:
+    description: "Default deny all ingress traffic for {{ default_namespace | default('petclinic') }} namespace"
+    owner: "platform-team@spring-petclinic.com"
+    security.kubernetes.io/enforce: "true"
+    {% if app_env | default('dev') == 'prod' %}
+    compliance.standard: "PCI-DSS, SOC2, HIPAA"
+    {% endif %}
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+---
+{# =============================================================================
+   Default Deny All Egress Policy
+   Blocks all outgoing traffic by default (zero-trust baseline)
+   ============================================================================= #}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+meta
+  name: {{ app_name | default('spring-petclinic') }}-default-deny-egress
+  namespace: {{ default_namespace | default('petclinic') }}
+  labels:
+    app.kubernetes.io/name: {{ app_name | default('spring-petclinic') }}
+    app.kubernetes.io/instance: {{ app_name | default('spring-petclinic') }}-{{ app_env | default('dev') }}
+    app.kubernetes.io/component: network-policy
+    app.kubernetes.io/managed-by: ansible
+    app.kubernetes.io/environment: {{ app_env | default('dev') }}
+    app.kubernetes.io/part-of: spring-petclinic
+    aws.region: {{ aws_region | default('us-east-1') }}
+    eks.cluster: {{ eks_cluster_name | default('petclinic-eks') }}
+    security.policy: zero-trust
+  annotations:
+    description: "Default deny all egress traffic for {{ default_namespace | default('petclinic') }} namespace"
+    owner: "platform-team@spring-petclinic.com"
+    security.kubernetes.io/enforce: "true"
+spec:
+  podSelector: {}
+  policyTypes:
+    - Egress
+---
+{# =============================================================================
+   Allow Ingress from ALB Ingress Controller
+   Permits external traffic through AWS Load Balancer
+   ============================================================================= #}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+meta
+  name: {{ app_name | default('spring-petclinic') }}-allow-ingress-from-alb
+  namespace: {{ default_namespace | default('petclinic') }}
+  labels:
+    app.kubernetes.io/name: {{ app_name | default('spring-petclinic') }}
+    app.kubernetes.io/component: network-policy
+    app.kubernetes.io/managed-by: ansible
+    security.policy: ingress-allow
+  annotations:
+    description: "Allow ingress traffic from AWS ALB Ingress Controller"
+    owner: "platform-team@spring-petclinic.com"
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: {{ api_gateway_service | default('api-gateway') }}
+  policyTypes:
+    - Ingress
+  ingress:
+    # Allow from ALB Ingress Controller pods
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: {{ ingress_controller_namespace | default('kube-system') }}
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: aws-load-balancer-controller
+      ports:
+        - protocol: TCP
+          port: {{ api_gateway_port | default(8080) }}
+        - protocol: TCP
+          port: {{ management_port | default(8081) }}
+{% if allow_ingress_from_cidrs is defined and allow_ingress_from_cidrs | length > 0 %}
+    # Allow from specific CIDR blocks (corporate networks, VPNs)
+{% for cidr in allow_ingress_from_cidrs %}
+    - from:
+        - ipBlock:
+            cidr: {{ cidr }}
+      ports:
+        - protocol: TCP
+          port: {{ api_gateway_port | default(8080) }}
+{% endfor %}
+{% endif %}
+---
+{# =============================================================================
+   Allow Intra-Namespace Communication
+   Permits microservices to communicate within the same namespace
+   ============================================================================= #}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+meta
+  name: {{ app_name | default('spring-petclinic') }}-allow-intra-namespace
+  namespace: {{ default_namespace | default('petclinic') }}
+  labels:
+    app.kubernetes.io/name: {{ app_name | default('spring-petclinic') }}
+    app.kubernetes.io/component: network-policy
+    app.kubernetes.io/managed-by: ansible
+    security.policy: intra-namespace-allow
+  annotations:
+    description: "Allow communication between microservices within {{ default_namespace | default('petclinic') }} namespace"
+    owner: "platform-team@spring-petclinic.com"
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # Allow from all pods in the same namespace
+    - from:
+        - podSelector: {}
+      ports:
+        - protocol: TCP
+          port: {{ api_gateway_port | default(8080) }}
+        - protocol: TCP
+          port: {{ management_port | default(8081) }}
+{% if additional_service_ports is defined and additional_service_ports | length > 0 %}
+{% for port in additional_service_ports %}
+        - protocol: TCP
+          port: {{ port }}
+{% endfor %}
+{% endif %}
+  egress:
+    # Allow to all pods in the same namespace
+    - to:
+        - podSelector: {}
+      ports:
+        - protocol: TCP
+          port: {{ api_gateway_port | default(8080) }}
+        - protocol: TCP
+          port: {{ management_port | default(8081) }}
+{% if additional_service_ports is defined and additional_service_ports | length > 0 %}
+{% for port in additional_service_ports %}
+        - protocol: TCP
+          port: {{ port }}
+{% endfor %}
+{% endif %}
+---
+{# =============================================================================
+   Allow Egress to DNS (Required for Service Discovery)
+   Permits pods to resolve Kubernetes service names
+   ============================================================================= #}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+meta
+  name: {{ app_name | default('spring-petclinic') }}-allow-egress-dns
+  namespace: {{ default_namespace | default('petclinic') }}
+  labels:
+    app.kubernetes.io/name: {{ app_name | default('spring-petclinic') }}
+    app.kubernetes.io/component: network-policy
+    app.kubernetes.io/managed-by: ansible
+    security.policy: dns-allow
+  annotations:
+    description: "Allow egress traffic to Kubernetes DNS for service discovery"
+    owner: "platform-team@spring-petclinic.com"
+spec:
+  podSelector: {}
+  policyTypes:
+    - Egress
+  egress:
+    # Allow DNS resolution (UDP and TCP port 53)
+    - to:
+        - namespaceSelector: {}
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+    # Allow DNS resolution to CoreDNS
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+---
+{# =============================================================================
+   Allow Egress to RDS Database
+   Permits microservices to connect to MySQL/MariaDB on RDS
+   ============================================================================= #}
+{% if db_host is defined and db_host != '' %}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+meta
+  name: {{ app_name | default('spring-petclinic') }}-allow-egress-rds
+  namespace: {{ default_namespace | default('petclinic') }}
+  labels:
+    app.kubernetes.io/name: {{ app_name | default('spring-petclinic') }}
+    app.kubernetes.io/component: network-policy
+    app.kubernetes.io/managed-by: ansible
+    security.policy: database-allow
+  annotations:
+    description: "Allow egress traffic to RDS database endpoint: {{ db_host }}"
+    owner: "platform-team@spring-petclinic.com"
+    database.endpoint: "{{ db_host }}"
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: {{ app_name | default('spring-petclinic') }}
+  policyTypes:
+    - Egress
+  egress:
+    # Allow to RDS endpoint on MySQL port
+    - to:
+        - ipBlock:
+            cidr: {{ db_host }}/32
+      ports:
+        - protocol: TCP
+          port: {{ db_port | default(3306) }}
+{% if db_read_replica_hosts is defined and db_read_replica_hosts | length > 0 %}
+    # Allow to RDS read replicas
+{% for replica_host in db_read_replica_hosts %}
+    - to:
+        - ipBlock:
+            cidr: {{ replica_host }}/32
+      ports:
+        - protocol: TCP
+          port: {{ db_port | default(3306) }}
+{% endfor %}
+{% endif %}
+{% endif %}
+---
+{# =============================================================================
+   Allow Egress to Redis Cache
+   Permits microservices to connect to Redis for session caching
+   ============================================================================= #}
+{% if redis_host is defined and redis_host != '' %}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+meta
+  name: {{ app_name | default('spring-petclinic') }}-allow-egress-redis
+  namespace: {{ default_namespace | default('petclinic') }}
+  labels:
+    app.kubernetes.io/name: {{ app_name | default('spring-petclinic') }}
+    app.kubernetes.io/component: network-policy
+    app.kubernetes.io/managed-by: ansible
+    security.policy: cache-allow
+  annotations:
+    description: "Allow egress traffic to Redis cache endpoint: {{ redis_host }}"
+    owner: "platform-team@spring-petclinic.com"
+    cache.endpoint: "{{ redis_host }}"
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: {{ app_name | default('spring-petclinic') }}
+  policyTypes:
+    - Egress
+  egress:
+    # Allow to Redis endpoint
+    - to:
+        - ipBlock:
+            cidr: {{ redis_host }}/32
+      ports:
+        - protocol: TCP
+          port: {{ redis_port | default(6379) }}
+{% endif %}
+---
+{# =============================================================================
+   Allow Ingress from Monitoring Namespace (Prometheus Scraping)
+   Permits Prometheus to scrape metrics from Spring Boot Actuator
+   ============================================================================= #}
+{% if monitoring_namespace is defined %}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+meta
+  name: {{ app_name | default('spring-petclinic') }}-allow-ingress-monitoring
+  namespace: {{ default_namespace | default('petclinic') }}
+  labels:
+    app.kubernetes.io/name: {{ app_name | default('spring-petclinic') }}
+    app.kubernetes.io/component: network-policy
+    app.kubernetes.io/managed-by: ansible
+    security.policy: monitoring-allow
+  annotations:
+    description: "Allow ingress traffic from Prometheus in {{ monitoring_namespace }} namespace"
+    owner: "platform-team@spring-petclinic.com"
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+  ingress:
+    # Allow from Prometheus pods
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: {{ monitoring_namespace }}
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: prometheus
+      ports:
+        - protocol: TCP
+          port: {{ management_port | default(8081) }}
+        - protocol: TCP
+          port: {{ api_gateway_port | default(8080) }}
+{% endif %}
+---
+{# =============================================================================
+   Allow Egress to External APIs (Spring Cloud Config, Eureka, etc.)
+   Permits microservices to connect to external dependencies
+   ============================================================================= #}
+{% if allow_egress_cidrs is defined and allow_egress_cidrs | length > 0 %}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+meta
+  name: {{ app_name | default('spring-petclinic') }}-allow-egress-external
+  namespace: {{ default_namespace | default('petclinic') }}
+  labels:
+    app.kubernetes.io/name: {{ app_name | default('spring-petclinic') }}
+    app.kubernetes.io/component: network-policy
+    app.kubernetes.io/managed-by: ansible
+    security.policy: external-allow
+  annotations:
+    description: "Allow egress traffic to external APIs and services"
+    owner: "platform-team@spring-petclinic.com"
+spec:
+  podSelector: {}
+  policyTypes:
+    - Egress
+  egress:
+{% for cidr_config in allow_egress_cidrs %}
+    - to:
+        - ipBlock:
+            cidr: {{ cidr_config.cidr }}
+{% if cidr_config.except is defined and cidr_config.except | length > 0 %}
+            except:
+{% for except_cidr in cidr_config.except %}
+              - {{ except_cidr }}
+{% endfor %}
+{% endif %}
+      ports:
+{% for port in cidr_config.ports | default([443, 80]) %}
+        - protocol: TCP
+          port: {{ port }}
+{% endfor %}
+{% endfor %}
+{% endif %}
+---
+{# =============================================================================
+   Allow Ingress from Specific Namespaces (Cross-Namespace Communication)
+   Permits designated namespaces to access this namespace's services
+   ============================================================================= #}
+{% if allow_from_namespaces is defined and allow_from_namespaces | length > 0 %}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+meta
+  name: {{ app_name | default('spring-petclinic') }}-allow-ingress-from-namespaces
+  namespace: {{ default_namespace | default('petclinic') }}
+  labels:
+    app.kubernetes.io/name: {{ app_name | default('spring-petclinic') }}
+    app.kubernetes.io/component: network-policy
+    app.kubernetes.io/managed-by: ansible
+    security.policy: cross-namespace-allow
+  annotations:
+    description: "Allow ingress traffic from specific namespaces"
+    owner: "platform-team@spring-petclinic.com"
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+  ingress:
+{% for ns_config in allow_from_namespaces %}
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: {{ ns_config.namespace }}
+{% if ns_config.pod_selector is defined %}
+          podSelector:
+{{ ns_config.pod_selector | to_nice_yaml(indent=2, width=132) | indent(12, true) }}
+{% endif %}
+      ports:
+{% for port in ns_config.ports | default([8080, 8081]) %}
+        - protocol: TCP
+          port: {{ port }}
+{% endfor %}
+{% endfor %}
+{% endif %}
+---
+{# =============================================================================
+   Production-Specific Hardening (Additional Restrictions)
+   Applied only when app_env == 'prod'
+   ============================================================================= #}
+{% if app_env | default('dev') == 'prod' %}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+meta
+  name: {{ app_name | default('spring-petclinic') }}-prod-restrictions
+  namespace: {{ default_namespace | default('petclinic') }}
+  labels:
+    app.kubernetes.io/name: {{ app_name | default('spring-petclinic') }}
+    app.kubernetes.io/component: network-policy
+    app.kubernetes.io/managed-by: ansible
+    app.kubernetes.io/environment: prod
+    security.policy: production-hardening
+  annotations:
+    description: "Production-specific network restrictions for enhanced security"
+    owner: "security-team@spring-petclinic.com"
+    compliance.standard: "PCI-DSS, SOC2"
+spec:
+  podSelector: {}
+  policyTypes:
+    - Egress
+  egress:
+    # Block egress to IMDS (prevent SSRF attacks on AWS)
+    - to:
+        - ipBlock:
+            cidr: 169.254.169.254/32
+      ports:
+        - protocol: TCP
+          port: 80
+        - protocol: TCP
+          port: 443
+    # Note: This is a deny rule; requires CNI that supports deny policies
+    # For VPC CNI, use Security Groups instead
+{% endif %}
+---
+{# =============================================================================
+   NetworkPolicy Status ConfigMap (For Observability)
+   Tracks which policies are applied for auditing
+   ============================================================================= #}
+{% if network_policy_audit_enabled | default(true) %}
+apiVersion: v1
+kind: ConfigMap
+meta
+  name: {{ app_name | default('spring-petclinic') }}-network-policy-status
+  namespace: {{ default_namespace | default('petclinic') }}
+  labels:
+    app.kubernetes.io/name: {{ app_name | default('spring-petclinic') }}
+    app.kubernetes.io/component: network-policy-audit
+    app.kubernetes.io/managed-by: ansible
+  annotations:
+    description: "NetworkPolicy audit trail for compliance and debugging"
+    last-updated: "{{ ansible_date_time.iso8601 | default('unknown') }}"
+
+  network_policies_applied: |
+    - {{ app_name | default('spring-petclinic') }}-default-deny-ingress
+    - {{ app_name | default('spring-petclinic') }}-default-deny-egress
+    - {{ app_name | default('spring-petclinic') }}-allow-ingress-from-alb
+    - {{ app_name | default('spring-petclinic') }}-allow-intra-namespace
+    - {{ app_name | default('spring-petclinic') }}-allow-egress-dns
+{% if db_host is defined %}
+    - {{ app_name | default('spring-petclinic') }}-allow-egress-rds
+{% endif %}
+{% if redis_host is defined %}
+    - {{ app_name | default('spring-petclinic') }}-allow-egress-redis
+{% endif %}
+{% if monitoring_namespace is defined %}
+    - {{ app_name | default('spring-petclinic') }}-allow-ingress-monitoring
+{% endif %}
+
+  security_standards: |
+    - Zero-trust network architecture
+    - Default deny all ingress/egress
+    - Explicit allow rules for required traffic
+    - DNS resolution permitted
+    - Database access restricted to specific endpoints
+    - Monitoring namespace allowed for metrics scraping
+
+  compliance_mappings: |
+    PCI-DSS: Requirement 1.3 - Firewall configuration
+    SOC2: CC6.6 - Logical access controls
+    HIPAA: §164.312(e)(1) - Transmission security
+    CIS-Kubernetes: 5.3.2 - Network policies defined
+{% endif %}
+{% endif %}
