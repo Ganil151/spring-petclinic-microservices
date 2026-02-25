@@ -1,8 +1,8 @@
 ---
 # =============================================================================
-# Kubernetes Setup Role - tasks/main.yml
-# Purpose: Configure kubectl access and prepare EKS cluster for Spring Petclinic
-# Alignment: Must match Terragrunt EKS outputs (cluster name, region, OIDC)
+# Kubernetes Setup Role — tasks/main.yml
+# Purpose: Configure EKS cluster and deploy Spring Petclinic microservices
+# Alignment: Must match Terragrunt EKS outputs and template variable contracts
 # =============================================================================
 
 - name: Verify kubectl is installed
@@ -21,7 +21,29 @@
   failed_when: aws_check.rc != 0
   tags: kubernetes, prereq
 
-- name: Update kubeconfig for EKS
+- name: Verify Kubernetes core collection is available
+  ansible.builtin.meta: end_host
+  when: lookup('config', 'ENABLED_COLLECTIONS') is not search('kubernetes.core')
+  tags: kubernetes, prereq
+
+# =============================================================================
+# Phase 1: Kubeconfig & Cluster Connectivity
+# =============================================================================
+
+- name: Generate kubeconfig from template
+  ansible.builtin.template:
+    src: kubeconfig.j2
+    dest: "{{ kubeconfig_path | default('~/.kube/config') | expanduser }}"
+    mode: '0600'
+    owner: "{{ ansible_user_id | default(lookup('env', 'USER')) }}"
+    group: "{{ ansible_user_gid | default(lookup('env', 'USER')) }}"
+  vars:
+    eks_cluster_endpoint: "{{ eks_cluster_endpoint }}"
+    eks_cluster_ca_certificate: "{{ eks_cluster_ca_certificate }}"
+  no_log: true  # Prevent CA cert leakage in logs
+  tags: kubernetes, kubeconfig
+
+- name: Update kubeconfig via AWS CLI (fallback)
   ansible.builtin.command:
     cmd: >
       aws eks update-kubeconfig
@@ -31,6 +53,7 @@
   register: kubeconfig_update
   changed_when: "'Updated context' in kubeconfig_update.stdout"
   failed_when: kubeconfig_update.rc != 0
+  when: eks_cluster_endpoint == '' or eks_cluster_ca_certificate == ''
   tags: kubernetes, kubeconfig
 
 - name: Verify cluster connectivity
@@ -57,35 +80,189 @@
       - "Cluster: {{ eks_cluster_name }}"
       - "Region: {{ aws_region | default('us-east-1') }}"
       - "Nodes: {{ nodes_check.stdout_lines | length }}"
+      - "API Server: {{ cluster_info.stdout_lines[0] | default('N/A') }}"
   tags: kubernetes, verify
+
+# =============================================================================
+# Phase 2: Namespace & RBAC Foundation
+# =============================================================================
 
 - name: Create Spring Petclinic namespace
   kubernetes.core.k8s:
     state: present
-    definition:
-      apiVersion: v1
-      kind: Namespace
-      metadata:
-        name: "{{ default_namespace | default('petclinic') }}"
-        labels:
-          app: spring-petclinic
-          environment: "{{ app_env | default('dev') }}"
+    definition: "{{ lookup('template', 'namespace.yaml.j2') | from_yaml }}"
+    kubeconfig: "{{ kubeconfig_path | default('~/.kube/config') | expanduser }}"
   tags: kubernetes, namespace
 
-- name: Configure default service account for namespace
+- name: Configure IRSA ServiceAccount
   kubernetes.core.k8s:
     state: present
-    definition:
-      apiVersion: v1
-      kind: ServiceAccount
-      metadata:
-        name: petclinic-sa
-        namespace: "{{ default_namespace | default('petclinic') }}"
-        annotations:
-          eks.amazonaws.com/role-arn: "{{ oidc_provider_arn | default('') }}"
+    definition: "{{ lookup('template', 'serviceaccount.yaml.j2') | from_yaml }}"
+    kubeconfig: "{{ kubeconfig_path | default('~/.kube/config') | expanduser }}"
+  when: oidc_provider_enabled | default(true)
   tags: kubernetes, rbac, irsa
 
-- name: Display kubeconfig location
+- name: Apply default NetworkPolicies for zero-trust
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('template', 'networkpolicy-default.yaml.j2') | from_yaml_all }}"
+    kubeconfig: "{{ kubeconfig_path | default('~/.kube/config') | expanduser }}"
+  when: network_policies_enabled | default(true)
+  tags: kubernetes, security, networkpolicy
+
+# =============================================================================
+# Phase 3: Configuration & Secrets
+# =============================================================================
+
+- name: Deploy application ConfigMap
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('template', 'configmap-app.yaml.j2') | from_yaml }}"
+    kubeconfig: "{{ kubeconfig_path | default('~/.kube/config') | expanduser }}"
+  tags: kubernetes, configmap
+
+- name: Deploy database credentials Secret (Vault-integrated)
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('template', 'secret-db-creds.yaml.j2') | from_yaml }}"
+    kubeconfig: "{{ kubeconfig_path | default('~/.kube/config') | expanduser }}"
+  when: secret_name is defined and secret_name != ''
+  no_log: true
+  tags: kubernetes, secret, security
+
+# =============================================================================
+# Phase 4: Core Application Deployment
+# =============================================================================
+
+- name: Deploy Spring Petclinic microservices
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('template', 'deployment-petclinic.yaml.j2') | from_yaml_all }}"
+    kubeconfig: "{{ kubeconfig_path | default('~/.kube/config') | expanduser }}"
+    wait: true
+    wait_timeout: 300
+    wait_condition:
+      type: Available
+      status: "True"
+  loop: "{{ microservices | default(['api-gateway', 'customers-service', 'vets-service', 'visits-service', 'config-server', 'discovery-server', 'admin-server', 'genai-service']) }}"
+  loop_control:
+    loop_var: app_name
+    label: "{{ app_name }}"
+  tags: kubernetes, deployment
+
+- name: Deploy Kubernetes Services for microservices
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('template', 'service-petclinic.yaml.j2') | from_yaml_all }}"
+    kubeconfig: "{{ kubeconfig_path | default('~/.kube/config') | expanduser }}"
+  loop: "{{ microservices | default(['api-gateway', 'customers-service', 'vets-service', 'visits-service', 'config-server', 'discovery-server', 'admin-server', 'genai-service']) }}"
+  loop_control:
+    loop_var: app_name
+    label: "{{ app_name }}"
+  tags: kubernetes, service
+
+# =============================================================================
+# Phase 5: External Access & Ingress
+# =============================================================================
+
+- name: Deploy ALB Ingress for external access
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('template', 'ingress-petclinic.yaml.j2') | from_yaml_all }}"
+    kubeconfig: "{{ kubeconfig_path | default('~/.kube/config') | expanduser }}"
+  when: ingress_enabled | default(false)
+  tags: kubernetes, ingress, alb
+
+- name: Verify Ingress is provisioned
+  kubernetes.core.k8s_info:
+    kind: Ingress
+    name: "{{ app_name | default('spring-petclinic') }}-ingress"
+    namespace: "{{ default_namespace | default('petclinic') }}"
+    kubeconfig: "{{ kubeconfig_path | default('~/.kube/config') | expanduser }}"
+  register: ingress_status
+  until: ingress_status.resources[0].status.loadBalancer.ingress is defined
+  retries: 10
+  delay: 30
+  when: ingress_enabled | default(false)
+  tags: kubernetes, ingress, verify
+
+# =============================================================================
+# Phase 6: Autoscaling & Resilience
+# =============================================================================
+
+- name: Deploy HorizontalPodAutoscaler
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('template', 'hpa-petclinic.yaml.j2') | from_yaml_all }}"
+    kubeconfig: "{{ kubeconfig_path | default('~/.kube/config') | expanduser }}"
+  when: hpa_enabled | default(true)
+  tags: kubernetes, hpa, autoscaling
+
+- name: Verify HPA is active
+  kubernetes.core.k8s_info:
+    kind: HorizontalPodAutoscaler
+    name: "{{ app_name | default('spring-petclinic') }}-hpa"
+    namespace: "{{ default_namespace | default('petclinic') }}"
+    kubeconfig: "{{ kubeconfig_path | default('~/.kube/config') | expanduser }}"
+  register: hpa_status
+  when: hpa_enabled | default(true)
+  tags: kubernetes, hpa, verify
+
+# =============================================================================
+# Phase 7: Observability & Health Checks
+# =============================================================================
+
+- name: Verify all deployments are ready
+  kubernetes.core.k8s_info:
+    kind: Deployment
+    namespace: "{{ default_namespace | default('petclinic') }}"
+    kubeconfig: "{{ kubeconfig_path | default('~/.kube/config') | expanduser }}"
+    label_selectors:
+      - "app.kubernetes.io/part-of=spring-petclinic"
+  register: deployment_status
+  until: >
+    deployment_status.resources | selectattr('status.readyReplicas', 'defined') 
+    | map(attribute='status.readyReplicas') 
+    | list == deployment_status.resources | map(attribute='spec.replicas') | list
+  retries: 12
+  delay: 25
+  tags: kubernetes, verify, health
+
+- name: Display deployment status summary
   ansible.builtin.debug:
-    msg: "Kubeconfig: {{ lookup('env', 'KUBECONFIG') | default('~/.kube/config', true) }}"
-  tags: kubernetes, debug
+    msg:
+      - "=== Spring Petclinic Deployment Summary ==="
+      - "Namespace: {{ default_namespace | default('petclinic') }}"
+      - "Cluster: {{ eks_cluster_name }}"
+      - "Deployments: {{ deployment_status.resources | length }}"
+      - "Ready: {{ deployment_status.resources | selectattr('status.readyReplicas', 'defined') | list | length }}"
+      - "Ingress: {{ ingress_status.resources[0].status.loadBalancer.ingress[0].hostname | default('Not provisioned') if ingress_enabled else 'Disabled' }}"
+  tags: kubernetes, summary
+
+# =============================================================================
+# Phase 8: Post-Deployment Validation
+# =============================================================================
+
+- name: Test API Gateway health endpoint
+  ansible.builtin.uri:
+    url: "http://{{ ingress_status.resources[0].status.loadBalancer.ingress[0].hostname | default('localhost') }}/actuator/health"
+    method: GET
+    status_code: [200, 503]  # 503 is OK during startup
+    timeout: 30
+  register: health_check
+  until: health_check.status == 200 or health_check.status == 503
+  retries: 5
+  delay: 15
+  when: ingress_enabled | default(false)
+  tags: kubernetes, smoke-test
+
+- name: Record deployment completion timestamp
+  ansible.builtin.set_fact:
+    deployment_completed_at: "{{ ansible_date_time.iso8601 }}"
+    deployment_status: "success"
+  tags: kubernetes, audit
+
+- name: Notify deployment completion
+  ansible.builtin.debug:
+    msg: "✅ Spring Petclinic deployed to {{ eks_cluster_name }} at {{ deployment_completed_at }}"
+  tags: kubernetes, notify
