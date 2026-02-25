@@ -1,0 +1,424 @@
+{# =============================================================================
+   Spring Petclinic HorizontalPodAutoscaler Template
+   Location: ansible/roles/kubernetes_setup/templates/hpa-petclinic.yaml.j2
+   Purpose: Auto-scaling configuration for Spring Petclinic microservices
+   Alignment: Must match deployment-petclinic.yaml.j2 and defaults/main.yml
+   ============================================================================= #}
+{# -----------------------------------------------------------------------------
+   Expected Variables (from defaults/main.yml or group_vars/):
+   - app_name: Application name (e.g., api-gateway, customers-service)
+   - default_namespace: Kubernetes namespace (default: petclinic)
+   - app_env: Environment (dev/staging/prod)
+   - aws_region: AWS region
+   - eks_cluster_name: EKS cluster name
+   - hpa_enabled: Enable HPA (default: true)
+   - hpa_min_replicas: Minimum pod replicas
+   - hpa_max_replicas: Maximum pod replicas
+   - hpa_cpu_target: Target CPU utilization percentage
+   - hpa_memory_target: Target memory utilization percentage
+   - hpa_scale_down_stabilization: Scale down stabilization window (seconds)
+   - hpa_scale_up_stabilization: Scale up stabilization window (seconds)
+   - custom_metrics_enabled: Enable custom metrics scaling
+   - prometheus_adapter_enabled: Enable Prometheus metrics adapter
+   ----------------------------------------------------------------------------- #}
+{% if hpa_enabled | default(true) %}
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ app_name | default('spring-petclinic') }}-hpa
+  namespace: {{ default_namespace | default('petclinic') }}
+  labels:
+    app.kubernetes.io/name: {{ app_name | default('spring-petclinic') }}
+    app.kubernetes.io/instance: {{ app_name | default('spring-petclinic') }}-{{ app_env | default('dev') }}
+    app.kubernetes.io/version: "{{ app_version | default('1.0.0') }}"
+    app.kubernetes.io/component: hpa
+    app.kubernetes.io/managed-by: ansible
+    app.kubernetes.io/environment: {{ app_env | default('dev') }}
+    app.kubernetes.io/part-of: spring-petclinic
+    aws.region: {{ aws_region | default('us-east-1') }}
+    eks.cluster: {{ eks_cluster_name | default('petclinic-eks') }}
+  annotations:
+    description: "HorizontalPodAutoscaler for {{ app_name | default('spring-petclinic') }} {{ app_env | default('dev') }} environment"
+    owner: "platform-team@spring-petclinic.com"
+    # Metrics Server integration
+    autoscaling.kubernetes.io/integration: "metrics-server"
+{% if prometheus_adapter_enabled | default(false) %}
+    # Prometheus custom metrics integration
+    autoscaling.kubernetes.io/custom-metrics: "prometheus"
+{% endif %}
+    # Scale down policy documentation
+    autoscaling.kubernetes.io/scale-down-stabilization: "{{ hpa_scale_down_stabilization | default(300) }}s"
+spec:
+  # =============================================================================
+  # Scale Target Reference (Must match Deployment name)
+  # =============================================================================
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ app_name | default('spring-petclinic') }}
+  
+  # =============================================================================
+  # Replica Bounds
+  # =============================================================================
+  minReplicas: {{ hpa_min_replicas | default(2) }}
+  maxReplicas: {{ hpa_max_replicas | default(10) }}
+  
+  # =============================================================================
+  # Scaling Metrics (CPU, Memory, Custom)
+  # =============================================================================
+  metrics:
+    # ---------------------------------------------------------------------
+    # CPU Utilization Metric (Resource-based)
+    # ---------------------------------------------------------------------
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: {{ hpa_cpu_target | default(70) }}
+    
+    # ---------------------------------------------------------------------
+    # Memory Utilization Metric (Resource-based)
+    # ---------------------------------------------------------------------
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: {{ hpa_memory_target | default(80) }}
+    
+    # ---------------------------------------------------------------------
+    # Custom Metrics (Prometheus-based) - Optional
+    # ---------------------------------------------------------------------
+{% if custom_metrics_enabled | default(false) %}
+    # HTTP Request Rate (requests per second)
+    - type: Pods
+      pods:
+        metric:
+          name: http_requests_per_second
+        target:
+          type: AverageValue
+          averageValue: "{{ hpa_requests_per_second_target | default('100') }}"
+    
+    # JVM Heap Usage (for Java applications)
+    - type: Pods
+      pods:
+        metric:
+          name: jvm_heap_used_percent
+        target:
+          type: AverageValue
+          averageValue: "{{ hpa_jvm_heap_target | default('75') }}"
+    
+    # Spring Boot Active Threads
+    - type: Pods
+      pods:
+        metric:
+          name: tomcat_threads_busy
+        target:
+          type: AverageValue
+          averageValue: "{{ hpa_threads_busy_target | default('50') }}"
+    
+    # Response Latency (P95 in milliseconds)
+    - type: Pods
+      pods:
+        metric:
+          name: http_request_duration_seconds_p95
+        target:
+          type: AverageValue
+          averageValue: "{{ hpa_latency_p95_target | default('0.5') }}"
+{% endif %}
+    
+    # ---------------------------------------------------------------------
+    # External Metrics (AWS SQS, Kinesis, etc.) - Optional
+    # ---------------------------------------------------------------------
+{% if external_metrics_enabled | default(false) %}
+    # AWS SQS Queue Depth (requires KEDA or external metrics adapter)
+    - type: External
+      external:
+        metric:
+          name: aws_sqs_queue_depth
+          selector:
+            matchLabels:
+              queue-name: "{{ sqs_queue_name | default('petclinic-queue') }}"
+        target:
+          type: Value
+          value: "{{ hpa_sqs_queue_depth_target | default('100') }}"
+{% endif %}
+  
+  # =============================================================================
+  # Scaling Behavior (Prevents Thrashing)
+  # =============================================================================
+  behavior:
+    # ---------------------------------------------------------------------
+    # Scale Down Policy (Conservative to prevent oscillation)
+    # ---------------------------------------------------------------------
+    scaleDown:
+      stabilizationWindowSeconds: {{ hpa_scale_down_stabilization | default(300) }}
+      policies:
+        # Percentage-based scale down (gentle)
+        - type: Percent
+          value: {{ hpa_scale_down_percent | default(10) }}
+          periodSeconds: {{ hpa_scale_down_period | default(60) }}
+        # Pod count-based scale down (absolute)
+        - type: Pods
+          value: {{ hpa_scale_down_pods | default(2) }}
+          periodSeconds: {{ hpa_scale_down_pods_period | default(120) }}
+      # Select the policy that results in the smallest change
+      selectPolicy: {{ hpa_scale_down_select_policy | default('Min') }}
+    
+    # ---------------------------------------------------------------------
+    # Scale Up Policy (Aggressive for quick response to load)
+    # ---------------------------------------------------------------------
+    scaleUp:
+      stabilizationWindowSeconds: {{ hpa_scale_up_stabilization | default(0) }}
+      policies:
+        # Percentage-based scale up (fast)
+        - type: Percent
+          value: {{ hpa_scale_up_percent | default(100) }}
+          periodSeconds: {{ hpa_scale_up_period | default(15) }}
+        # Pod count-based scale up (burst capacity)
+        - type: Pods
+          value: {{ hpa_scale_up_pods | default(4) }}
+          periodSeconds: {{ hpa_scale_up_pods_period | default(30) }}
+      # Select the policy that results in the largest change
+      selectPolicy: {{ hpa_scale_up_select_policy | default('Max') }}
+{% endif %}
+---
+{# =============================================================================
+   PodDisruptionBudget (PDB) - Works with HPA for safe scaling
+   Ensures minimum availability during voluntary disruptions
+   ============================================================================= #}
+{% if pdb_enabled | default(true) and hpa_enabled | default(true) %}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ app_name | default('spring-petclinic') }}-pdb
+  namespace: {{ default_namespace | default('petclinic') }}
+  labels:
+    app.kubernetes.io/name: {{ app_name | default('spring-petclinic') }}
+    app.kubernetes.io/instance: {{ app_name | default('spring-petclinic') }}-{{ app_env | default('dev') }}
+    app.kubernetes.io/component: pdb
+    app.kubernetes.io/managed-by: ansible
+    app.kubernetes.io/environment: {{ app_env | default('dev') }}
+  annotations:
+    description: "PodDisruptionBudget for {{ app_name | default('spring-petclinic') }} - ensures availability during HPA scale-down"
+    owner: "platform-team@spring-petclinic.com"
+spec:
+  # Ensure minimum pods available during voluntary disruptions
+  # (node drains, cluster upgrades, etc.)
+{% if pdb_min_available is defined %}
+  minAvailable: {{ pdb_min_available }}
+{% elif pdb_max_unavailable is defined %}
+  maxUnavailable: {{ pdb_max_unavailable | default(1) }}
+{% else %}
+  # Default: At least 50% of minReplicas must be available
+  minAvailable: {{ (hpa_min_replicas | default(2) / 2) | round | int }}
+{% endif %}
+  # Selector must match Deployment pod labels
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ app_name | default('spring-petclinic') }}
+      app.kubernetes.io/instance: {{ app_name | default('spring-petclinic') }}-{{ app_env | default('dev') }}
+{% endif %}
+---
+{# =============================================================================
+   VerticalPodAutoscaler (VPA) - Optional Complement to HPA
+   NOTE: Do NOT use HPA and VPA together on the same resource unless:
+   - HPA controls replicas, VPA controls requests/limits ONLY
+   - Use VPA in 'Off' or 'Recommendation' mode initially
+   ============================================================================= #}
+{% if vpa_enabled | default(false) %}
+apiVersion: autoscaling.k8s.io/v1
+kind: VerticalPodAutoscaler
+metadata:
+  name: {{ app_name | default('spring-petclinic') }}-vpa
+  namespace: {{ default_namespace | default('petclinic') }}
+  labels:
+    app.kubernetes.io/name: {{ app_name | default('spring-petclinic') }}
+    app.kubernetes.io/component: vpa
+    app.kubernetes.io/managed-by: ansible
+  annotations:
+    description: "VerticalPodAutoscaler for {{ app_name | default('spring-petclinic') }} - recommends resource requests/limits"
+    updater.mode: "{{ vpa_updater_mode | default('Off') }}"  # Off, Initial, Recreate, Auto
+spec:
+  targetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ app_name | default('spring-petclinic') }}
+  updatePolicy:
+    updateMode: "{{ vpa_update_mode | default('Off') }}"  # Start with 'Off' for recommendations only
+  resourcePolicy:
+    containerPolicies:
+      - containerName: {{ app_name | default('spring-petclinic') }}
+        controlledResources:
+          - cpu
+          - memory
+        minAllowed:
+          cpu: "{{ vpa_min_cpu | default('100m') }}"
+          memory: "{{ vpa_min_memory | default('128Mi') }}"
+        maxAllowed:
+          cpu: "{{ vpa_max_cpu | default('2000m') }}"
+          memory: "{{ vpa_max_memory | default('4Gi') }}"
+{% endif %}
+---
+{# =============================================================================
+   KEDA ScaledObject (Optional - Advanced Event-Driven Scaling)
+   Alternative to HPA for event-driven workloads (SQS, Kafka, Cron, etc.)
+   Requires: KEDA operator installed in cluster
+   ============================================================================= #}
+{% if keda_enabled | default(false) %}
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: {{ app_name | default('spring-petclinic') }}-scaledobject
+  namespace: {{ default_namespace | default('petclinic') }}
+  labels:
+    app.kubernetes.io/name: {{ app_name | default('spring-petclinic') }}
+    app.kubernetes.io/component: keda-scaledobject
+    app.kubernetes.io/managed-by: ansible
+  annotations:
+    description: "KEDA ScaledObject for event-driven scaling of {{ app_name | default('spring-petclinic') }}"
+spec:
+  scaleTargetRef:
+    name: {{ app_name | default('spring-petclinic') }}
+  pollingInterval: {{ keda_polling_interval | default(30) }}
+  cooldownPeriod: {{ keda_cooldown_period | default(300) }}
+  minReplicaCount: {{ keda_min_replicas | default(1) }}
+  maxReplicaCount: {{ keda_max_replicas | default(50) }}
+  advanced:
+    restoreToOriginalReplicaCount: {{ keda_restore_original | default(false) | lower }}
+    horizontalPodAutoscalerConfig:
+      name: {{ app_name | default('spring-petclinic') }}-keda-hpa
+      behavior:
+        scaleDown:
+          stabilizationWindowSeconds: {{ keda_scale_down_stabilization | default(300) }}
+          policies:
+            - type: Percent
+              value: 50
+              periodSeconds: 60
+        scaleUp:
+          stabilizationWindowSeconds: 0
+          policies:
+            - type: Percent
+              value: 100
+              periodSeconds: 15
+            - type: Pods
+              value: 10
+              periodSeconds: 15
+          selectPolicy: Max
+  triggers:
+    # AWS SQS Queue Trigger
+{% if keda_sqs_enabled | default(false) %}
+    - type: aws-sqs-queue
+      metadata:
+        queueURL: "{{ keda_sqs_queue_url }}"
+        queueLength: "{{ keda_sqs_queue_length_target | default('10') }}"
+        awsRegion: "{{ aws_region | default('us-east-1') }}"
+        identityOwner: pod
+{% endif %}
+    
+    # Apache Kafka Trigger
+{% if keda_kafka_enabled | default(false) %}
+    - type: kafka
+      metadata:
+        bootstrapServers: "{{ keda_kafka_bootstrap_servers }}"
+        consumerGroup: "{{ app_name | default('spring-petclinic') }}-consumer-group"
+        topic: "{{ keda_kafka_topic }}"
+        lagThreshold: "{{ keda_kafka_lag_threshold | default('100') }}"
+        offsetResetPolicy: "{{ keda_kafka_offset_reset | default('latest') }}"
+{% endif %}
+    
+    # Cron/ Schedule Trigger (for batch workloads)
+{% if keda_cron_enabled | default(false) %}
+    - type: cron
+      metadata:
+        timezone: "{{ keda_cron_timezone | default('America/New_York') }}"
+        start: "{{ keda_cron_start | default('0 9 * * *') }}"
+        end: "{{ keda_cron_end | default('0 18 * * *') }}"
+        desiredReplicaCount: "{{ keda_cron_desired_replicas | default('5') }}"
+{% endif %}
+    
+    # Prometheus Metrics Trigger
+{% if keda_prometheus_enabled | default(false) %}
+    - type: prometheus
+      metadata:
+        serverAddress: "{{ keda_prometheus_server }}"
+        metricName: "{{ keda_prometheus_metric_name }}"
+        query: "{{ keda_prometheus_query }}"
+        threshold: "{{ keda_prometheus_threshold | default('100') }}"
+{% endif %}
+{% endif %}
+---
+{# =============================================================================
+   ConfigMap for HPA Monitoring & Alerting
+   Stores thresholds and alerting configuration for observability
+   ============================================================================= #}
+{% if hpa_monitoring_enabled | default(true) %}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ app_name | default('spring-petclinic') }}-hpa-monitoring
+  namespace: {{ default_namespace | default('petclinic') }}
+  labels:
+    app.kubernetes.io/name: {{ app_name | default('spring-petclinic') }}
+    app.kubernetes.io/component: hpa-monitoring
+    app.kubernetes.io/managed-by: ansible
+  annotations:
+    description: "HPA monitoring configuration and alerting thresholds"
+data:
+  # HPA Thresholds for Alerting
+  hpa_cpu_warning_threshold: "{{ hpa_cpu_warning_threshold | default('80') }}"
+  hpa_cpu_critical_threshold: "{{ hpa_cpu_critical_threshold | default('90') }}"
+  hpa_memory_warning_threshold: "{{ hpa_memory_warning_threshold | default('85') }}"
+  hpa_memory_critical_threshold: "{{ hpa_memory_critical_threshold | default('95') }}"
+  
+  # Scaling Event Alerting
+  scale_up_alert_threshold: "{{ hpa_scale_up_alert_threshold | default('5') }}"
+  scale_down_alert_threshold: "{{ hpa_scale_down_alert_threshold | default('3') }}"
+  rapid_scaling_window: "{{ hpa_rapid_scaling_window | default('300') }}"
+  
+  # Prometheus Alert Rules (to be loaded by Prometheus Operator)
+  alerting_rules.yaml: |
+    groups:
+      - name: hpa-alerts
+        rules:
+          - alert: HPANearMaxReplicas
+            expr: |
+              kube_horizontalpodautoscaler_status_current_replicas{horizontalpodautoscaler="{{ app_name | default('spring-petclinic') }}-hpa", namespace="{{ default_namespace | default('petclinic') }}"} 
+              / 
+              kube_horizontalpodautoscaler_spec_max_replicas{horizontalpodautoscaler="{{ app_name | default('spring-petclinic') }}-hpa", namespace="{{ default_namespace | default('petclinic') }}"} 
+              > 0.9
+            for: 5m
+            labels:
+              severity: warning
+              app: {{ app_name | default('spring-petclinic') }}
+              environment: {{ app_env | default('dev') }}
+            annotations:
+              summary: "HPA {{ app_name | default('spring-petclinic') }}-hpa is near max replicas"
+              description: "HPA is at {{ '{{' }} $value | humanizePercentage {{ '}}' }} of max replicas for 5 minutes"
+          
+          - alert: HPAUnableToScaleUp
+            expr: |
+              kube_horizontalpodautoscaler_status_condition{condition="ScalingActive", status="false", horizontalpodautoscaler="{{ app_name | default('spring-petclinic') }}-hpa"}
+              == 1
+            for: 10m
+            labels:
+              severity: critical
+              app: {{ app_name | default('spring-petclinic') }}
+            annotations:
+              summary: "HPA {{ app_name | default('spring-petclinic') }}-hpa cannot scale"
+              description: "HPA is unable to scale due to metrics API or resource constraints"
+          
+          - alert: RapidScalingDetected
+            expr: |
+              increase(kube_horizontalpodautoscaler_status_current_replicas{horizontalpodautoscaler="{{ app_name | default('spring-petclinic') }}-hpa"}[5m]) 
+              > {{ hpa_scale_up_alert_threshold | default('5') }}
+            for: 0m
+            labels:
+              severity: warning
+              app: {{ app_name | default('spring-petclinic') }}
+            annotations:
+              summary: "Rapid scaling detected for {{ app_name | default('spring-petclinic') }}"
+              description: "Pod count changed by {{ '{{' }} $value {{ '}}' }} in 5 minutes - investigate traffic spike"
+{% endif %}
