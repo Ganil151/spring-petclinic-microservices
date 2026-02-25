@@ -1,0 +1,396 @@
+{# =============================================================================
+   Spring Petclinic Microservices Service Template
+   Location: ansible/roles/kubernetes_setup/templates/service-petclinic.yaml.j2
+   Purpose: Define Kubernetes Service resources for Spring Petclinic microservices
+   Alignment: Must match defaults/main.yml variables and AWS ALB Ingress integration
+   ============================================================================= #}
+{# -----------------------------------------------------------------------------
+   Expected Variables (from defaults/main.yml or group_vars/):
+   - app_name: Service name (e.g., api-gateway, customers-service)
+   - default_namespace: Kubernetes namespace
+   - app_env: Environment (dev/staging/prod)
+   - service_type: ClusterIP, NodePort, or LoadBalancer
+   - app_port: Application port (default: 8080)
+   - management_port: Spring Boot management port (default: 8081)
+   - aws_region: AWS region for ALB annotations
+   - eks_cluster_name: EKS cluster name
+   - ssl_cert_arn: AWS ACM certificate ARN for HTTPS
+   - ingress_host: Ingress hostname for external access
+   - health_check_path: Health check endpoint for ALB
+   - target_type: ip or instance (for ALB target group)
+   ----------------------------------------------------------------------------- #}
+---
+apiVersion: v1
+kind: Service
+meta
+  name: {{ app_name | default('spring-petclinic') }}
+  namespace: {{ default_namespace | default('petclinic') }}
+  labels:
+    app.kubernetes.io/name: {{ app_name | default('spring-petclinic') }}
+    app.kubernetes.io/instance: {{ app_name | default('spring-petclinic') }}-{{ app_env | default('dev') }}
+    app.kubernetes.io/version: "{{ app_version | default('1.0.0') }}"
+    app.kubernetes.io/component: service
+    app.kubernetes.io/managed-by: ansible
+    app.kubernetes.io/environment: {{ app_env | default('dev') }}
+    app.kubernetes.io/part-of: spring-petclinic
+    aws.region: {{ aws_region | default('us-east-1') }}
+    eks.cluster: {{ eks_cluster_name | default('petclinic-eks') }}
+  annotations:
+    description: "Spring Petclinic {{ app_name | default('microservice') }} service"
+    owner: "platform-team@spring-petclinic.com"
+{% if service_type | default('ClusterIP') == 'LoadBalancer' %}
+    # AWS Load Balancer Controller Annotations
+    service.beta.kubernetes.io/aws-load-balancer-type: "external"
+    service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: "{{ target_type | default('ip') }}"
+    service.beta.kubernetes.io/aws-load-balancer-scheme: "{{ lb_scheme | default('internet-facing') }}"
+    service.beta.kubernetes.io/aws-load-balancer-ssl-ports: "https"
+{% if ssl_cert_arn is defined and ssl_cert_arn != '' %}
+    service.beta.kubernetes.io/aws-load-balancer-ssl-cert: "{{ ssl_cert_arn }}"
+{% endif %}
+    service.beta.kubernetes.io/aws-load-balancer-ssl-negotiation-policy: "ELBSecurityPolicy-TLS13-1-2-2021-06"
+    service.beta.kubernetes.io/aws-load-balancer-backend-protocol: "tcp"
+    service.beta.kubernetes.io/aws-load-balancer-cross-zone-load-balancing-enabled: "true"
+    service.beta.kubernetes.io/aws-load-balancer-healthcheck-protocol: "HTTP"
+    service.beta.kubernetes.io/aws-load-balancer-healthcheck-port: "{{ management_port | default(8081) }}"
+    service.beta.kubernetes.io/aws-load-balancer-healthcheck-path: "{{ health_check_path | default('/actuator/health') }}"
+    service.beta.kubernetes.io/aws-load-balancer-healthcheck-interval: "15"
+    service.beta.kubernetes.io/aws-load-balancer-healthcheck-timeout: "5"
+    service.beta.kubernetes.io/aws-load-balancer-healthcheck-success-codes: "200"
+    service.beta.kubernetes.io/aws-load-balancer-healthcheck-failure-threshold: "3"
+    service.beta.kubernetes.io/aws-load-balancer-healthcheck-healthy-threshold: "2"
+{% if lb_idle_timeout is defined %}
+    service.beta.kubernetes.io/aws-load-balancer-connection-idle-timeout: "{{ lb_idle_timeout }}"
+{% endif %}
+{% if lb_deletion_protection is defined %}
+    service.beta.kubernetes.io/aws-load-balancer-deletion-protection-enabled: "{{ lb_deletion_protection | lower }}"
+{% endif %}
+{% if additional_lb_annotations is defined and additional_lb_annotations | length > 0 %}
+{% for key, value in additional_lb_annotations.items() %}
+    {{ key }}: "{{ value }}"
+{% endfor %}
+{% endif %}
+{% endif %}
+{% if service_type | default('ClusterIP') == 'ClusterIP' %}
+    # Internal service - no external LB annotations
+    service.kubernetes.io/internal: "true"
+{% endif %}
+    # Prometheus service discovery
+    prometheus.io/scrape: "{{ prometheus_metrics_enabled | default(true) | lower }}"
+    prometheus.io/port: "{{ management_port | default(8081) }}"
+    prometheus.io/path: "{{ prometheus_path | default('/actuator/prometheus') }}"
+spec:
+  type: {{ service_type | default('ClusterIP') }}
+{% if service_type | default('ClusterIP') == 'ClusterIP' and cluster_ip is defined %}
+  clusterIP: {{ cluster_ip }}
+{% endif %}
+{% if service_type | default('ClusterIP') == 'NodePort' and node_port is defined %}
+  clusterIP: {{ cluster_ip | default('') }}
+{% endif %}
+  selector:
+    app.kubernetes.io/name: {{ app_name | default('spring-petclinic') }}
+    app.kubernetes.io/instance: {{ app_name | default('spring-petclinic') }}-{{ app_env | default('dev') }}
+  ports:
+    # Main application port
+    - name: http
+      protocol: TCP
+      port: {{ app_port | default(8080) }}
+      targetPort: {{ app_port | default(8080) }}
+{% if service_type | default('ClusterIP') == 'NodePort' and node_port is defined %}
+      nodePort: {{ node_port }}
+{% endif %}
+      appProtocol: http
+{% if management_port is defined %}
+    # Spring Boot management port (actuator endpoints)
+    - name: management
+      protocol: TCP
+      port: {{ management_port }}
+      targetPort: {{ management_port }}
+{% if service_type | default('ClusterIP') == 'NodePort' and management_node_port is defined %}
+      nodePort: {{ management_node_port }}
+{% endif %}
+      appProtocol: http
+{% endif %}
+{% if additional_ports is defined and additional_ports | length > 0 %}
+{% for port in additional_ports %}
+    - name: {{ port.name }}
+      protocol: {{ port.protocol | default('TCP') }}
+      port: {{ port.port }}
+      targetPort: {{ port.targetPort | default(port.port) }}
+{% if port.nodePort is defined %}
+      nodePort: {{ port.nodePort }}
+{% endif %}
+{% if port.appProtocol is defined %}
+      appProtocol: {{ port.appProtocol }}
+{% endif %}
+{% endfor %}
+{% endif %}
+{% if service_type | default('ClusterIP') == 'LoadBalancer' %}
+{% if load_balancer_ip is defined %}
+  loadBalancerIP: {{ load_balancer_ip }}
+{% endif %}
+{% if load_balancer_source_ranges is defined and load_balancer_source_ranges | length > 0 %}
+  loadBalancerSourceRanges:
+{% for cidr in load_balancer_source_ranges %}
+    - {{ cidr }}
+{% endfor %}
+{% endif %}
+{% if external_traffic_policy is defined %}
+  externalTrafficPolicy: {{ external_traffic_policy }}
+{% else %}
+  externalTrafficPolicy: Cluster
+{% endif %}
+{% if internal_traffic_policy is defined %}
+  internalTrafficPolicy: {{ internal_traffic_policy }}
+{% endif %}
+{% if allocate_load_balancer_node_ports is defined %}
+  allocateLoadBalancerNodePorts: {{ allocate_load_balancer_node_ports | lower }}
+{% endif %}
+{% if session_affinity is defined %}
+  sessionAffinity: {{ session_affinity }}
+{% if session_affinity_config is defined %}
+  sessionAffinityConfig:
+    clientIP:
+      timeoutSeconds: {{ session_affinity_config.client_ip_timeout | default(10800) }}
+{% endif %}
+{% else %}
+  sessionAffinity: None
+{% endif %}
+{% endif %}
+{% if ip_families is defined and ip_families | length > 0 %}
+  ipFamilies:
+{% for family in ip_families %}
+    - {{ family }}
+{% endfor %}
+{% endif %}
+{% if ip_family_policy is defined %}
+  ipFamilyPolicy: {{ ip_family_policy }}
+{% endif %}
+---
+{# =============================================================================
+   Headless Service for StatefulSet Discovery (Optional)
+   Enable via headless_service_enabled variable
+   ============================================================================= #}
+{% if headless_service_enabled | default(false) %}
+apiVersion: v1
+kind: Service
+meta
+  name: {{ app_name | default('spring-petclinic') }}-headless
+  namespace: {{ default_namespace | default('petclinic') }}
+  labels:
+    app.kubernetes.io/name: {{ app_name | default('spring-petclinic') }}
+    app.kubernetes.io/instance: {{ app_name | default('spring-petclinic') }}-{{ app_env | default('dev') }}
+    app.kubernetes.io/component: headless-service
+    app.kubernetes.io/managed-by: ansible
+  annotations:
+    description: "Headless service for {{ app_name | default('spring-petclinic') }} StatefulSet discovery"
+    service.kubernetes.io/headless: "true"
+spec:
+  type: ClusterIP
+  clusterIP: None
+  selector:
+    app.kubernetes.io/name: {{ app_name | default('spring-petclinic') }}
+    app.kubernetes.io/instance: {{ app_name | default('spring-petclinic') }}-{{ app_env | default('dev') }}
+  ports:
+    - name: http
+      protocol: TCP
+      port: {{ app_port | default(8080) }}
+      targetPort: {{ app_port | default(8080) }}
+{% if management_port is defined %}
+    - name: management
+      protocol: TCP
+      port: {{ management_port }}
+      targetPort: {{ management_port }}
+{% endif %}
+  publishNotReadyAddresses: {{ publish_not_ready_addresses | default(true) | lower }}
+{% endif %}
+---
+{# =============================================================================
+   Ingress Resource for External Access (Optional)
+   Enable via ingress_enabled variable
+   Requires: AWS Load Balancer Controller installed in cluster
+   ============================================================================= #}
+{% if ingress_enabled | default(false) %}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+meta
+  name: {{ app_name | default('spring-petclinic') }}-ingress
+  namespace: {{ default_namespace | default('petclinic') }}
+  labels:
+    app.kubernetes.io/name: {{ app_name | default('spring-petclinic') }}
+    app.kubernetes.io/instance: {{ app_name | default('spring-petclinic') }}-{{ app_env | default('dev') }}
+    app.kubernetes.io/component: ingress
+    app.kubernetes.io/managed-by: ansible
+  annotations:
+    # AWS Load Balancer Controller
+    kubernetes.io/ingress.class: "alb"
+    alb.ingress.kubernetes.io/scheme: "{{ lb_scheme | default('internet-facing') }}"
+    alb.ingress.kubernetes.io/target-type: "{{ target_type | default('ip') }}"
+    alb.ingress.kubernetes.io/healthcheck-path: "{{ health_check_path | default('/actuator/health') }}"
+    alb.ingress.kubernetes.io/healthcheck-protocol: "HTTP"
+    alb.ingress.kubernetes.io/healthcheck-port: "{{ management_port | default(8081) }}"
+    alb.ingress.kubernetes.io/healthcheck-interval-seconds: "15"
+    alb.ingress.kubernetes.io/healthcheck-timeout-seconds: "5"
+    alb.ingress.kubernetes.io/success-codes: "200"
+    alb.ingress.kubernetes.io/healthy-threshold-count: "2"
+    alb.ingress.kubernetes.io/unhealthy-threshold-count: "3"
+{% if ssl_cert_arn is defined and ssl_cert_arn != '' %}
+    alb.ingress.kubernetes.io/certificate-arn: "{{ ssl_cert_arn }}"
+    alb.ingress.kubernetes.io/ssl-redirect: "443"
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]'
+{% else %}
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}]'
+{% endif %}
+{% if ingress_group is defined %}
+    alb.ingress.kubernetes.io/group.name: "{{ ingress_group }}"
+{% endif %}
+{% if ingress_order is defined %}
+    alb.ingress.kubernetes.io/group.order: "{{ ingress_order }}"
+{% endif %}
+{% if waf_acl_arn is defined %}
+    alb.ingress.kubernetes.io/wafv2-acl-arn: "{{ waf_acl_arn }}"
+{% endif %}
+{% if shield_advanced_protection is defined %}
+    alb.ingress.kubernetes.io/shield-advanced-protection: "{{ shield_advanced_protection | lower }}"
+{% endif %}
+{% if ingress_security_groups is defined and ingress_security_groups | length > 0 %}
+    alb.ingress.kubernetes.io/security-groups: "{{ ingress_security_groups | join(',') }}"
+{% endif %}
+{% if ingress_tags is defined and ingress_tags | length > 0 %}
+    alb.ingress.kubernetes.io/tags: "{{ ingress_tags | join(',') }}"
+{% endif %}
+{% if stickiness_enabled | default(false) %}
+    alb.ingress.kubernetes.io/stickiness-enabled: "true"
+    alb.ingress.kubernetes.io/stickiness-ttl: "{{ stickiness_ttl | default(86400) }}"
+{% endif %}
+{% if additional_ingress_annotations is defined and additional_ingress_annotations | length > 0 %}
+{% for key, value in additional_ingress_annotations.items() %}
+    {{ key }}: "{{ value }}"
+{% endfor %}
+{% endif %}
+spec:
+{% if ingress_class_name is defined %}
+  ingressClassName: {{ ingress_class_name }}
+{% else %}
+  ingressClassName: alb
+{% endif %}
+{% if tls_enabled | default(false) %}
+  tls:
+    - hosts:
+        - {{ ingress_host | default('petclinic.example.com') }}
+{% if tls_secret_name is defined %}
+      secretName: {{ tls_secret_name }}
+{% endif %}
+{% endif %}
+  rules:
+    - host: {{ ingress_host | default('petclinic.example.com') }}
+      http:
+        paths:
+          - path: /
+            pathType: {{ path_type | default('Prefix') }}
+            backend:
+              service:
+                name: {{ app_name | default('spring-petclinic') }}
+                port:
+                  number: {{ app_port | default(8080) }}
+{% if additional_ingress_paths is defined and additional_ingress_paths | length > 0 %}
+{% for path_config in additional_ingress_paths %}
+          - path: {{ path_config.path }}
+            pathType: {{ path_config.pathType | default('Prefix') }}
+            backend:
+              service:
+                name: {{ path_config.serviceName | default(app_name | default('spring-petclinic')) }}
+                port:
+                  number: {{ path_config.servicePort | default(app_port | default(8080)) }}
+{% endfor %}
+{% endif %}
+{% endif %}
+---
+{# =============================================================================
+   NetworkPolicy for Service Isolation (Optional)
+   Enable via network_policies_enabled variable in defaults/main.yml
+   ============================================================================= #}
+{% if network_policies_enabled | default(true) %}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+meta
+  name: {{ app_name | default('spring-petclinic') }}-network-policy
+  namespace: {{ default_namespace | default('petclinic') }}
+  labels:
+    app.kubernetes.io/name: {{ app_name | default('spring-petclinic') }}
+    app.kubernetes.io/managed-by: ansible
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: {{ app_name | default('spring-petclinic') }}
+      app.kubernetes.io/instance: {{ app_name | default('spring-petclinic') }}-{{ app_env | default('dev') }}
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # Allow traffic from same namespace
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: {{ default_namespace | default('petclinic') }}
+      ports:
+        - protocol: TCP
+          port: {{ app_port | default(8080) }}
+        - protocol: TCP
+          port: {{ management_port | default(8081) }}
+{% if allow_from_namespaces is defined and allow_from_namespaces | length > 0 %}
+    # Allow traffic from specific namespaces
+{% for ns in allow_from_namespaces %}
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: {{ ns }}
+      ports:
+        - protocol: TCP
+          port: {{ app_port | default(8080) }}
+{% endfor %}
+{% endif %}
+{% if allow_from_pod_selector is defined %}
+    # Allow traffic from specific pods
+    - from:
+        - podSelector:
+{{ allow_from_pod_selector | to_nice_yaml(indent=2, width=132) | indent(10, true) }}
+      ports:
+        - protocol: TCP
+          port: {{ app_port | default(8080) }}
+{% endif %}
+  egress:
+    # Allow DNS resolution
+    - to:
+        - namespaceSelector: {}
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+{% if allow_egress_to is defined and allow_egress_to | length > 0 %}
+    # Allow egress to specific destinations
+{% for egress_rule in allow_egress_to %}
+    - to:
+{% if egress_rule.namespaceSelector is defined %}
+        - namespaceSelector:
+{{ egress_rule.namespaceSelector | to_nice_yaml(indent=2, width=132) | indent(10, true) }}
+{% endif %}
+{% if egress_rule.podSelector is defined %}
+        - podSelector:
+{{ egress_rule.podSelector | to_nice_yaml(indent=2, width=132) | indent(10, true) }}
+{% endif %}
+{% if egress_rule.ipBlock is defined %}
+        - ipBlock:
+{{ egress_rule.ipBlock | to_nice_yaml(indent=2, width=132) | indent(10, true) }}
+{% endif %}
+      ports:
+{% for port_rule in egress_rule.ports | default([]) %}
+        - protocol: {{ port_rule.protocol | default('TCP') }}
+          port: {{ port_rule.port }}
+{% endfor %}
+{% endfor %}
+{% endif %}
+{% endif %}
