@@ -192,6 +192,7 @@ ansible-playbook -i inventory/hosts playbooks/deployment/security-hardening.yml 
 
 ## Key Tags:
 
+
 ### deployment/security-hardening.yml
 
 Applies security hardening to all instances:
