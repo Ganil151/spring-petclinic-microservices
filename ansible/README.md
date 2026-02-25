@@ -144,20 +144,6 @@ ansible-inventory -i inventory/hosts --list --yaml | head -30
 ansible all -i inventory/hosts -m ping
 ```
 
-### Installation
-
-```bash
-# Install Ansible collections
-cd ansible
-ansible-galaxy install -r requirements.yml
-
-# Verify inventory
-ansible-inventory -i inventory/hosts --list
-
-# Test connectivity
-ansible all -i inventory/hosts -m ping
-```
-
 ### Deploy Infrastructure
 
 ```bash
