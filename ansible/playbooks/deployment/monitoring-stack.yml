@@ -1,36 +1,832 @@
 ---
 # =============================================================================
-# Monitoring Stack Playbook
-# Deploys Prometheus and Grafana using Helm
+# Monitoring Stack Deployment Playbook
+# Location: ansible/playbooks/deployment/monitoring-stack.yml
+# Purpose: Deploy Prometheus + Grafana + CloudWatch for Spring Petclinic observability
+# Target: monitoring hosts + k8s_cluster (for Prometheus Operator)
 # =============================================================================
 
 - name: Deploy Monitoring Stack
-  hosts: jenkins_masters
+  hosts: monitoring
   become: true
-  tasks:
-    - name: Add Prometheus community repo
-      kubernetes.core.k8s_info:
-        kind: Namespace
-        name: monitoring
-      register: ns_check
-
-    - name: Create monitoring namespace
-      kubernetes.core.k8s:
-        name: monitoring
-        kind: Namespace
-        state: present
-      when: ns_check.resources | length == 0
-
-    - name: Add Helm repos
-      ansible.builtin.command:
-        cmd: "{{ item }}"
+  gather_facts: true
+  
+  vars:
+    # Prometheus Configuration
+    prometheus_version: "2.45.0"
+    prometheus_home: "/opt/prometheus"
+    prometheus_data_dir: "/var/lib/prometheus"
+    prometheus_retention: "30d"
+    prometheus_scrape_interval: "30s"
+    prometheus_evaluation_interval: "30s"
+    
+    # Grafana Configuration
+    grafana_version: "10.0.0"
+    grafana_home: "/var/lib/grafana"
+    grafana_port: 3000
+    grafana_admin_user: "admin"
+    grafana_admin_password: "{{ lookup('env', 'GRAFANA_ADMIN_PASSWORD') | default('admin', true) }}"
+    
+    # Alertmanager Configuration
+    alertmanager_version: "0.26.0"
+    alertmanager_home: "/opt/alertmanager"
+    
+    # Node Exporter Configuration
+    node_exporter_version: "1.6.0"
+    node_exporter_port: 9100
+    
+    # CloudWatch Integration
+    cloudwatch_log_group: "/spring-petclinic/{{ environment | default('dev') }}/monitoring"
+    cloudwatch_log_retention: 90
+    cloudwatch_namespace: "SpringPetclinic"
+    
+    # Kubernetes Monitoring (via Helm)
+    k8s_monitoring_enabled: true
+    kube_prometheus_stack_version: "51.0.0"
+    monitoring_namespace: "monitoring"
+    
+    # Dashboard Configuration
+    grafana_dashboards:
+      - name: "Spring Petclinic Overview"
+        file: "../../docker/grafana/dashboards/grafana-petclinic-dashboard.json"
+      - name: "Node Exporter Full"
+        url: "https://grafana.com/api/dashboards/1860/revisions/23/download"
+      - name: "Prometheus Stats"
+        url: "https://grafana.com/api/dashboards/2/revisions/2/download"
+    
+    # Alerting Configuration
+    alerting_enabled: true
+    alert_email: "{{ monitoring_alert_email | default('platform-team@spring-petclinic.com') }}"
+    alert_slack_webhook: "{{ monitoring_slack_webhook | default('') }}"
+    
+    # Security
+    grafana_security:
+      admin_user: "{{ grafana_admin_user }}"
+      secret_key: "{{ lookup('password', '/dev/null chars=ascii_letters,digits length=32') }}"
+      cookie_secure: true
+      cookie_samesite: "strict"
+    
+  tags: [monitoring, observability]
+  
+  pre_tasks:
+    - name: Validate monitoring host connectivity
+      ansible.builtin.ping:
+      tags: [monitoring, prereq]
+    
+    - name: Gather system facts
+      ansible.builtin.setup:
+        gather_subset:
+          - hardware
+          - network
+          - virtual
+      tags: [monitoring, prereq]
+    
+    - name: Validate OS family
+      ansible.builtin.assert:
+        that:
+          - ansible_os_family == "RedHat"
+          - ansible_distribution in ["Amazon", "CentOS", "Rocky"]
+        fail_msg: "Monitoring host must run Amazon Linux 2, CentOS, or Rocky Linux"
+        success_msg: "OS validation passed: {{ ansible_distribution }} {{ ansible_distribution_version }}"
+      tags: [monitoring, prereq]
+    
+    - name: Check if Prometheus is already installed
+      ansible.builtin.stat:
+        path: "{{ prometheus_home }}"
+      register: prometheus_home_stat
+      tags: [monitoring, prereq]
+    
+    - name: Check if Grafana is already installed
+      ansible.builtin.stat:
+        path: "{{ grafana_home }}"
+      register: grafana_home_stat
+      tags: [monitoring, prereq]
+    
+    - name: Create monitoring directories
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        mode: '0755'
+        owner: root
+        group: root
       loop:
-        - "helm repo add prometheus-community https://prometheus-community.github.io/helm-charts"
-        - "helm repo add grafana https://grafana.github.io/helm-charts"
-        - "helm repo update"
-      changed_when: false
-
-    - name: Install Prometheus
-      ansible.builtin.command:
-        cmd: "helm upgrade --install prometheus prometheus-community/kube-prometheus-stack --namespace monitoring"
-      changed_when: true
+        - "{{ prometheus_home }}"
+        - "{{ prometheus_data_dir }}"
+        - "{{ prometheus_home }}/rules"
+        - "{{ prometheus_home }}/file_sd"
+        - "{{ grafana_home }}"
+        - "{{ grafana_home }}/provisioning"
+        - "{{ grafana_home }}/provisioning/dashboards"
+        - "{{ grafana_home }}/provisioning/datasources"
+        - "{{ alertmanager_home }}"
+        - /var/log/prometheus
+        - /var/log/grafana
+        - /var/log/alertmanager
+      tags: [monitoring, dirs]
+  
+  roles:
+    - role: common
+      tags: [common, base]
+    
+    - role: cloudwatch_agent
+      tags: [monitoring, cloudwatch]
+    
+    - role: security_tools
+      tags: [security, hardening]
+    
+    - role: helm
+      tags: [helm, k8s]
+      when: k8s_monitoring_enabled | bool
+  
+  tasks:
+    # =============================================================================
+    # Prometheus Installation
+    # =============================================================================
+    
+    - name: Download Prometheus
+      ansible.builtin.get_url:
+        url: "https://github.com/prometheus/prometheus/releases/download/v{{ prometheus_version }}/prometheus-{{ prometheus_version }}.linux-amd64.tar.gz"
+        dest: "/tmp/prometheus-{{ prometheus_version }}.tar.gz"
+        mode: '0644'
+      when: not prometheus_home_stat.stat.exists
+      tags: [monitoring, prometheus, install]
+    
+    - name: Extract Prometheus
+      ansible.builtin.unarchive:
+        src: "/tmp/prometheus-{{ prometheus_version }}.tar.gz"
+        dest: /tmp
+        remote_src: true
+      when: not prometheus_home_stat.stat.exists
+      tags: [monitoring, prometheus, install]
+    
+    - name: Move Prometheus binaries
+      ansible.builtin.copy:
+        src: "/tmp/prometheus-{{ prometheus_version }}.linux-amd64/{{ item }}"
+        dest: "/usr/local/bin/{{ item }}"
+        mode: '0755'
+        remote_src: true
+      loop:
+        - prometheus
+        - promtool
+      when: not prometheus_home_stat.stat.exists
+      tags: [monitoring, prometheus, install]
+    
+    - name: Configure Prometheus systemd service
+      ansible.builtin.copy:
+        content: |
+          [Unit]
+          Description=Prometheus Server
+          Documentation=https://prometheus.io/docs/introduction/overview/
+          After=network-online.target
+          
+          [Service]
+          User=prometheus
+          Group=prometheus
+          Type=simple
+          ExecStart=/usr/local/bin/prometheus \
+            --config.file={{ prometheus_home }}/prometheus.yml \
+            --storage.tsdb.path={{ prometheus_data_dir }} \
+            --storage.tsdb.retention.time={{ prometheus_retention }} \
+            --web.console.templates={{ prometheus_home }}/consoles \
+            --web.console.libraries={{ prometheus_home }}/console_libraries \
+            --web.listen-address=0.0.0.0:9090 \
+            --web.enable-lifecycle \
+            --log.level=info
+          Restart=always
+          LimitNOFILE=65536
+          
+          [Install]
+          WantedBy=multi-user.target
+        dest: /etc/systemd/system/prometheus.service
+        mode: '0644'
+      notify: Reload systemd
+      tags: [monitoring, prometheus, config]
+    
+    - name: Create Prometheus user
+      ansible.builtin.user:
+        name: prometheus
+        system: true
+        shell: /usr/sbin/nologin
+        create_home: false
+        comment: "Prometheus Service Account"
+      tags: [monitoring, prometheus, users]
+    
+    - name: Set Prometheus directory ownership
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        owner: prometheus
+        group: prometheus
+        recurse: true
+      loop:
+        - "{{ prometheus_home }}"
+        - "{{ prometheus_data_dir }}"
+      tags: [monitoring, prometheus, config]
+    
+    - name: Configure Prometheus main config
+      ansible.builtin.template:
+        src: prometheus.yml.j2
+        dest: "{{ prometheus_home }}/prometheus.yml"
+        mode: '0644'
+        owner: prometheus
+        group: prometheus
+      vars:
+        prometheus_config:
+          global:
+            scrape_interval: "{{ prometheus_scrape_interval }}"
+            evaluation_interval: "{{ prometheus_evaluation_interval }}"
+          alerting:
+            alertmanagers:
+              - static_configs:
+                  - targets:
+                      - "localhost:9093"
+          rule_files:
+            - "{{ prometheus_home }}/rules/*.yml"
+          scrape_configs:
+            - job_name: "prometheus"
+              static_configs:
+                - targets: ["localhost:9090"]
+            - job_name: "node"
+              static_configs:
+                - targets: ["localhost:{{ node_exporter_port }}"]
+            - job_name: "grafana"
+              static_configs:
+                - targets: ["localhost:{{ grafana_port }}"]
+      notify: Restart Prometheus
+      tags: [monitoring, prometheus, config]
+    
+    - name: Configure Prometheus alerting rules
+      ansible.builtin.copy:
+        content: |
+          groups:
+            - name: spring-petclinic-alerts
+              rules:
+                - alert: InstanceDown
+                  expr: up == 0
+                  for: 5m
+                  labels:
+                    severity: critical
+                  annotations:
+                    summary: "Instance {{ $labels.instance }} down"
+                    description: "{{ $labels.instance }} of job {{ $labels.job }} has been down for more than 5 minutes."
+                
+                - alert: HighMemoryUsage
+                  expr: (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes * 100 > 85
+                  for: 10m
+                  labels:
+                    severity: warning
+                  annotations:
+                    summary: "High memory usage on {{ $labels.instance }}"
+                    description: "Memory usage is above 85% on {{ $labels.instance }}"
+                
+                - alert: HighCPUUsage
+                  expr: 100 - (avg by(instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+                  for: 10m
+                  labels:
+                    severity: warning
+                  annotations:
+                    summary: "High CPU usage on {{ $labels.instance }}"
+                    description: "CPU usage is above 80% on {{ $labels.instance }}"
+                
+                - alert: DiskSpaceLow
+                  expr: (node_filesystem_avail_bytes / node_filesystem_size_bytes) * 100 < 15
+                  for: 10m
+                  labels:
+                    severity: warning
+                  annotations:
+                    summary: "Low disk space on {{ $labels.instance }}"
+                    description: "Disk space is below 15% on {{ $labels.instance }}"
+                
+                - alert: JenkinsDown
+                  expr: jenkins_node_up == 0
+                  for: 5m
+                  labels:
+                    severity: critical
+                  annotations:
+                    summary: "Jenkins node {{ $labels.node }} down"
+                    description: "Jenkins node has been down for more than 5 minutes"
+        dest: "{{ prometheus_home }}/rules/spring-petclinic-alerts.yml"
+        mode: '0644'
+        owner: prometheus
+        group: prometheus
+      notify: Restart Prometheus
+      tags: [monitoring, prometheus, alerting]
+    
+    # =============================================================================
+    # Grafana Installation
+    # =============================================================================
+    
+    - name: Add Grafana repository
+      ansible.builtin.yum_repository:
+        name: grafana
+        description: Grafana Repository
+        baseurl: https://rpm.grafana.com
+        gpgcheck: true
+        gpgkey: https://rpm.grafana.com/gpg.key
+        enabled: true
+      when: not grafana_home_stat.stat.exists
+      tags: [monitoring, grafana, install]
+    
+    - name: Install Grafana
+      ansible.builtin.yum:
+        name: grafana-{{ grafana_version }}
+        state: present
+        update_cache: true
+      when: not grafana_home_stat.stat.exists
+      tags: [monitoring, grafana, install]
+    
+    - name: Configure Grafana
+      ansible.builtin.template:
+        src: grafana.ini.j2
+        dest: /etc/grafana/grafana.ini
+        mode: '0640'
+        owner: root
+        group: grafana
+      vars:
+        grafana_config:
+          server:
+            http_port: "{{ grafana_port }}"
+            domain: "{{ grafana_domain | default('localhost') }}"
+            root_url: "%(protocol)s://%(domain)s:%(http_port)s/"
+          security:
+            admin_user: "{{ grafana_security.admin_user }}"
+            secret_key: "{{ grafana_security.secret_key }}"
+            cookie_secure: "{{ grafana_security.cookie_secure }}"
+            cookie_samesite: "{{ grafana_security.cookie_samesite }}"
+          users:
+            allow_sign_up: false
+            allow_org_create: false
+          auth:
+            disable_login_form: false
+      notify: Restart Grafana
+      tags: [monitoring, grafana, config]
+    
+    - name: Configure Grafana datasources
+      ansible.builtin.copy:
+        content: |
+          apiVersion: 1
+          
+          datasources:
+            - name: Prometheus
+              type: prometheus
+              access: proxy
+              url: http://localhost:9090
+              isDefault: true
+              editable: false
+              jsonData:
+                timeInterval: "{{ prometheus_scrape_interval }}"
+            
+            - name: CloudWatch
+              type: cloudwatch
+              access: proxy
+              editable: false
+              jsonData:
+                authType: default
+                defaultRegion: "{{ aws_region | default('us-east-1') }}"
+        dest: "{{ grafana_home }}/provisioning/datasources/datasources.yml"
+        mode: '0640'
+        owner: root
+        group: grafana
+      notify: Restart Grafana
+      tags: [monitoring, grafana, config]
+    
+    - name: Configure Grafana dashboard provisioning
+      ansible.builtin.copy:
+        content: |
+          apiVersion: 1
+          
+          providers:
+            - name: 'default'
+              orgId: 1
+              folder: ''
+              folderUid: ''
+              type: file
+              disableDeletion: false
+              updateIntervalSeconds: 30
+              allowUiUpdates: true
+              options:
+                path: {{ grafana_home }}/provisioning/dashboards
+        dest: "{{ grafana_home }}/provisioning/dashboards/dashboards.yml"
+        mode: '0640'
+        owner: root
+        group: grafana
+      notify: Restart Grafana
+      tags: [monitoring, grafana, config]
+    
+    - name: Download and import Petclinic dashboard
+      ansible.builtin.copy:
+        src: ../../../docker/grafana/dashboards/grafana-petclinic-dashboard.json
+        dest: "{{ grafana_home }}/provisioning/dashboards/spring-petclinic-overview.json"
+        mode: '0644'
+        owner: grafana
+        group: grafana
+      notify: Restart Grafana
+      tags: [monitoring, grafana, dashboards]
+    
+    - name: Enable and start Grafana
+      ansible.builtin.systemd:
+        name: grafana-server
+        state: started
+        enabled: true
+      tags: [monitoring, grafana, service]
+    
+    # =============================================================================
+    # Node Exporter Installation
+    # =============================================================================
+    
+    - name: Download Node Exporter
+      ansible.builtin.get_url:
+        url: "https://github.com/prometheus/node_exporter/releases/download/v{{ node_exporter_version }}/node_exporter-{{ node_exporter_version }}.linux-amd64.tar.gz"
+        dest: "/tmp/node_exporter-{{ node_exporter_version }}.tar.gz"
+        mode: '0644'
+      tags: [monitoring, node_exporter, install]
+    
+    - name: Extract Node Exporter
+      ansible.builtin.unarchive:
+        src: "/tmp/node_exporter-{{ node_exporter_version }}.tar.gz"
+        dest: /tmp
+        remote_src: true
+      tags: [monitoring, node_exporter, install]
+    
+    - name: Move Node Exporter binary
+      ansible.builtin.copy:
+        src: "/tmp/node_exporter-{{ node_exporter_version }}.linux-amd64/node_exporter"
+        dest: /usr/local/bin/node_exporter
+        mode: '0755'
+        remote_src: true
+      tags: [monitoring, node_exporter, install]
+    
+    - name: Configure Node Exporter systemd service
+      ansible.builtin.copy:
+        content: |
+          [Unit]
+          Description=Node Exporter
+          Documentation=https://prometheus.io/docs/guides/node-exporter/
+          After=network-online.target
+          
+          [Service]
+          User=prometheus
+          Group=prometheus
+          Type=simple
+          ExecStart=/usr/local/bin/node_exporter --web.listen-address=0.0.0.0:{{ node_exporter_port }}
+          Restart=always
+          
+          [Install]
+          WantedBy=multi-user.target
+        dest: /etc/systemd/system/node_exporter.service
+        mode: '0644'
+      notify: Reload systemd
+      tags: [monitoring, node_exporter, config]
+    
+    - name: Enable and start Node Exporter
+      ansible.builtin.systemd:
+        name: node_exporter
+        state: started
+        enabled: true
+      tags: [monitoring, node_exporter, service]
+    
+    # =============================================================================
+    # Alertmanager Installation
+    # =============================================================================
+    
+    - name: Download Alertmanager
+      ansible.builtin.get_url:
+        url: "https://github.com/prometheus/alertmanager/releases/download/v{{ alertmanager_version }}/alertmanager-{{ alertmanager_version }}.linux-amd64.tar.gz"
+        dest: "/tmp/alertmanager-{{ alertmanager_version }}.tar.gz"
+        mode: '0644'
+      when: alerting_enabled | bool
+      tags: [monitoring, alertmanager, install]
+    
+    - name: Extract Alertmanager
+      ansible.builtin.unarchive:
+        src: "/tmp/alertmanager-{{ alertmanager_version }}.tar.gz"
+        dest: /tmp
+        remote_src: true
+      when: alerting_enabled | bool
+      tags: [monitoring, alertmanager, install]
+    
+    - name: Move Alertmanager binaries
+      ansible.builtin.copy:
+        src: "/tmp/alertmanager-{{ alertmanager_version }}.linux-amd64/{{ item }}"
+        dest: "/usr/local/bin/{{ item }}"
+        mode: '0755'
+        remote_src: true
+      loop:
+        - alertmanager
+        - amtool
+      when: alerting_enabled | bool
+      tags: [monitoring, alertmanager, install]
+    
+    - name: Configure Alertmanager
+      ansible.builtin.copy:
+        content: |
+          global:
+            resolve_timeout: 5m
+            smtp_smarthost: '{{ smtp_host | default("localhost:587") }}'
+            smtp_from: '{{ alert_email | split("@") | first }}@{{ alert_email | split("@") | last }}'
+            smtp_auth_username: '{{ smtp_username | default("") }}'
+            smtp_auth_password: '{{ smtp_password | default("") }}'
+          
+          route:
+            group_by: ['alertname', 'severity']
+            group_wait: 30s
+            group_interval: 5m
+            repeat_interval: 4h
+            receiver: 'default-receiver'
+            routes:
+              - match:
+                  severity: critical
+                receiver: 'critical-receiver'
+              - match:
+                  severity: warning
+                receiver: 'warning-receiver'
+          
+          receivers:
+            - name: 'default-receiver'
+              email_configs:
+                - to: '{{ alert_email }}'
+                  send_resolved: true
+            - name: 'critical-receiver'
+              email_configs:
+                - to: '{{ alert_email }}'
+                  send_resolved: true
+              {% if alert_slack_webhook != '' %}
+              slack_configs:
+                - api_url: '{{ alert_slack_webhook }}'
+                  channel: '#alerts-critical'
+                  send_resolved: true
+              {% endif %}
+            - name: 'warning-receiver'
+              email_configs:
+                - to: '{{ alert_email }}'
+                  send_resolved: true
+        dest: "{{ alertmanager_home }}/alertmanager.yml"
+        mode: '0640'
+        owner: prometheus
+        group: prometheus
+      when: alerting_enabled | bool
+      notify: Restart Alertmanager
+      tags: [monitoring, alertmanager, config]
+    
+    - name: Configure Alertmanager systemd service
+      ansible.builtin.copy:
+        content: |
+          [Unit]
+          Description=Alertmanager Server
+          Documentation=https://prometheus.io/docs/alerting/alertmanager/
+          After=network-online.target
+          
+          [Service]
+          User=prometheus
+          Group=prometheus
+          Type=simple
+          ExecStart=/usr/local/bin/alertmanager \
+            --config.file={{ alertmanager_home }}/alertmanager.yml \
+            --storage.path={{ alertmanager_home }}/data \
+            --web.listen-address=0.0.0.0:9093 \
+            --cluster.listen-address=
+          Restart=always
+          
+          [Install]
+          WantedBy=multi-user.target
+        dest: /etc/systemd/system/alertmanager.service
+        mode: '0644'
+      when: alerting_enabled | bool
+      notify: Reload systemd
+      tags: [monitoring, alertmanager, config]
+    
+    - name: Enable and start Alertmanager
+      ansible.builtin.systemd:
+        name: alertmanager
+        state: started
+        enabled: true
+      when: alerting_enabled | bool
+      tags: [monitoring, alertmanager, service]
+    
+    # =============================================================================
+    # CloudWatch Agent Configuration
+    # =============================================================================
+    
+    - name: Configure CloudWatch agent for monitoring logs
+      ansible.builtin.template:
+        src: ../../roles/cloudwatch_agent/templates/amazon-cloudwatch-agent.json.j2
+        dest: /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json
+        mode: '0644'
+        owner: root
+        group: root
+      vars:
+        cloudwatch_config:
+          logs:
+            log_group_name: "{{ cloudwatch_log_group }}"
+            log_stream_name: "{{ inventory_hostname }}"
+            file_paths:
+              - /var/log/prometheus/*.log
+              - /var/log/grafana/*.log
+              - /var/log/alertmanager/*.log
+              - /var/log/messages
+            retention_days: "{{ cloudwatch_log_retention }}"
+          metrics:
+            namespace: "{{ cloudwatch_namespace }}"
+            append_dimensions:
+              InstanceId: "${aws:InstanceId}"
+            metrics_collected:
+              cpu:
+                measurement:
+                  - usage_active
+                  - usage_idle
+                  - usage_user
+                  - usage_system
+                totalcpu: true
+              memory:
+                measurement:
+                  - used_percent
+                  - available_percent
+              disk:
+                measurement:
+                  - used_percent
+                  - free_percent
+                resources:
+                  - "/"
+              net:
+                measurement:
+                  - bytes_sent
+                  - bytes_recv
+      notify: Restart CloudWatch Agent
+      tags: [monitoring, cloudwatch, config]
+    
+    # =============================================================================
+    # Firewall Configuration
+    # =============================================================================
+    
+    - name: Configure firewalld for monitoring ports
+      ansible.posix.firewalld:
+        port: "{{ item }}/tcp"
+        permanent: true
+        state: enabled
+        immediate: true
+      loop:
+        - "9090"   # Prometheus
+        - "9093"   # Alertmanager
+        - "9100"   # Node Exporter
+        - "{{ grafana_port }}"  # Grafana
+      tags: [monitoring, firewall, security]
+    
+    # =============================================================================
+    # Kubernetes Monitoring (Helm-based)
+    # =============================================================================
+    
+    - name: Add Prometheus community Helm repository
+      kubernetes.core.helm_repository:
+        name: prometheus-community
+        repo_url: https://prometheus-community.github.io/helm-charts
+      when: k8s_monitoring_enabled | bool
+      tags: [monitoring, k8s, helm]
+    
+    - name: Deploy kube-prometheus-stack via Helm
+      kubernetes.core.helm:
+        name: kube-prometheus-stack
+        chart_ref: prometheus-community/kube-prometheus-stack
+        release_namespace: "{{ monitoring_namespace }}"
+        create_namespace: true
+        values:
+          prometheus:
+            prometheusSpec:
+              retention: "{{ prometheus_retention }}"
+              resources:
+                requests:
+                  cpu: 500m
+                  memory: 1Gi
+                limits:
+                  cpu: 1000m
+                  memory: 2Gi
+          grafana:
+            enabled: true
+            adminPassword: "{{ grafana_admin_password }}"
+            persistence:
+              enabled: true
+              size: 10Gi
+          alertmanager:
+            enabled: "{{ alerting_enabled | lower }}"
+            alertmanagerSpec:
+              resources:
+                requests:
+                  cpu: 100m
+                  memory: 100Mi
+                limits:
+                  cpu: 200m
+                  memory: 200Mi
+          nodeExporter:
+            enabled: true
+          kubeStateMetrics:
+            enabled: true
+      when: k8s_monitoring_enabled | bool
+      tags: [monitoring, k8s, helm]
+    
+    # =============================================================================
+    # Post-Installation Validation
+    # =============================================================================
+    
+    - name: Verify Prometheus is running
+      ansible.builtin.uri:
+        url: "http://localhost:9090/-/healthy"
+        method: GET
+        status_code: 200
+        timeout: 30
+      register: prometheus_health
+      retries: 5
+      delay: 10
+      until: prometheus_health.status == 200
+      tags: [monitoring, prometheus, verify]
+    
+    - name: Verify Grafana is running
+      ansible.builtin.uri:
+        url: "http://localhost:{{ grafana_port }}/api/health"
+        method: GET
+        status_code: 200
+        timeout: 30
+      register: grafana_health
+      retries: 5
+      delay: 10
+      until: grafana_health.status == 200
+      tags: [monitoring, grafana, verify]
+    
+    - name: Verify Node Exporter is running
+      ansible.builtin.uri:
+        url: "http://localhost:{{ node_exporter_port }}/metrics"
+        method: GET
+        status_code: 200
+        timeout: 30
+      register: node_exporter_health
+      retries: 5
+      delay: 10
+      until: node_exporter_health.status == 200
+      tags: [monitoring, node_exporter, verify]
+    
+    - name: Display monitoring stack summary
+      ansible.builtin.debug:
+        msg:
+          - "=============================================="
+          - "Monitoring Stack Deployment Complete"
+          - "=============================================="
+          - "Hostname: {{ inventory_hostname }}"
+          - "IP Address: {{ ansible_default_ipv4.address | default('N/A') }}"
+          - "Prometheus: http://{{ ansible_default_ipv4.address }}:9090"
+          - "Grafana: http://{{ ansible_default_ipv4.address }}:{{ grafana_port }}"
+          - "Alertmanager: http://{{ ansible_default_ipv4.address }}:9093"
+          - "Node Exporter: http://{{ ansible_default_ipv4.address }}:{{ node_exporter_port }}"
+          - "CloudWatch Logs: {{ cloudwatch_log_group }}"
+          - "K8s Monitoring: {{ 'Enabled' if k8s_monitoring_enabled else 'Disabled' }}"
+          - "=============================================="
+          - "⚠️  IMPORTANT: Grafana default credentials:"
+          - "   Username: {{ grafana_admin_user }}"
+          - "   Password: {{ grafana_admin_password }}"
+          - "   Please change after first login!"
+          - "=============================================="
+      tags: [monitoring, summary]
+  
+  handlers:
+    - name: Reload systemd
+      ansible.builtin.systemd:
+        daemon_reload: true
+      tags: [monitoring]
+    
+    - name: Restart Prometheus
+      ansible.builtin.systemd:
+        name: prometheus
+        state: restarted
+      tags: [monitoring, prometheus]
+    
+    - name: Restart Grafana
+      ansible.builtin.systemd:
+        name: grafana-server
+        state: restarted
+      tags: [monitoring, grafana]
+    
+    - name: Restart Alertmanager
+      ansible.builtin.systemd:
+        name: alertmanager
+        state: restarted
+      tags: [monitoring, alertmanager]
+    
+    - name: Restart CloudWatch Agent
+      ansible.builtin.systemd:
+        name: amazon-cloudwatch-agent
+        state: restarted
+      tags: [monitoring, cloudwatch]
+  
+  post_tasks:
+    - name: Record monitoring deployment timestamp
+      ansible.builtin.set_fact:
+        monitoring_deployed_at: "{{ ansible_date_time.iso8601 }}"
+        monitoring_deploy_status: "success"
+      tags: [monitoring, audit]
+    
+    - name: Validate monitoring services
+      ansible.builtin.assert:
+        that:
+          - prometheus_health.status == 200
+          - grafana_health.status == 200
+          - node_exporter_health.status == 200
+        fail_msg: "Monitoring stack validation failed"
+        success_msg: "Monitoring stack validated successfully"
+      tags: [monitoring, verify]
