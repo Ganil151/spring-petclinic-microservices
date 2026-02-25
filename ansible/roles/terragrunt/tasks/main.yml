@@ -1,32 +1,49 @@
 ---
-# =============================================================================
-# Terragrunt Role - tasks/main.yml
-# =============================================================================
+# ansible/roles/terragrunt/tasks/main.yml
 
 - name: Check if Terragrunt is already installed
   ansible.builtin.command: terragrunt --version
   register: terragrunt_check
   changed_when: false
   failed_when: false
-  tags: terragrunt
+  tags: terragrunt, prereq
 
 - name: Download Terragrunt binary
   ansible.builtin.get_url:
-    url: "https://github.com/gruntwork-io/terragrunt/releases/download/v{{ terragrunt_version | default('0.67.0') }}/terragrunt_linux_amd64"
-    dest: /usr/local/bin/terragrunt
-    mode: '0755'
+    url: "https://github.com/gruntwork-io/terragrunt/releases/download/v{{ terragrunt_version }}/terragrunt_linux_amd64"
+    dest: "/tmp/terragrunt"
+    mode: '0755'  # ← CRITICAL: Make executable during download
     owner: root
     group: root
   when: terragrunt_check.rc != 0
-  tags: terragrunt
+  tags: terragrunt, install
+
+- name: Move Terragrunt to system PATH
+  ansible.builtin.copy:
+    src: /tmp/terragrunt
+    dest: /usr/local/bin/terragrunt
+    mode: '0755'  # ← CRITICAL: Ensure executable permissions
+    owner: root
+    group: root
+    remote_src: true
+  when: terragrunt_check.rc != 0
+  tags: terragrunt, install
+
+- name: Clean up temp download
+  ansible.builtin.file:
+    path: /tmp/terragrunt
+    state: absent
+  when: terragrunt_check.rc != 0
+  tags: terragrunt, install
 
 - name: Verify Terragrunt installation
   ansible.builtin.command: terragrunt --version
-  register: terragrunt_version_output
+  register: terragrunt_version
   changed_when: false
-  tags: terragrunt
+  failed_when: terragrunt_version.rc != 0
+  tags: terragrunt, verify
 
 - name: Display Terragrunt version
   ansible.builtin.debug:
-    var: terragrunt_version_output.stdout
-  tags: terragrunt
+    msg: "Terragrunt installed: {{ terragrunt_version.stdout }}"
+  tags: terragrunt, verify
