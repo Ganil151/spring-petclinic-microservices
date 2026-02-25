@@ -1,0 +1,344 @@
+{# =============================================================================
+   Spring Petclinic Application ConfigMap Template
+   Location: ansible/roles/kubernetes_setup/templates/configmap-app.yaml.j2
+   Purpose: Centralized application configuration for Spring Boot microservices
+   Alignment: Must match defaults/main.yml variables and Spring Cloud Config structure
+   ============================================================================= #}
+{# -----------------------------------------------------------------------------
+   Expected Variables (from defaults/main.yml or group_vars/):
+   - app_name: Application name (default: spring-petclinic)
+   - default_namespace: Kubernetes namespace (default: petclinic)
+   - app_env: Environment (dev/staging/prod)
+   - aws_region: AWS region
+   - eks_cluster_name: EKS cluster name
+   - db_host: Database endpoint (from RDS Terraform outputs)
+   - db_port: Database port (default: 3306)
+   - db_name: Database name (default: petclinic)
+   - redis_host: Redis endpoint (if using session caching)
+   - discovery_server_url: Eureka/Consul server URL
+   - config_server_url: Spring Cloud Config Server URL
+   - log_level: Root logging level (default: INFO)
+   - tracing_enabled: Enable distributed tracing (default: true)
+   - metrics_enabled: Enable Prometheus metrics (default: true)
+   - cache_enabled: Enable Spring cache (default: true)
+   - cors_origins: Allowed CORS origins
+   - additional_config: Custom key-value pairs
+   ----------------------------------------------------------------------------- #}
+---
+apiVersion: v1
+kind: ConfigMap
+meta
+  name: {{ configmap_name | default('spring-petclinic-config') }}
+  namespace: {{ default_namespace | default('petclinic') }}
+  labels:
+    app.kubernetes.io/name: {{ app_name | default('spring-petclinic') }}
+    app.kubernetes.io/instance: {{ app_name | default('spring-petclinic') }}-{{ app_env | default('dev') }}
+    app.kubernetes.io/version: "{{ app_version | default('1.0.0') }}"
+    app.kubernetes.io/component: configmap
+    app.kubernetes.io/managed-by: ansible
+    app.kubernetes.io/environment: {{ app_env | default('dev') }}
+    app.kubernetes.io/part-of: spring-petclinic
+    aws.region: {{ aws_region | default('us-east-1') }}
+    eks.cluster: {{ eks_cluster_name | default('petclinic-eks') }}
+  annotations:
+    description: "Spring Petclinic application configuration for {{ app_env | default('dev') }} environment"
+    owner: "platform-team@spring-petclinic.com"
+    config.hash: "{{ (meta.labels | to_json) | hash('sha256') }}"
+    # Trigger rolling update when config changes
+    config.kubernetes.io/rolling-update: "true"
+data:
+  # =============================================================================
+  # Spring Boot Core Configuration
+  # =============================================================================
+  SPRING_APPLICATION_NAME: "{{ app_name | default('spring-petclinic') }}"
+  SPRING_PROFILES_ACTIVE: "{{ spring_profiles_active | default('kubernetes,' + app_env | default('dev')) }}"
+  
+  # =============================================================================
+  # Server Configuration
+  # =============================================================================
+  SERVER_PORT: "{{ server_port | default('8080') }}"
+  SERVER_MANAGEMENT_PORT: "{{ management_port | default('8081') }}"
+  SERVER_SERVLET_CONTEXT_PATH: "{{ context_path | default('/') }}"
+  SERVER_SHUTDOWN: "{{ server_shutdown | default('graceful') }}"
+  SERVER_FORWARD_HEADERS_STRATEGY: "{{ forward_headers_strategy | default('framework') }}"
+  
+  # Graceful Shutdown Configuration
+  SPRING_LIFECYCLE_TIMEOUT_PER_SHUTDOWN_PHASE: "{{ shutdown_timeout | default('30s') }}"
+  SERVER_SHUTDOWN_GRACE_PERIOD: "{{ shutdown_grace_period | default('30s') }}"
+  
+  # =============================================================================
+  # Database Configuration (MySQL/MariaDB via RDS)
+  # =============================================================================
+{% if db_host is defined and db_host != '' %}
+  SPRING_DATASOURCE_URL: "jdbc:mysql://{{ db_host }}:{{ db_port | default('3306') }}/{{ db_name | default('petclinic') }}?useSSL=true&requireSSL=true&serverTimezone=UTC&allowPublicKeyRetrieval=false&useLegacyDatetimeCode=false"
+  SPRING_DATASOURCE_DRIVER_CLASS_NAME: "com.mysql.cj.jdbc.Driver"
+  SPRING_DATASOURCE_HIKARI_CONNECTION_TIMEOUT: "{{ db_connection_timeout | default('20000') }}"
+  SPRING_DATASOURCE_HIKARI_IDLE_TIMEOUT: "{{ db_idle_timeout | default('600000') }}"
+  SPRING_DATASOURCE_HIKARI_MAX_LIFETIME: "{{ db_max_lifetime | default('1800000') }}"
+  SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE: "{{ db_max_pool_size | default('10') }}"
+  SPRING_DATASOURCE_HIKARI_MINIMUM_IDLE: "{{ db_min_idle | default('5') }}"
+  SPRING_DATASOURCE_HIKARI_POOL_NAME: "{{ app_name | default('spring-petclinic') }}-HikariPool"
+{% endif %}
+
+  # JPA/Hibernate Configuration
+  SPRING_JPA_HIBERNATE_DDL_AUTO: "{{ jpa_ddl_auto | default('validate') }}"
+  SPRING_JPA_SHOW_SQL: "{{ jpa_show_sql | default('false') }}"
+  SPRING_JPA_PROPERTIES_HIBERNATE_FORMAT_SQL: "{{ jpa_format_sql | default('false') }}"
+  SPRING_JPA_PROPERTIES_HIBERNATE_USE_SQL_COMMENTS: "{{ jpa_use_sql_comments | default('false') }}"
+  SPRING_JPA_PROPERTIES_HIBERNATE_JDBC_TIME_ZONE: "UTC"
+  SPRING_JPA_PROPERTIES_HIBERNATE_CONNECTION_PROVIDER_DISABLES_AUTOCOMMIT: "true"
+  
+  # Flyway Migration Configuration
+  SPRING_FLYWAY_ENABLED: "{{ flyway_enabled | default('true') }}"
+  SPRING_FLYWAY_BASELINE_ON_MIGRATE: "{{ flyway_baseline_on_migrate | default('true') }}"
+  SPRING_FLYWAY_VALIDATE_ON_MIGRATE: "{{ flyway_validate_on_migrate | default('true') }}"
+  SPRING_FLYWAY_CLEAN_DISABLED: "{{ flyway_clean_disabled | default('true') }}"
+  SPRING_FLYWAY_LOCATIONS: "{{ flyway_locations | default('classpath:db/migration') }}"
+  
+  # =============================================================================
+  # Service Discovery (Eureka/Consul)
+  # =============================================================================
+{% if discovery_server_url is defined and discovery_server_url != '' %}
+  EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: "{{ discovery_server_url }}"
+  EUREKA_CLIENT_ENABLED: "{{ eureka_client_enabled | default('true') }}"
+  EUREKA_CLIENT_REGISTER_WITH_EUREKA: "{{ eureka_register | default('true') }}"
+  EUREKA_CLIENT_FETCH_REGISTRY: "{{ eureka_fetch_registry | default('true') }}"
+  EUREKA_CLIENT_REGISTRY_FETCH_INTERVAL_SECONDS: "{{ eureka_fetch_interval | default('30') }}"
+  EUREKA_INSTANCE_LEASE_RENEWAL_INTERVAL_IN_SECONDS: "{{ eureka_renewal_interval | default('30') }}"
+  EUREKA_INSTANCE_LEASE_EXPIRATION_DURATION_IN_SECONDS: "{{ eureka_lease_duration | default('90') }}"
+  EUREKA_INSTANCE_PREFER_IP_ADDRESS: "{{ eureka_prefer_ip | default('true') }}"
+  EUREKA_INSTANCE_METADATA_MAP_INSTANCE_ZONE: "{{ aws_region | default('us-east-1') }}"
+  EUREKA_INSTANCE_METADATA_MAP_ENVIRONMENT: "{{ app_env | default('dev') }}"
+{% endif %}
+
+  # =============================================================================
+  # Spring Cloud Config Server
+  # =============================================================================
+{% if config_server_url is defined and config_server_url != '' %}
+  SPRING_CLOUD_CONFIG_URI: "{{ config_server_url }}"
+  SPRING_CLOUD_CONFIG_ENABLED: "{{ config_server_enabled | default('true') }}"
+  SPRING_CLOUD_CONFIG_FAIL_FAST: "{{ config_fail_fast | default('false') }}"
+  SPRING_CLOUD_CONFIG_RETRY_INITIAL_INTERVAL: "{{ config_retry_interval | default('1000') }}"
+  SPRING_CLOUD_CONFIG_RETRY_MAX_ATTEMPTS: "{{ config_retry_attempts | default('6') }}"
+  SPRING_CLOUD_CONFIG_RETRY_MAX_INTERVAL: "{{ config_retry_max_interval | default('2000') }}"
+  SPRING_CLOUD_CONFIG_LABEL: "{{ config_label | default(app_env | default('dev')) }}"
+{% endif %}
+
+  # =============================================================================
+  # Resilience4j Circuit Breaker Configuration
+  # =============================================================================
+  RESILIENCE4J_CIRCUITBREAKER_INSTANCES_DEFAULT_REGISTER_HEALTH_INDICATOR: "true"
+  RESILIENCE4J_CIRCUITBREAKER_INSTANCES_DEFAULT_EVENT_CONSUMER_BUFFER_SIZE: "{{ circuit_breaker_buffer_size | default('10') }}"
+  RESILIENCE4J_CIRCUITBREAKER_INSTANCES_DEFAULT_SLIDING_WINDOW_SIZE: "{{ circuit_breaker_window_size | default('10') }}"
+  RESILIENCE4J_CIRCUITBREAKER_INSTANCES_DEFAULT_SLIDING_WINDOW_TYPE: "{{ circuit_breaker_window_type | default('COUNT_BASED') }}"
+  RESILIENCE4J_CIRCUITBREAKER_INSTANCES_DEFAULT_FAILURE_RATE_THRESHOLD: "{{ circuit_breaker_failure_threshold | default('50') }}"
+  RESILIENCE4J_CIRCUITBREAKER_INSTANCES_DEFAULT_WAIT_DURATION_IN_OPEN_STATE: "{{ circuit_breaker_open_wait | default('60s') }}"
+  RESILIENCE4J_CIRCUITBREAKER_INSTANCES_DEFAULT_PERMITTED_NUMBER_OF_CALLS_IN_HALF_OPEN_STATE: "{{ circuit_breaker_half_open_calls | default('5') }}"
+  RESILIENCE4J_CIRCUITBREAKER_INSTANCES_DEFAULT_MINIMUM_NUMBER_OF_CALLS: "{{ circuit_breaker_min_calls | default('5') }}"
+  
+  RESILIENCE4J_RETRY_INSTANCES_DEFAULT_MAX_ATTEMPTS: "{{ retry_max_attempts | default('3') }}"
+  RESILIENCE4J_RETRY_INSTANCES_DEFAULT_WAIT_DURATION: "{{ retry_wait_duration | default('1s') }}"
+  RESILIENCE4J_RETRY_INSTANCES_DEFAULT_ENABLE_EXPONENTIAL_BACKOFF: "{{ retry_exponential_backoff | default('true') }}"
+  RESILIENCE4J_RETRY_INSTANCES_DEFAULT_EXPONENTIAL_BACKOFF_MULTIPLIER: "{{ retry_backoff_multiplier | default('2') }}"
+  
+  RESILIENCE4J_BULKHEAD_INSTANCES_DEFAULT_MAX_CONCURRENT_CALLS: "{{ bulkhead_max_calls | default('10') }}"
+  RESILIENCE4J_BULKHEAD_INSTANCES_DEFAULT_MAX_WAIT_DURATION: "{{ bulkhead_max_wait | default('1s') }}"
+  
+  RESILIENCE4J_TIMELIMITER_INSTANCES_DEFAULT_TIMEOUT_DURATION: "{{ time_limiter_timeout | default('3s') }}"
+  RESILIENCE4J_TIMELIMITER_INSTANCES_DEFAULT_CANCEL_RUNNING_FUTURE: "{{ time_limiter_cancel | default('true') }}"
+
+  # =============================================================================
+  # Logging Configuration
+  # =============================================================================
+  LOGGING_LEVEL_ROOT: "{{ log_level | default('INFO') }}"
+  LOGGING_LEVEL_ORG_SPRINGFRAMEWORK: "{{ spring_log_level | default('INFO') }}"
+  LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_SECURITY: "{{ security_log_level | default('INFO') }}"
+  LOGGING_LEVEL_ORG_HIBERNATE: "{{ hibernate_log_level | default('WARN') }}"
+  LOGGING_LEVEL_COM_ZAXXER_HIKARI: "{{ hikari_log_level | default('WARN') }}"
+  LOGGING_LEVEL_IO_MICROMETER: "{{ micrometer_log_level | default('INFO') }}"
+  LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_SAMPLES_PETCLINIC: "{{ app_log_level | default('DEBUG') }}"
+  LOGGING_PATTERN_CONSOLE: "{{ log_pattern_console | default('%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n') }}"
+  LOGGING_PATTERN_FILE: "{{ log_pattern_file | default('%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n') }}"
+  LOGGING_FILE_NAME: "{{ log_file_name | default('/tmp/spring-petclinic.log') }}"
+  LOGGING_FILE_MAX_SIZE: "{{ log_file_max_size | default('10MB') }}"
+  LOGGING_FILE_MAX_HISTORY: "{{ log_file_max_history | default('7') }}"
+  
+  # =============================================================================
+  # Actuator & Health Checks
+  # =============================================================================
+  MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "{{ actuator_expose | default('health,info,metrics,prometheus,env,loggers') }}"
+  MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_EXCLUDE: "{{ actuator_hide | default('threaddump,heapdump') }}"
+  MANAGEMENT_ENDPOINT_HEALTH_PROBES_ENABLED: "{{ health_probes_enabled | default('true') }}"
+  MANAGEMENT_ENDPOINT_HEALTH_SHOW_DETAILS: "{{ health_show_details | default('when_authorized') }}"
+  MANAGEMENT_ENDPOINT_INFO_ENABLED: "{{ info_enabled | default('true') }}"
+  MANAGEMENT_ENDPOINT_METRICS_ENABLED: "{{ metrics_enabled | default('true') }}"
+  MANAGEMENT_ENDPOINT_PROMETHEUS_ENABLED: "{{ prometheus_enabled | default('true') }}"
+  MANAGEMENT_SERVER_PORT: "{{ management_port | default('8081') }}"
+  MANAGEMENT_SERVER_ADD_APPLICATION_DISPLAY_NAME: "{{ management_add_app_name | default('false') }}"
+  
+  # Kubernetes Health Probes
+  MANAGEMENT_HEALTH_LIVENESS_STATE_ENABLED: "{{ liveness_probe_enabled | default('true') }}"
+  MANAGEMENT_HEALTH_READINESS_STATE_ENABLED: "{{ readiness_probe_enabled | default('true') }}"
+  MANAGEMENT_HEALTH_DB_ENABLED: "{{ health_db_enabled | default('true') }}"
+  MANAGEMENT_HEALTH_DISCOVERY_CLIENT_ENABLED: "{{ health_discovery_enabled | default('true') }}"
+  MANAGEMENT_HEALTH_RABBIT_ENABLED: "{{ health_rabbit_enabled | default('false') }}"
+  MANAGEMENT_HEALTH_KAFKA_ENABLED: "{{ health_kafka_enabled | default('false') }}"
+  
+  # =============================================================================
+  # Metrics & Observability (Micrometer + Prometheus)
+  # =============================================================================
+  MANAGEMENT_METRICS_EXPORT_PROMETHEUS_ENABLED: "{{ prometheus_export_enabled | default('true') }}"
+  MANAGEMENT_METRICS_TAGS_APPLICATION: "{{ app_name | default('spring-petclinic') }}"
+  MANAGEMENT_METRICS_TAGS_ENVIRONMENT: "{{ app_env | default('dev') }}"
+  MANAGEMENT_METRICS_TAGS_CLUSTER: "{{ eks_cluster_name | default('petclinic-eks') }}"
+  MANAGEMENT_METRICS_DISTRIBUTIONS_PERCENTILES_HISTOGRAM: "{{ metrics_histogram_enabled | default('true') }}"
+  MANAGEMENT_METRICS_ENABLE_ALL: "{{ metrics_enable_all | default('true') }}"
+  
+  # Distributed Tracing (Micrometer Tracing + AWS X-Ray)
+{% if tracing_enabled | default(true) %}
+  MANAGEMENT_TRACING_ENABLED: "true"
+  MANAGEMENT_TRACING_SAMPLING_PROBABILITY: "{{ tracing_sample_rate | default('0.1') }}"
+  MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: "{{ zipkin_endpoint | default('') }}"
+  SPRING_SLEUTH_ENABLED: "{{ sleuth_enabled | default('false') }}"
+  AWS_XRAY_TRACING_NAME: "{{ xray_tracing_name | default(app_name | default('spring-petclinic')) }}"
+  AWS_XRAY_DAEMON_ADDRESS: "{{ xray_daemon_address | default('xray-daemon:2000') }}"
+{% endif %}
+
+  # =============================================================================
+  # Cache Configuration (Redis/Caffeine)
+  # =============================================================================
+{% if cache_enabled | default(true) %}
+  SPRING_CACHE_TYPE: "{{ cache_type | default('caffeine') }}"
+  SPRING_CACHE_CACHE_NAMES: "{{ cache_names | default('vets,petTypes') }}"
+{% if cache_type | default('caffeine') == 'redis' and redis_host is defined %}
+  SPRING_REDIS_HOST: "{{ redis_host }}"
+  SPRING_REDIS_PORT: "{{ redis_port | default('6379') }}"
+  SPRING_REDIS_TIMEOUT: "{{ redis_timeout | default('2000') }}"
+  SPRING_REDIS_LETTUCE_POOL_MAX_ACTIVE: "{{ redis_pool_max | default('8') }}"
+  SPRING_REDIS_LETTUCE_POOL_MAX_IDLE: "{{ redis_pool_max_idle | default('8') }}"
+  SPRING_REDIS_LETTUCE_POOL_MIN_IDLE: "{{ redis_pool_min_idle | default('0') }}"
+{% endif %}
+  SPRING_CACHE_CAFFEINE_SPEC: "{{ cache_caffeine_spec | default('maximumSize=500,expireAfterAccess=600s') }}"
+{% endif %}
+
+  # =============================================================================
+  # Security Configuration
+  # =============================================================================
+  SPRING_SECURITY_FILTER_CHAIN_ORDER: "{{ security_filter_order | default('-100') }}"
+  SERVER_SSL_ENABLED: "{{ ssl_enabled | default('false') }}"
+{% if ssl_enabled | default(false) %}
+  SERVER_SSL_KEY_STORE: "{{ ssl_keystore_path | default('/etc/ssl/certs/keystore.p12') }}"
+  SERVER_SSL_KEY_STORE_PASSWORD: "{{ ssl_keystore_password | default('changeit') }}"
+  SERVER_SSL_KEY_STORE_TYPE: "{{ ssl_keystore_type | default('PKCS12') }}"
+  SERVER_SSL_KEY_ALIAS: "{{ ssl_key_alias | default('petclinic') }}"
+{% endif %}
+
+  # =============================================================================
+  # CORS Configuration
+  # =============================================================================
+{% if cors_origins is defined and cors_origins | length > 0 %}
+  SPRING_WEB_CORS_ORIGINS: "{{ cors_origins | join(',') }}"
+  SPRING_WEB_CORS_ALLOWED_METHODS: "{{ cors_methods | default('GET,POST,PUT,DELETE,OPTIONS') }}"
+  SPRING_WEB_CORS_ALLOWED_HEADERS: "{{ cors_headers | default('*') }}"
+  SPRING_WEB_CORS_ALLOW_CREDENTIALS: "{{ cors_credentials | default('true') }}"
+  SPRING_WEB_CORS_MAX_AGE: "{{ cors_max_age | default('3600') }}"
+{% endif %}
+
+  # =============================================================================
+  # AWS-Specific Configuration
+  # =============================================================================
+  AWS_REGION: "{{ aws_region | default('us-east-1') }}"
+  AWS_DEFAULT_REGION: "{{ aws_region | default('us-east-1') }}"
+{% if aws_account_id is defined %}
+  AWS_ACCOUNT_ID: "{{ aws_account_id }}"
+{% endif %}
+{% if oidc_provider_arn is defined and oidc_provider_arn != '' %}
+  AWS_WEB_IDENTITY_TOKEN_FILE: "/var/run/secrets/eks.amazonaws.com/serviceaccount/token"
+  AWS_ROLE_ARN: "{{ oidc_provider_arn }}"
+{% endif %}
+
+  # =============================================================================
+  # Feature Flags & Toggles
+  # =============================================================================
+  FEATURE_GENAI_ENABLED: "{{ feature_genai_enabled | default('false') }}"
+  FEATURE_CHAT_ENABLED: "{{ feature_chat_enabled | default('false') }}"
+  FEATURE_ANALYTICS_ENABLED: "{{ feature_analytics_enabled | default('true') }}"
+  FEATURE_MAINTENANCE_MODE: "{{ feature_maintenance_mode | default('false') }}"
+  
+  # =============================================================================
+  # Performance Tuning
+  # =============================================================================
+  SERVER_TOMCAT_THREADS_MAX: "{{ tomcat_threads_max | default('200') }}"
+  SERVER_TOMCAT_THREADS_MIN_SPARE: "{{ tomcat_threads_min | default('10') }}"
+  SERVER_TOMCAT_MAX_CONNECTIONS: "{{ tomcat_max_connections | default('8192') }}"
+  SERVER_TOMCAT_ACCEPT_COUNT: "{{ tomcat_accept_count | default('100') }}"
+  SERVER_TOMCAT_CONNECTION_TIMEOUT: "{{ tomcat_connection_timeout | default('20000') }}"
+  SERVER_TOMCAT_KEEP_ALIVE_TIMEOUT: "{{ tomcat_keep_alive_timeout | default('60000') }}"
+  
+  # JVM Memory Hints (for documentation; actual limits set in K8s resources)
+  JVM_HEAP_MAX: "{{ jvm_heap_max | default('512m') }}"
+  JVM_HEAP_MIN: "{{ jvm_heap_min | default('256m') }}"
+  JVM_METASPACE_MAX: "{{ jvm_metaspace_max | default('256m') }}"
+  
+  # =============================================================================
+  # Custom Application Properties
+  # =============================================================================
+{% if additional_config is defined and additional_config | length > 0 %}
+{% for key, value in additional_config.items() %}
+  {{ key }}: "{{ value }}"
+{% endfor %}
+{% endif %}
+
+---
+{# =============================================================================
+   Environment-Specific ConfigMap Overrides (Optional)
+   Create separate ConfigMaps for dev/staging/prod if needed
+   ============================================================================= #}
+{% if app_env | default('dev') == 'prod' %}
+---
+apiVersion: v1
+kind: ConfigMap
+meta
+  name: {{ configmap_name | default('spring-petclinic-config') }}-prod-overrides
+  namespace: {{ default_namespace | default('petclinic') }}
+  labels:
+    app.kubernetes.io/name: {{ app_name | default('spring-petclinic') }}
+    app.kubernetes.io/environment: prod
+    app.kubernetes.io/component: configmap-override
+  annotations:
+    description: "Production-specific configuration overrides"
+    config.kubernetes.io/rolling-update: "true"
+data:
+  # Production-specific overrides
+  LOGGING_LEVEL_ROOT: "{{ prod_log_level | default('WARN') }}"
+  LOGGING_LEVEL_ORG_SPRINGFRAMEWORK: "{{ prod_spring_log_level | default('WARN') }}"
+  SPRING_JPA_SHOW_SQL: "false"
+  MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_EXCLUDE: "{{ prod_actuator_hide | default('threaddump,heapdump,env,loggers') }}"
+  MANAGEMENT_TRACING_SAMPLING_PROBABILITY: "{{ prod_tracing_sample_rate | default('0.01') }}"
+  RESILIENCE4J_CIRCUITBREAKER_INSTANCES_DEFAULT_FAILURE_RATE_THRESHOLD: "{{ prod_circuit_breaker_threshold | default('60') }}"
+{% endif %}
+
+---
+{# =============================================================================
+   Init Container ConfigMap (for database migration, etc.)
+   ============================================================================= #}
+{% if init_config_enabled | default(false) %}
+---
+apiVersion: v1
+kind: ConfigMap
+meta
+  name: {{ configmap_name | default('spring-petclinic-config') }}-init
+  namespace: {{ default_namespace | default('petclinic') }}
+  labels:
+    app.kubernetes.io/name: {{ app_name | default('spring-petclinic') }}
+    app.kubernetes.io/component: configmap-init
+  annotations:
+    description: "Initialization configuration for pre-start tasks"
+data:
+  FLYWAY_ENABLED: "true"
+  FLYWAY_BASELINE_ON_MIGRATE: "true"
+  FLYWAY_VALIDATE_ON_MIGRATE: "true"
+  DATABASE_MIGRATION_TIMEOUT: "{{ db_migration_timeout | default('300') }}"
+  DATABASE_MIGRATION_RETRY_COUNT: "{{ db_migration_retry | default('3') }}"
+  DATABASE_MIGRATION_RETRY_DELAY: "{{ db_migration_retry_delay | default('10') }}"
+{% endif %}
