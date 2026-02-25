@@ -1,24 +1,305 @@
 ---
-# Kubernetes Setup Variables (role-specific, not meant to be overridden)
+# =============================================================================
+# Kubernetes Setup Role — Internal Variables
+# Location: ansible/roles/kubernetes_setup/vars/main.yml
+# Purpose: High-precedence variables for internal role logic (NOT for user override)
+# Warning: Variables here override defaults/main.yml and group_vars/
+#          Only modify if you understand Ansible variable precedence!
+# =============================================================================
 
-# Package names
-kubernetes_packages:
-  - kubelet
-  - kubeadm
-  - kubectl
+# -----------------------------------------------------------------------------
+# Role Internal Constants (Do Not Override)
+# -----------------------------------------------------------------------------
 
-# Required kernel modules
-kubernetes_kernel_modules:
-  - br_netfilter
-  - overlay
-  - ip_vs
-  - ip_vs_rr
-  - ip_vs_wrr
-  - ip_vs_sh
-  - nf_conntrack
+# Kubernetes API versions (pinned for compatibility)
+_k8s_api_versions:
+  namespace: "v1"
+  service: "v1"
+  deployment: "apps/v1"
+  ingress: "networking.k8s.io/v1"
+  hpa: "autoscaling/v2"
+  pdb: "policy/v1"
+  networkpolicy: "networking.k8s.io/v1"
+  serviceaccount: "v1"
+  configmap: "v1"
+  secret: "v1"
 
-# Required sysctl parameters
-kubernetes_sysctl_params:
-  net.bridge.bridge-nf-call-iptables: 1
-  net.bridge.bridge-nf-call-ip6tables: 1
-  net.ipv4.ip_forward: 1
+# AWS Load Balancer Controller required annotations
+_alb_required_annotations:
+  - "kubernetes.io/ingress.class"
+  - "alb.ingress.kubernetes.io/scheme"
+  - "alb.ingress.kubernetes.io/target-type"
+  - "alb.ingress.kubernetes.io/healthcheck-path"
+
+# Spring Petclinic microservice catalog (internal reference)
+_petclinic_microservices:
+  - name: api-gateway
+    port: 8080
+    management_port: 8081
+    health_path: "/actuator/health/liveness"
+    readiness_path: "/actuator/health/readiness"
+    depends_on:
+      - discovery-server
+      - config-server
+  - name: customers-service
+    port: 8080
+    management_port: 8081
+    health_path: "/actuator/health/liveness"
+    depends_on:
+      - discovery-server
+      - config-server
+  - name: vets-service
+    port: 8080
+    management_port: 8081
+    health_path: "/actuator/health/liveness"
+    depends_on:
+      - discovery-server
+      - config-server
+  - name: visits-service
+    port: 8080
+    management_port: 8081
+    health_path: "/actuator/health/liveness"
+    depends_on:
+      - discovery-server
+      - config-server
+  - name: config-server
+    port: 8888
+    management_port: 8889
+    health_path: "/actuator/health"
+    depends_on: []
+  - name: discovery-server
+    port: 8761
+    management_port: 8762
+    health_path: "/actuator/health"
+    depends_on: []
+  - name: admin-server
+    port: 9090
+    management_port: 9091
+    health_path: "/actuator/health"
+    depends_on:
+      - discovery-server
+  - name: genai-service
+    port: 8080
+    management_port: 8081
+    health_path: "/actuator/health/liveness"
+    depends_on:
+      - discovery-server
+      - config-server
+
+# -----------------------------------------------------------------------------
+# Computed Values (Derived from defaults/user vars)
+# -----------------------------------------------------------------------------
+
+# Full cluster context name (computed, not user-configurable)
+_kubeconfig_context: "{{ eks_cluster_name }}-{{ aws_region | default('us-east-1') }}"
+
+# Computed image tag with fallback logic
+_app_image_tag: >-
+  {{ app_image_tag | default(
+       (app_version | default('latest')) if app_version is defined else 'latest'
+     ) }}
+
+# Computed resource requests/limits with environment-aware defaults
+_resource_defaults:
+  dev:
+    requests:
+      cpu: "100m"
+      memory: "256Mi"
+      ephemeral-storage: "1Gi"
+    limits:
+      cpu: "500m"
+      memory: "512Mi"
+      ephemeral-storage: "2Gi"
+  staging:
+    requests:
+      cpu: "250m"
+      memory: "512Mi"
+      ephemeral-storage: "2Gi"
+    limits:
+      cpu: "1000m"
+      memory: "1Gi"
+      ephemeral-storage: "4Gi"
+  prod:
+    requests:
+      cpu: "500m"
+      memory: "1Gi"
+      ephemeral-storage: "4Gi"
+    limits:
+      cpu: "2000m"
+      memory: "2Gi"
+      ephemeral-storage: "8Gi"
+
+# Resolved resource values based on environment
+_resolved_resources: >-
+  {{ _resource_defaults[app_env | default('dev')] | default(_resource_defaults.dev) }}
+
+# -----------------------------------------------------------------------------
+# Version Pins (Internal Dependency Management)
+# -----------------------------------------------------------------------------
+
+# Kubernetes collection version requirement
+_kubernetes_core_min_version: "2.4.0"
+
+# AWS collection version requirement
+_amazon_aws_min_version: "6.0.0"
+
+# Helm chart versions (pinned for reproducibility)
+_chart_versions:
+  aws-load-balancer-controller: "1.6.0"
+  external-dns: "1.12.0"
+  cert-manager: "1.12.0"
+  prometheus-operator: "51.0.0"
+  grafana: "7.3.0"
+
+# Spring Petclinic base image (internal reference)
+_petclinic_base_image: "springcommunity/spring-petclinic"
+
+# -----------------------------------------------------------------------------
+# Path References (Internal Role Structure)
+# -----------------------------------------------------------------------------
+
+# Template paths (relative to role/templates/)
+_role_templates:
+  kubeconfig: "kubeconfig.j2"
+  namespace: "namespace.yaml.j2"
+  serviceaccount: "serviceaccount.yaml.j2"
+  networkpolicy: "networkpolicy-default.yaml.j2"
+  configmap: "configmap-app.yaml.j2"
+  secret: "secret-db-creds.yaml.j2"
+  deployment: "deployment-petclinic.yaml.j2"
+  service: "service-petclinic.yaml.j2"
+  ingress: "ingress-petclinic.yaml.j2"
+  hpa: "hpa-petclinic.yaml.j2"
+
+# File paths (internal use)
+_role_paths:
+  kubeconfig: "{{ kubeconfig_path | default('~/.kube/config') | expanduser }}"
+  vault_pass: "{{ vault_password_file | default('~/.vault_pass') | expanduser }}"
+  ansible_log: "{{ log_path | default('/tmp/ansible.log') }}"
+
+# -----------------------------------------------------------------------------
+# Validation Rules (Internal Checks)
+# -----------------------------------------------------------------------------
+
+# Required variables for role execution (fail fast if missing)
+_required_vars:
+  - eks_cluster_name
+  - aws_region
+
+# Conditional requirements (only required if certain features enabled)
+_conditional_required_vars:
+  - var: db_host
+    when: "db_enabled | default(true)"
+    message: "Database host required when db_enabled is true"
+  - var: oidc_provider_arn
+    when: "oidc_provider_enabled | default(true)"
+    message: "OIDC provider ARN required for IRSA"
+  - var: ssl_cert_arn
+    when: "ingress_enabled | default(false) and tls_enabled | default(true)"
+    message: "ACM certificate ARN required for TLS-enabled Ingress"
+
+# -----------------------------------------------------------------------------
+# Internal Feature Flags (Not for User Configuration)
+# -----------------------------------------------------------------------------
+
+# Enable internal debug logging (set via ANSIBLE_DEBUG env var, not this file)
+_internal_debug: "{{ lookup('env', 'ANSIBLE_DEBUG') | default('false') | bool }}"
+
+# Enable template validation before apply
+_validate_templates_before_apply: true
+
+# Enable dry-run mode for check mode compatibility
+_enable_check_mode: true
+
+# -----------------------------------------------------------------------------
+# Security Hardening Defaults (Internal, Can Be Overridden via group_vars)
+# -----------------------------------------------------------------------------
+
+# Pod security context defaults (baseline compliance)
+_pod_security_defaults:
+  runAsNonRoot: true
+  runAsUser: 1000
+  runAsGroup: 1000
+  fsGroup: 1000
+  seccompProfile:
+    type: RuntimeDefault
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+      - ALL
+
+# Network policy defaults (zero-trust baseline)
+_network_policy_defaults:
+  default_deny_ingress: true
+  default_deny_egress: true
+  allow_dns_egress: true
+  allow_intra_namespace: true
+
+# -----------------------------------------------------------------------------
+# Health Check Defaults (Internal)
+# -----------------------------------------------------------------------------
+
+# Probe timing defaults (aligned with Spring Boot startup characteristics)
+_probe_defaults:
+  liveness:
+    initialDelaySeconds: 60
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+    successThreshold: 1
+  readiness:
+    initialDelaySeconds: 30
+    periodSeconds: 5
+    timeoutSeconds: 3
+    failureThreshold: 3
+    successThreshold: 1
+  startup:
+    initialDelaySeconds: 0
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 30  # Allows up to 5 minutes for slow Spring Boot startup
+
+# -----------------------------------------------------------------------------
+# Rollout Strategy Defaults (Internal)
+# -----------------------------------------------------------------------------
+
+_deployment_strategy_defaults:
+  type: RollingUpdate
+  rollingUpdate:
+    maxSurge: "25%"
+    maxUnavailable: "25%"
+
+# -----------------------------------------------------------------------------
+# HPA Behavior Defaults (Internal)
+# -----------------------------------------------------------------------------
+
+_hpa_behavior_defaults:
+  scaleDown:
+    stabilizationWindowSeconds: 300
+    policies:
+      - type: Percent
+        value: 10
+        periodSeconds: 60
+    selectPolicy: Min
+  scaleUp:
+    stabilizationWindowSeconds: 0
+    policies:
+      - type: Percent
+        value: 100
+        periodSeconds: 15
+    selectPolicy: Max
+
+# -----------------------------------------------------------------------------
+# Internal Metadata (For Auditing & Debugging)
+# -----------------------------------------------------------------------------
+
+_role_metadata:
+  name: "kubernetes_setup"
+  version: "1.0.0"
+  author: "Spring Petclinic Team"
+  license: "Apache-2.0"
+  min_ansible_version: "2.14"
+  collections_required:
+    - kubernetes.core>=2.4.0
+    - amazon.aws>=6.0.0
+  last_updated: "{{ ansible_date_time.iso8601 | default('unknown') }}"
