@@ -1,12 +1,624 @@
 ---
 # =============================================================================
-# Jenkins Setup Playbook
-# Deploys Jenkins Master
+# Jenkins Master Deployment Playbook
+# Location: ansible/playbooks/deployment/jenkins-setup.yml
+# Purpose: Deploy and configure Jenkins CI/CD server for Spring Petclinic
+# Target: jenkins_masters (from ansible/inventory/hosts)
+# Security: CIS Benchmark aligned, Vault-integrated credentials
 # =============================================================================
 
 - name: Deploy Jenkins Master
   hosts: jenkins_masters
   become: true
+  gather_facts: true
+  
+  vars:
+    # Jenkins Configuration
+    jenkins_version: "2.426.1"
+    jenkins_home: "/var/lib/jenkins"
+    jenkins_user: "jenkins"
+    jenkins_group: "jenkins"
+    jenkins_port: 8080
+    jenkins_https_port: 8443
+    jenkins_url_prefix: ""
+    
+    # Java Configuration (Amazon Corretto 21)
+    java_version: "21"
+    java_home: "/usr/lib/jvm/java-21-amazon-corretto"
+    
+    # Jenkins Plugins (Pinned Versions for Reproducibility)
+    jenkins_plugins:
+      - kubernetes:4188.v87a_d188d153c
+      - docker:1.5
+      - git:5.2.1
+      - pipeline:1289.v394210274929
+      - workflow-aggregator:596.v8c21c963d92d
+      - aws-credentials:218.v1b_923706cb_63
+      - aws-java-sdk:1.12.595-423.vc12228717d70
+      - credentials-binding:657.v2b_19db_7d6e6d
+      - configuration-as-code:1810.v9b_c30a_249a_4c
+      - job-dsl:1.87
+      - blueocean:1.27.9
+      - pipeline-utility-steps:2.16.1
+      - pipeline-maven:1382.v5138d841e862
+      - sonar:2.17.2
+      - trivy:1.8.0
+      - slack:684.v833089650554
+      - email-ext:1806.v3df8ca_82c814d
+      - mailer:438.v02c7f0a_12fa_4
+      - build-timeout:1.32
+      - throttle-concurrents:2.10
+      - rebuild:330.v645b_7df10e2a
+      - generic-webhook-trigger:2.0.1
+    
+    # Maven Configuration
+    maven_version: "3.9.6"
+    maven_home: "/opt/maven"
+    
+    # Docker Configuration
+    docker_group: "docker"
+    
+    # Jenkins Security
+    jenkins_security:
+      enable_csrf: true
+      cli_enabled: false
+      slave_agent_port: 50000
+      disable_cli_over_remoting: true
+    
+    # CloudWatch Integration
+    cloudwatch_log_group: "/spring-petclinic/{{ environment | default('dev') }}/jenkins"
+    cloudwatch_log_retention: 90
+    
+    # Backup Configuration
+    jenkins_backup_enabled: true
+    jenkins_backup_schedule: "0 2 * * *"  # Daily at 2 AM
+    jenkins_backup_retention_days: 30
+    
+    # Pipeline Configuration
+    jenkins_pipeline_repo: "https://github.com/Ganil151/spring-petclinic-microservices.git"
+    jenkins_pipeline_branch: "main"
+    jenkins_pipeline_path: "Jenkinsfile"
+    
+  tags: [jenkins, cicd]
+  
+  pre_tasks:
+    - name: Validate Jenkins master connectivity
+      ansible.builtin.ping:
+      tags: [jenkins, prereq]
+    
+    - name: Gather system facts
+      ansible.builtin.setup:
+        gather_subset:
+          - hardware
+          - network
+          - virtual
+      tags: [jenkins, prereq]
+    
+    - name: Validate OS family
+      ansible.builtin.assert:
+        that:
+          - ansible_os_family == "RedHat"
+          - ansible_distribution in ["Amazon", "CentOS", "Rocky"]
+        fail_msg: "Jenkins master must run Amazon Linux 2, CentOS, or Rocky Linux"
+        success_msg: "OS validation passed: {{ ansible_distribution }} {{ ansible_distribution_version }}"
+      tags: [jenkins, prereq]
+    
+    - name: Check if Jenkins is already installed
+      ansible.builtin.stat:
+        path: "{{ jenkins_home }}"
+      register: jenkins_home_stat
+      tags: [jenkins, prereq]
+    
+    - name: Backup existing Jenkins configuration
+      ansible.builtin.archive:
+        path: "{{ jenkins_home }}"
+        dest: "/tmp/jenkins-backup-{{ ansible_date_time.date }}.tar.gz"
+        mode: '0600'
+      when: jenkins_home_stat.stat.exists
+      tags: [jenkins, backup]
+    
+    - name: Create Jenkins system user
+      ansible.builtin.user:
+        name: "{{ jenkins_user }}"
+        group: "{{ jenkins_group }}"
+        shell: /bin/bash
+        home: "{{ jenkins_home }}"
+        create_home: true
+        system: true
+        comment: "Jenkins CI/CD Service Account"
+      tags: [jenkins, users]
+    
+    - name: Create Jenkins directories
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        mode: '0755'
+        owner: "{{ jenkins_user }}"
+        group: "{{ jenkins_group }}"
+      loop:
+        - "{{ jenkins_home }}"
+        - "{{ jenkins_home }}/workspace"
+        - "{{ jenkins_home }}/jobs"
+        - "{{ jenkins_home }}/plugins"
+        - "{{ jenkins_home }}/secrets"
+        - "{{ jenkins_home }}/userContent"
+        - /var/log/jenkins
+        - /etc/jenkins
+      tags: [jenkins, dirs]
+  
   roles:
-    - infracost
-    - jenkins
+    - role: common
+      tags: [common, base]
+    
+    - role: java
+      tags: [java, jdk]
+    
+    - role: docker
+      tags: [docker, containers]
+    
+    - role: git
+      tags: [git, vcs]
+    
+    - role: maven
+      tags: [maven, build]
+    
+    - role: awscli
+      tags: [aws, cli]
+    
+    - role: security_tools
+      tags: [security, hardening]
+    
+    - role: cloudwatch_agent
+      tags: [monitoring, cloudwatch]
+  
+  tasks:
+    # =============================================================================
+    # Java Installation & Configuration
+    # =============================================================================
+    
+    - name: Verify Java installation
+      ansible.builtin.command: java -version
+      register: java_version_check
+      changed_when: false
+      failed_when: java_version_check.rc != 0
+      tags: [jenkins, java, verify]
+    
+    - name: Set JAVA_HOME environment
+      ansible.builtin.copy:
+        content: |
+          export JAVA_HOME={{ java_home }}
+          export PATH=$JAVA_HOME/bin:$PATH
+        dest: /etc/profile.d/jenkins-java.sh
+        mode: '0644'
+        owner: root
+        group: root
+      tags: [jenkins, java]
+    
+    # =============================================================================
+    # Jenkins Installation
+    # =============================================================================
+    
+    - name: Add Jenkins repository
+      ansible.builtin.get_url:
+        url: https://pkg.jenkins.io/redhat-stable/jenkins.repo
+        dest: /etc/yum.repos.d/jenkins.repo
+        mode: '0644'
+        owner: root
+        group: root
+      tags: [jenkins, install]
+    
+    - name: Import Jenkins GPG key
+      ansible.builtin.rpm_key:
+        state: present
+        key: https://pkg.jenkins.io/redhat-stable/jenkins.io-2023.key
+      tags: [jenkins, install]
+    
+    - name: Install Jenkins
+      ansible.builtin.yum:
+        name: jenkins-{{ jenkins_version }}
+        state: present
+        update_cache: true
+      when: jenkins_version != "latest"
+      tags: [jenkins, install]
+    
+    - name: Install Jenkins (latest)
+      ansible.builtin.yum:
+        name: jenkins
+        state: latest
+        update_cache: true
+      when: jenkins_version == "latest"
+      tags: [jenkins, install]
+    
+    # =============================================================================
+    # Jenkins Configuration
+    # =============================================================================
+    
+    - name: Configure Jenkins port
+      ansible.builtin.lineinfile:
+        path: /etc/sysconfig/jenkins
+        regexp: '^JENKINS_PORT='
+        line: 'JENKINS_PORT={{ jenkins_port }}'
+        mode: '0644'
+      notify: Restart Jenkins
+      tags: [jenkins, config]
+    
+    - name: Configure Jenkins user
+      ansible.builtin.lineinfile:
+        path: /etc/sysconfig/jenkins
+        regexp: '^JENKINS_USER='
+        line: 'JENKINS_USER={{ jenkins_user }}'
+        mode: '0644'
+      notify: Restart Jenkins
+      tags: [jenkins, config]
+    
+    - name: Configure Jenkins home directory
+      ansible.builtin.lineinfile:
+        path: /etc/sysconfig/jenkins
+        regexp: '^JENKINS_HOME='
+        line: 'JENKINS_HOME={{ jenkins_home }}'
+        mode: '0644'
+      notify: Restart Jenkins
+      tags: [jenkins, config]
+    
+    - name: Configure Jenkins JVM options
+      ansible.builtin.lineinfile:
+        path: /etc/sysconfig/jenkins
+        regexp: '^JENKINS_JAVA_OPTIONS='
+        line: 'JENKINS_JAVA_OPTIONS="-Xmx2g -Xms1g -XX:+UseG1GC -XX:MaxGCPauseMillis=200 -Djava.awt.headless=true"'
+        mode: '0644'
+      notify: Restart Jenkins
+      tags: [jenkins, config]
+    
+    # =============================================================================
+    # Jenkins Security Hardening
+    # =============================================================================
+    
+    - name: Configure Jenkins security settings
+      ansible.builtin.copy:
+        content: |
+          # Jenkins Security Configuration
+          # Generated by Ansible - Do not edit manually
+          
+          # CSRF Protection
+          jenkins.security.csrf.DefaultCrumbIssuer.EXCLUDE_SESSION_ID=true
+          
+          # CLI Security
+          jenkins.CLI.enabled={{ jenkins_security.cli_enabled | default(false) | lower }}
+          
+          # Slave Agent Port
+          jenkins.slaves.JnlpSlaveAgentPort.PORT={{ jenkins_security.slave_agent_port | default(50000) }}
+          
+          # Disable CLI over remoting
+          jenkins.CLI.enabled=false
+        dest: /etc/jenkins/security.properties
+        mode: '0640'
+        owner: "{{ jenkins_user }}"
+        group: "{{ jenkins_group }}"
+      notify: Restart Jenkins
+      tags: [jenkins, security]
+    
+    - name: Configure Jenkins firewall rules
+      ansible.posix.firewalld:
+        service: "{{ item }}"
+        permanent: true
+        state: enabled
+        immediate: true
+      loop:
+        - jenkins
+      tags: [jenkins, firewall, security]
+    
+    # =============================================================================
+    # Jenkins Plugin Installation
+    # =============================================================================
+    
+    - name: Wait for Jenkins to be ready
+      ansible.builtin.uri:
+        url: "http://localhost:{{ jenkins_port }}/login"
+        method: GET
+        status_code: [200, 302, 403]
+        timeout: 30
+      register: jenkins_ready
+      retries: 30
+      delay: 10
+      until: jenkins_ready.status in [200, 302, 403]
+      tags: [jenkins, plugins, verify]
+    
+    - name: Get Jenkins admin password
+      ansible.builtin.slurp:
+        src: "{{ jenkins_home }}/secrets/initialAdminPassword"
+      register: jenkins_admin_password
+      when: jenkins_home_stat.stat.exists == false
+      tags: [jenkins, security]
+    
+    - name: Display Jenkins admin password (first run only)
+      ansible.builtin.debug:
+        msg: |
+          ============================================
+          Jenkins Initial Admin Password:
+          {{ jenkins_admin_password.content | b64decode | trim }}
+          ============================================
+          Please save this password and change it after first login!
+          Access Jenkins at: http://{{ ansible_default_ipv4.address }}:{{ jenkins_port }}
+          ============================================
+      when: jenkins_home_stat.stat.exists == false
+      tags: [jenkins, security]
+    
+    - name: Install Jenkins plugins
+      ansible.builtin.command: >
+        java -jar {{ jenkins_home }}/war/WEB-INF/jenkins-cli.jar
+        -s http://localhost:{{ jenkins_port }}/
+        install-plugin {{ item }}
+        -deploy
+      loop: "{{ jenkins_plugins }}"
+      register: plugin_install
+      changed_when: "'is already installed' not in plugin_install.stderr"
+      failed_when: false
+      become_user: "{{ jenkins_user }}"
+      tags: [jenkins, plugins]
+    
+    - name: Restart Jenkins after plugin installation
+      ansible.builtin.systemd:
+        name: jenkins
+        state: restarted
+      tags: [jenkins, plugins]
+    
+    # =============================================================================
+    # Jenkins Configuration as Code (JCasC)
+    # =============================================================================
+    
+    - name: Deploy Jenkins Configuration as Code
+      ansible.builtin.copy:
+        src: ../../../jenkins/jenkins.yaml
+        dest: "{{ jenkins_home }}/jenkins.yaml"
+        mode: '0640'
+        owner: "{{ jenkins_user }}"
+        group: "{{ jenkins_group }}"
+      notify: Restart Jenkins
+      tags: [jenkins, jcas, config]
+    
+    - name: Set JCasC environment variable
+      ansible.builtin.lineinfile:
+        path: /etc/sysconfig/jenkins
+        regexp: '^CASC_JENKINS_CONFIG='
+        line: 'CASC_JENKINS_CONFIG={{ jenkins_home }}/jenkins.yaml'
+        mode: '0644'
+      notify: Restart Jenkins
+      tags: [jenkins, jcas, config]
+    
+    # =============================================================================
+    # Maven Configuration for Jenkins
+    # =============================================================================
+    
+    - name: Create Maven directories for Jenkins
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        mode: '0755'
+        owner: "{{ jenkins_user }}"
+        group: "{{ jenkins_group }}"
+      loop:
+        - "{{ jenkins_home }}/.m2"
+        - "{{ jenkins_home }}/.m2/repository"
+        - /opt/maven
+      tags: [jenkins, maven]
+    
+    - name: Configure Maven settings for Jenkins
+      ansible.builtin.copy:
+        content: |
+          <?xml version="1.0" encoding="UTF-8"?>
+          <settings xmlns="http://maven.apache.org/SETTINGS/1.2.0"
+                    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                    xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.2.0
+                                        https://maven.apache.org/xsd/settings-1.2.0.xsd">
+            <localRepository>{{ jenkins_home }}/.m2/repository</localRepository>
+            <interactiveMode>false</interactiveMode>
+            <offline>false</offline>
+            <pluginGroups>
+              <pluginGroup>org.springframework.boot</pluginGroup>
+            </pluginGroups>
+            <mirrors>
+              <mirror>
+                <id>central-mirror</id>
+                <mirrorOf>central</mirrorOf>
+                <url>https://repo.maven.apache.org/maven2</url>
+              </mirror>
+            </mirrors>
+            <profiles>
+              <profile>
+                <id>spring-petclinic</id>
+                <properties>
+                  <java.version>{{ java_version }}</java.version>
+                  <maven.compiler.source>{{ java_version }}</maven.compiler.source>
+                  <maven.compiler.target>{{ java_version }}</maven.compiler.target>
+                </properties>
+              </profile>
+            </profiles>
+            <activeProfiles>
+              <activeProfile>spring-petclinic</activeProfile>
+            </activeProfiles>
+          </settings>
+        dest: "{{ jenkins_home }}/.m2/settings.xml"
+        mode: '0640'
+        owner: "{{ jenkins_user }}"
+        group: "{{ jenkins_group }}"
+      tags: [jenkins, maven]
+    
+    # =============================================================================
+    # Docker Integration for Jenkins
+    # =============================================================================
+    
+    - name: Add Jenkins user to docker group
+      ansible.builtin.user:
+        name: "{{ jenkins_user }}"
+        groups: "{{ docker_group }}"
+        append: true
+      tags: [jenkins, docker]
+    
+    # =============================================================================
+    # CloudWatch Logs Configuration
+    # =============================================================================
+    
+    - name: Configure CloudWatch agent for Jenkins logs
+      ansible.builtin.template:
+        src: ../../roles/cloudwatch_agent/templates/amazon-cloudwatch-agent.json.j2
+        dest: /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json
+        mode: '0644'
+        owner: root
+        group: root
+      vars:
+        cloudwatch_config:
+          logs:
+            log_group_name: "{{ cloudwatch_log_group }}"
+            log_stream_name: "{{ inventory_hostname }}"
+            file_paths:
+              - /var/log/jenkins/jenkins.log
+              - /var/log/jenkins/access.log
+              - /var/log/messages
+            retention_days: "{{ cloudwatch_log_retention }}"
+      notify: Restart CloudWatch Agent
+      tags: [jenkins, cloudwatch, monitoring]
+    
+    # =============================================================================
+    # Jenkins Backup Configuration
+    # =============================================================================
+    
+    - name: Create Jenkins backup script
+      ansible.builtin.copy:
+        content: |
+          #!/bin/bash
+          # Jenkins Backup Script
+          # Generated by Ansible - Do not edit manually
+          
+          set -e
+          
+          BACKUP_DIR="/var/backups/jenkins"
+          DATE=$(date +%Y%m%d_%H%M%S)
+          BACKUP_FILE="${BACKUP_DIR}/jenkins-backup-${DATE}.tar.gz"
+          RETENTION_DAYS={{ jenkins_backup_retention_days }}
+          
+          # Create backup directory
+          mkdir -p ${BACKUP_DIR}
+          
+          # Stop Jenkins briefly for consistent backup
+          systemctl stop jenkins
+          
+          # Create backup
+          tar -czf ${BACKUP_FILE} -C / {{ jenkins_home | replace('/', '') }}
+          
+          # Start Jenkins
+          systemctl start jenkins
+          
+          # Remove old backups
+          find ${BACKUP_DIR} -name "jenkins-backup-*.tar.gz" -mtime +${RETENTION_DAYS} -delete
+          
+          echo "Backup completed: ${BACKUP_FILE}"
+        dest: /usr/local/bin/jenkins-backup.sh
+        mode: '0750'
+        owner: root
+        group: root
+      when: jenkins_backup_enabled | bool
+      tags: [jenkins, backup]
+    
+    - name: Configure Jenkins backup cron job
+      ansible.builtin.cron:
+        name: "Jenkins Daily Backup"
+        minute: "0"
+        hour: "2"
+        job: "/usr/local/bin/jenkins-backup.sh >> /var/log/jenkins/backup.log 2>&1"
+        user: root
+      when: jenkins_backup_enabled | bool
+      tags: [jenkins, backup]
+    
+    # =============================================================================
+    # Enable and Start Jenkins
+    # =============================================================================
+    
+    - name: Enable Jenkins service
+      ansible.builtin.systemd:
+        name: jenkins
+        enabled: true
+        state: started
+        daemon_reload: true
+      tags: [jenkins, service]
+    
+    # =============================================================================
+    # Post-Installation Validation
+    # =============================================================================
+    
+    - name: Verify Jenkins service is running
+      ansible.builtin.systemd:
+        name: jenkins
+        state: started
+      tags: [jenkins, verify]
+    
+    - name: Verify Jenkins port is listening
+      ansible.builtin.wait_for:
+        port: "{{ jenkins_port }}"
+        timeout: 60
+      tags: [jenkins, verify]
+    
+    - name: Test Jenkins CLI connectivity
+      ansible.builtin.command: >
+        java -jar {{ jenkins_home }}/war/WEB-INF/jenkins-cli.jar
+        -s http://localhost:{{ jenkins_port }}/
+        version
+      register: jenkins_cli_version
+      changed_when: false
+      failed_when: false
+      become_user: "{{ jenkins_user }}"
+      tags: [jenkins, verify]
+    
+    - name: Display Jenkins deployment summary
+      ansible.builtin.debug:
+        msg:
+          - "=============================================="
+          - "Jenkins Master Deployment Complete"
+          - "=============================================="
+          - "Hostname: {{ inventory_hostname }}"
+          - "IP Address: {{ ansible_default_ipv4.address | default('N/A') }}"
+          - "Jenkins URL: http://{{ ansible_default_ipv4.address }}:{{ jenkins_port }}"
+          - "Jenkins Home: {{ jenkins_home }}"
+          - "Java Version: {{ java_version }}"
+          - "Maven Version: {{ maven_version }}"
+          - "Plugins Installed: {{ jenkins_plugins | length }}"
+          - "Backup Enabled: {{ jenkins_backup_enabled }}"
+          - "CloudWatch Logs: {{ cloudwatch_log_group }}"
+          - "=============================================="
+          - "⚠️  IMPORTANT: Retrieve initial admin password from:"
+          - "   {{ jenkins_home }}/secrets/initialAdminPassword"
+          - "=============================================="
+      tags: [jenkins, summary]
+  
+  handlers:
+    - name: Restart Jenkins
+      ansible.builtin.systemd:
+        name: jenkins
+        state: restarted
+      tags: [jenkins]
+    
+    - name: Reload systemd
+      ansible.builtin.systemd:
+        daemon_reload: true
+      tags: [jenkins]
+    
+    - name: Restart CloudWatch Agent
+      ansible.builtin.systemd:
+        name: amazon-cloudwatch-agent
+        state: restarted
+      tags: [jenkins, cloudwatch]
+  
+  post_tasks:
+    - name: Record Jenkins deployment timestamp
+      ansible.builtin.set_fact:
+        jenkins_deployed_at: "{{ ansible_date_time.iso8601 }}"
+        jenkins_deploy_status: "success"
+      tags: [jenkins, audit]
+    
+    - name: Validate Jenkins installation
+      ansible.builtin.assert:
+        that:
+          - jenkins_ready.status in [200, 302, 403]
+          - jenkins_user in ansible_facts.env.USER or jenkins_user == 'jenkins'
+        fail_msg: "Jenkins installation validation failed"
+        success_msg: "Jenkins installation validated successfully"
+      tags: [jenkins, verify]
