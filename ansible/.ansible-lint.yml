@@ -1,12 +1,12 @@
 ---
 # =============================================================================
 # Ansible Lint Configuration for Spring Petclinic Microservices
-# =============================================================================
-# https://ansible-lint.readthedocs.io/configuring/
+# Location: ansible/.ansible-lint.yml
+# Purpose: Enforce code quality, security, and consistency standards
 # =============================================================================
 
 # Default rules
-profile: production
+profile: production  # ✅ GOOD: Strictest profile for production code
 
 # Parseability
 parseable: false
@@ -14,9 +14,9 @@ quiet: false
 verbosity: 0
 
 # Formatters
-format: rich
+format: rich  # ✅ GOOD: Human-readable output for developers
 
-# Rules
+# Rules - Enabled List
 enable_list:
   - args
   - avoid-implicit
@@ -48,11 +48,11 @@ enable_list:
   - var-naming
   - yaml
 
-# Skip rules
+# Rules - Skip List
 skip_list:
-  - yaml[line-length]  # Lines can be long in templates
-  - name[missing]      # Some tasks don't need names
-  - ignore-errors      # We use ignore_errors intentionally sometimes
+  - yaml[line-length]  # ⚠️ REVIEW: Long lines in templates can hide issues
+  - name[missing]      # ⚠️ REVIEW: Task names aid documentation/debugging
+  - ignore-errors      # ⚠️ REVIEW: Ensure this is truly intentional
 
 # Mock modules (for custom modules)
 mock_modules:
@@ -66,7 +66,7 @@ mock_roles:
   - geerlingguy.jenkins
 
 # Loop var prefix (quoted to prevent YAML alias interpretation)
-loop_var_prefix: '"{item}"'
+loop_var_prefix: '"{item}"'  # ✅ GOOD: Prevents YAML parsing issues
 
 # Rules specific configuration
 rules:
@@ -75,7 +75,7 @@ rules:
   avoid-implicit:
     action: warning
   command-instead-of-module:
-    action: error
+    action: error  # ✅ GOOD: Enforces module usage over raw commands
   command-instead-of-shell:
     action: warning
   deprecated-bare-vars:
@@ -91,29 +91,29 @@ rules:
   literal-compare:
     action: warning
   jinja:
-    action: error
+    action: error  # ✅ GOOD: Catches template syntax errors early
   no-free-form:
-    action: error
+    action: error  # ✅ GOOD: Enforces explicit parameter usage
   no-handler:
     action: error
   no-changed-when:
-    action: warning
+    action: warning  # ⚠️ CONSIDER: error for idempotency guarantees
   no-jinja-when:
     action: error
   no-relative-paths:
-    action: error
+    action: error  # ✅ GOOD: Prevents portability issues
   no-tabs:
-    action: error
+    action: error  # ✅ GOOD: Enforces consistent indentation
   package-latest:
-    action: warning  # We want specific versions
+    action: warning  # ✅ GOOD: Allows pinned versions while warning
   partial-become:
-    action: error
+    action: error  # ✅ GOOD: Prevents privilege escalation ambiguity
   playbook-extension:
     action: warning
   risky-file-permissions:
-    action: error
+    action: error  # ✅ GOOD: Security-critical rule
   risky-octal:
-    action: error
+    action: error  # ✅ GOOD: Prevents permission bugs
   risky-shell-pipe:
     action: warning
   role-name:
@@ -121,14 +121,14 @@ rules:
   schema:
     action: error
   name:
-    action: warning
+    action: warning  # ⚠️ CONSIDER: error for documentation quality
   syntax:
     action: error
   var-naming:
-    action: warning
+    action: warning  # ⚠️ CONSIDER: error for consistency
   yaml:
     action: error
-    line-length: 160  # Allow longer lines
+    line-length: 160  # ⚠️ REVIEW: 160 may still be too long for readability
 
 # Tags
 tags:
@@ -149,8 +149,8 @@ exclude_paths:
   - *.swp
   - *.swo
   - *~
-  - vault/
-  - tests/
+  - vault/  # ✅ GOOD: Exclude encrypted secrets from linting
+  - tests/  # ⚠️ REVIEW: Consider linting integration tests
 
 # Include paths
 include_paths:
@@ -158,7 +158,7 @@ include_paths:
   - roles/
 
 # Offline mode
-offline: false
+offline: false  # ✅ GOOD: Allows rule updates from Ansible Galaxy
 
 # Project directory
 project_dir: .
@@ -174,13 +174,11 @@ write_list:
   - .ansible-lint-cache
 
 # Progressive mode
-progressive: false
+progressive: false  # ⚠️ CONSIDER: true for gradual adoption in legacy code
 
-# Force color
+# Force color / No color
 force_color: false
-
-# No color
 nocolor: false
 
 # Sarif output
-sarif_file: null
+sarif_file: null  # ⚠️ CONSIDER: Enable for GitHub Actions/Jenkins integration
